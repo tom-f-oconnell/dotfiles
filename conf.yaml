@@ -15,6 +15,7 @@
     ~/.gitconfig:
     ~/.gitignore:
     ~/.config/LibreCAD:
+    ~/.config/inkscape:
 
 # TODO is this git update-submodules necessary? how different from one in ./install?
 - shell: []
