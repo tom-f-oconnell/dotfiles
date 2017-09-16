@@ -9,4 +9,4 @@ export MT_PLAYBACK_DIR=$MT_DIR/examples/sample_data
 # used by some of my data acquisition / analysis tools
 export EXP_DIR="$HOME/data"
 
-
+export IMAGING_EXP_DIR="$HOME/data/flies"

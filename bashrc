@@ -141,3 +141,7 @@ fi
 if [ -d $HOME/catkin/src/multi_tracker/multi_tracker_analysis ]; then
   export PATH="$PATH:$HOME/catkin/src/multi_tracker/multi_tracker_analysis"
 fi
+
+if [ -d $HOME/src/scripts:$PATH ]; then
+  export PATH="$HOME/src/scripts:$PATH"
+fi

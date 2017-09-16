@@ -21,6 +21,12 @@ autocmd! BufNewFile,BufRead *.launch setlocal ft=launch
 autocmd Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
 
 set backspace=indent,eol,start
+set autoindent
+
+" TODO what was the purpose of this again?
+if has("autocmd")
+  filetype plugin indent on
+endif
 
 " To turn off the preview window in YouCompleteMe (or other completions)
 set completeopt-=preview

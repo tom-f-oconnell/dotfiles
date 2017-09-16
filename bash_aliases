@@ -10,6 +10,9 @@ alias cpconf='cp $HOME/catkin/src/multi_tracker/examples/sample_data/config_2016
 alias py='python'
 alias i='ipython'
 alias j='jupyter notebook'
+
+alias cm='cd ~/catkin && catkin_make'
+
 alias cs='cd $MT_SRC_DIR'
 alias ca='cd $MT_ANALYSIS_DIR'
 alias co='cd $MT_OUTPUT_DIR'
@@ -24,6 +27,7 @@ alias rl='ROS_HOME=`pwd` roslaunch'
 
 alias e='cd $EXP_DIR'
 alias cdc='cd ~/src/al_imaging'
+# & cdd that uses env var to go to data
 
 alias mtdir='rosrun multi_tracker mk_date_dir.py'
 # TODO maybe have expdir make a directory for whicever acquisition pipeline i'm using at the moment?
