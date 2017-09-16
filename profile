@@ -17,7 +17,7 @@ if [ -n "$BASH_VERSION" ]; then
 fi
 
 
-if [ -f "$HOME/.bashrc" ]; then
+if [ -f "$HOME/.variables" ]; then
     . "$HOME/.variables"
 fi
 
