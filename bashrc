@@ -116,6 +116,12 @@ if ! shopt -oq posix; then
   fi
 fi
 
+# opens a file in Fiji, and appends current directory before argument so Fiji doesn't freak out
+function fp() {
+    $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
+}
+
+
 if [ -f /opt/ros/kinetic/setup.bash ]; then
   source /opt/ros/kinetic/setup.bash
 fi
@@ -125,5 +131,10 @@ if [ -f $HOME/catkin/devel/setup.bash ]; then
 fi
 #source $HOME/catkin/install/setup.bash
 
+# TODO better way to manage python path to include my modules nested within src?
 export PYTHONPATH="$PYTHONPATH:$HOME/src/al_imaging"
+
+if [ -d $HOME/src/SutterMP285 ]; then
+  export PYTHONPATH="${PYTHONPATH}:$HOME/src/SutterMP285"
+fi
 

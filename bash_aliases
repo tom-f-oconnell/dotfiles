@@ -1,4 +1,7 @@
 
+#alias plots='scp tom@eftm.duckdns.org:~/lab/hong/src/*html .'
+alias fiji='$HOME/Fiji.app/ImageJ-linux64'
+
 #alias atty='stty -F /dev/ttyACM0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts -hupcl'
 
 alias x='xdg-open'

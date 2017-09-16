@@ -3,7 +3,7 @@
       create: true
       relink: true
 
-- clean: ['~']
+- clean: ['~', '~/.config']
 
 - link: 
     ~/.bashrc:
@@ -14,6 +14,7 @@
     ~/.vim:
     ~/.gitconfig:
     ~/.gitignore:
+    ~/.config/LibreCAD:
 
 # TODO is this git update-submodules necessary? how different from one in ./install?
 - shell: []

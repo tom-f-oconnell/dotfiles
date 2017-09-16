@@ -23,3 +23,6 @@ fi
 
 # set PATH so it includes user's private bin directories
 PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+
+# TODO set GPG key. check keys
+# (had export GPGKEY=687D8AAF)
