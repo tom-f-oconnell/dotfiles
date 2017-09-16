@@ -1,0 +1,16 @@
+- defaults:
+    link:
+      create: true
+      relink: true
+
+- clean: ['~']
+
+- link: 
+    ~/.vimrc:
+    ~/.vim:
+    ~/.gitconfig:
+    ~/.gitignore_global:
+
+# TODO is this git update-submodules necessary? how different from one in ./install?
+- shell:
+  - git update-submodules
