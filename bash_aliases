@@ -3,7 +3,7 @@
 
 alias x='xdg-open'
 alias rs='rsync -auvP'
-alias cpconf='cp /home/lab/catkin/src/multi_tracker/examples/sample_data/config_20160412_134708_N1.py .; mv config_20160412_134708_N1.py config_`ls -p | grep bag | sed s/_delta_video.bag//g`.py'
+alias cpconf='cp $HOME/catkin/src/multi_tracker/examples/sample_data/config_20160412_134708_N1.py .; mv config_20160412_134708_N1.py config_`ls -p | grep bag | sed s/_delta_video.bag//g`.py'
 alias py='python'
 alias i='ipython'
 alias j='jupyter notebook'
@@ -43,7 +43,8 @@ alias d='expdir'
 alias c='roslaunch multi_tracker pointgrey_usb.launch'
 
 # Library Update
-alias lu='rm -rf ros_lib && rosrun rosserial_arduino make_libraries.py .'
+# TODO maybe find whichever arduino is actually installed?
+alias lu='cd $HOME/arduino-1.8.3/libraries rm -rf ros_lib && rosrun rosserial_arduino make_libraries.py .'
 
 # TODO central config file for specifying target of e or a? in .ros maybe (has to not get cleared)?
 # should it just be a launch file?

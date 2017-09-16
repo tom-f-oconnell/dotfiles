@@ -1,0 +1,4 @@
+
+# used by some of my data acquisition / analysis tools
+export EXP_DIR="$HOME/data"
+

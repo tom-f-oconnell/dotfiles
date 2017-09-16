@@ -6,10 +6,14 @@
 - clean: ['~']
 
 - link: 
+    ~/.bashrc:
+    ~/.bash_aliases:
+    ~/.variables:
+    ~/.profile:
     ~/.vimrc:
-#    ~/.vim:
+    ~/.vim:
     ~/.gitconfig:
-    ~/.gitignore_global:
+    ~/.gitignore:
 
 # TODO is this git update-submodules necessary? how different from one in ./install?
 - shell: []

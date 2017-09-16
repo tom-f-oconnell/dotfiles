@@ -1,3 +1,7 @@
 [user]
 	email = toconnel@caltech.edu
 	name = Tom O'Connell
+[push]
+	default = simple
+[core]
+	excludesfile = /home/tom/.gitignore
