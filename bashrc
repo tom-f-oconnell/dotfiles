@@ -138,3 +138,6 @@ if [ -d $HOME/src/SutterMP285 ]; then
   export PYTHONPATH="${PYTHONPATH}:$HOME/src/SutterMP285"
 fi
 
+if [ -d $HOME/catkin/src/multi_tracker/multi_tracker_analysis ]; then
+  export PATH="$PATH:$HOME/catkin/src/multi_tracker/multi_tracker_analysis"
+fi

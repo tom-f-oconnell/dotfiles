@@ -1,4 +1,12 @@
 
+export MT_DIR=$HOME/catkin/src/multi_tracker
+export MT_SRC_DIR=$HOME/demo/demo_1/src
+export MT_ANALYSIS_DIR=$MT_DIR/multi_tracker_analysis
+export MT_INPUT_DIR=/media/remy/storage/tracking_data
+export MT_OUTPUT_DIR=$HOME/demo/demo_1/data
+export MT_PLAYBACK_DIR=$MT_DIR/examples/sample_data
+
 # used by some of my data acquisition / analysis tools
 export EXP_DIR="$HOME/data"
+
 

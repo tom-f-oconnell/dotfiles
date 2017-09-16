@@ -14,6 +14,8 @@ alias cs='cd $MT_SRC_DIR'
 alias ca='cd $MT_ANALYSIS_DIR'
 alias co='cd $MT_OUTPUT_DIR'
 alias ci='cd $MT_INPUT_DIR'
+alias cr='cd $MT_PLAYBACK_DIR'
+alias trajecgui='trajectory_viewer_gui_v2.py'
 
 # if this ever causes problems with logs, can also include ROS_LOG_DIR=/home/user/.ros/log
 alias roslaunch='ROS_HOME=`pwd` roslaunch'
