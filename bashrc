@@ -121,6 +121,30 @@ function fp() {
     $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
 }
 
+function g() {
+    git commit -am "$1"
+}
+
+# for aliases where the arguments should go in the middle
+function ltx() {
+    FILE=$1
+    PREFIX=${FILE%%.*}
+    latex $1
+    RET=$?
+    rm "$PREFIX.log"; rm "$PREFIX.aux"
+    if [ $RET -eq 0 ]
+    then
+        dvipdfm $PREFIX.dvi; rm "$PREFIX.dvi"
+        xdg-open $PREFIX.pdf
+    fi
+}
+
+# added by Anaconda2 4.2.0 installer
+#export PATH="$HOME/anaconda2/bin:$PATH"
+
+# added by Anaconda3 4.1.1 installer
+#export PATH="$HOME/anaconda3/bin:$PATH"
+#export PATH="$HOME/.local/bin:$PATH"
 
 if [ -f /opt/ros/kinetic/setup.bash ]; then
   source /opt/ros/kinetic/setup.bash
@@ -145,3 +169,8 @@ fi
 if [ -d $HOME/src/scripts:$PATH ]; then
   export PATH="$HOME/src/scripts:$PATH"
 fi
+
+#export PATH="$HOME/util:$PATH"
+#export PATH="$HOME/src/pdfocr:$PATH"
+
+

@@ -1,4 +1,15 @@
 
+alias ga='git add'
+alias gca='git commit -am'
+alias gp='git push -u origin master'
+alias gst='git status'
+alias gl='git log'
+
+alias wow='wine /media/tb/Games/wow-4.3.4/wow_434.exe 1>/dev/null 2>/dev/null &'
+
+alias lmms='$HOME/src/lmms/build/lmms'
+alias lac='LAC'
+
 #alias plots='scp tom@eftm.duckdns.org:~/lab/hong/src/*html .'
 alias fiji='$HOME/Fiji.app/ImageJ-linux64'
 
@@ -25,8 +36,11 @@ alias roslaunch='ROS_HOME=`pwd` roslaunch'
 # TODO why does tab completion not seem to work with this one? can i make it?
 alias rl='ROS_HOME=`pwd` roslaunch'
 
+# TODO had alias e=exit on blackbox, and c=clear, and i might prefer those
 alias e='cd $EXP_DIR'
 alias cdc='cd ~/src/al_imaging'
+# d=data
+alias cdd='cd /media/threeA/Tom/flies/'
 # & cdd that uses env var to go to data
 
 alias mtdir='rosrun multi_tracker mk_date_dir.py'
@@ -50,6 +64,8 @@ alias d='expdir'
 # should i use any unrectified cameras?
 # TODO make this
 alias c='roslaunch multi_tracker pointgrey_usb.launch'
+
+alias arduino='~/arduino-1.8.0/arduino'
 
 # Library Update
 # TODO maybe find whichever arduino is actually installed?
