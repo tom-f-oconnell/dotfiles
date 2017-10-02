@@ -13,6 +13,7 @@ alias lac='LAC'
 #alias plots='scp tom@eftm.duckdns.org:~/lab/hong/src/*html .'
 alias fiji='$HOME/Fiji.app/ImageJ-linux64'
 
+alias snk='ssh -o PubkeyAuthentication=no'
 #alias atty='stty -F /dev/ttyACM0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts -hupcl'
 
 alias x='xdg-open'
@@ -84,3 +85,7 @@ alias mt_aliases='printf "e - cd to experiment directory (set with \$EXP_DIR)\np
 # sudo xargs or xargs sudo?
 alias labpython='pgrep python -u lab | sudo xargs kill'
 alias tompython='(pgrep python -u tom | sudo xargs kill); (pgrep record -u tom | sudo xargs kill)'
+
+# TODO could use same set of env vars i was planning on using for analysis
+alias transfer_data='rsync -avPurz -e "ssh -vi $HOME/.ssh/for_rsync_to_analysis" $HOME/data/. tom@gerty:/home/tom/data'
+alias transfer_data2='rsync -avPurz -e "ssh -vi $HOME/.ssh/for_rsync_to_analysis" $HOME/data/. tom@cthulhu:/home/tom/data'
