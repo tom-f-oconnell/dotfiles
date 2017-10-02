@@ -174,3 +174,6 @@ fi
 #export PATH="$HOME/src/pdfocr:$PATH"
 
 
+if [ -f "$HOME/.variables" ]; then
+    . "$HOME/.variables"
+fi
