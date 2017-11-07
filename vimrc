@@ -20,6 +20,9 @@ autocmd Filetype arduino setlocal expandtab tabstop=2 shiftwidth=2
 autocmd! BufNewFile,BufRead *.launch setlocal ft=launch
 autocmd Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
 
+autocmd! BufNewFile,BufRead *.md setlocal ft=markdown
+autocmd Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
+
 set backspace=indent,eol,start
 set autoindent
 
@@ -41,3 +44,6 @@ set completeopt-=preview
 " For Overtone / Clojure interfacing
 map <F2> :Eval<ENTER>
 map <F3> :Connect<ENTER>1<ENTER><ENTER>
+
+" vim-markdown configuration
+let g:vim_markdown_folding_disabled = 1
