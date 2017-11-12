@@ -5,6 +5,10 @@ execute pathogen#infect()
 syntax on
 filetype plugin indent on
 
+" Prevents vim from breaking in the middle of words, the default.
+" May prefer to break at space + punctuation? See breakat option.
+set linebreak
+
 " To alleviate stress from hitting the escape key
 inoremap jj <ESC>
 inoremap kk <ESC>
