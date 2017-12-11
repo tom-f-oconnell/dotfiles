@@ -191,7 +191,9 @@ function start_agent {
 }
 
 # Source SSH settings, if applicable
-
+# TODO only do this from first time i use ssh / git, not from first shell?
+# TODO also consider using user Micah's answer to same question, which should
+# kill ssh_agent when no more bash processes (?)
 if [ -f "${SSH_ENV}" ]; then
     . "${SSH_ENV}" > /dev/null
     #ps ${SSH_AGENT_PID} doesn't work under cywgin

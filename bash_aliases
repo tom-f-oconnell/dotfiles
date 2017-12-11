@@ -1,9 +1,18 @@
 
+alias r=". ~/.bashrc"
+
 alias ga='git add'
 alias gca='git commit -am'
 alias gp='git push -u origin master'
 alias gst='git status'
 alias gl='git log'
+
+clone_fn() {
+	echo "Argument 1: $1"
+	echo "Argument 2: $2"
+	git clone git://github.com/$1 $2
+}
+alias c="clone_fn"
 
 alias wow='wine /media/tb/Games/wow-4.3.4/wow_434.exe 1>/dev/null 2>/dev/null &'
 
@@ -64,7 +73,7 @@ alias d='expdir'
 # c for Camera
 # should i use any unrectified cameras?
 # TODO make this
-alias c='roslaunch multi_tracker pointgrey_usb.launch'
+#alias c='roslaunch multi_tracker pointgrey_usb.launch'
 
 alias arduino='~/arduino-1.8.0/arduino'
 
