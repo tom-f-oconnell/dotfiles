@@ -18,6 +18,8 @@ command W w
 
 autocmd Filetype python setlocal expandtab tabstop=4 shiftwidth=4
 
+autocmd Filetype sh setlocal expandtab tabstop=4 shiftwidth=4
+
 autocmd! BufNewFile,BufRead *.ino,*.pde setlocal ft=arduino
 autocmd Filetype arduino setlocal expandtab tabstop=2 shiftwidth=2
 
