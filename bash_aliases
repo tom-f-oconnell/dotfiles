@@ -53,6 +53,13 @@ alias cdc='cd ~/src/al_imaging'
 alias cdd='cd /media/threeA/Tom/flies/'
 # & cdd that uses env var to go to data
 
+alias fd='roscd'
+# TODO idk why this worked in one terminal, but now seems to have issues in new ones...
+# see where .bash_aliases is sourced in whatever sources completion stuff i suppose
+_completion_loader roscd
+# got from `complete -p roscd`
+complete -o nospace -F _roscomplete_sub_dir fd
+
 alias mtdir='rosrun multi_tracker mk_date_dir.py'
 # TODO maybe have expdir make a directory for whicever acquisition pipeline i'm using at the moment?
 alias expdir='rosrun multi_tracker mk_date_dir.py'
