@@ -20,6 +20,10 @@ set linebreak
 " TODO could this be done using other registers *(?) w/o compile flag?
 set clipboard+=unnamed
 
+" TODO i think i might want to prevent 'x' from going in to buffer? way to
+" prevent? maybe i actually would want to keep it, in case i get more
+" proficient with vim?
+
 " To alleviate stress from hitting the escape key
 inoremap jj <ESC>
 inoremap kk <ESC>
@@ -62,7 +66,14 @@ set expandtab
 set cinkeys-=0#
 set cinoptions+=#1s
 
-autocmd Filetype python setlocal expandtab tabstop=4 shiftwidth=4
+" TODO what is tabstop exactly? i had it at 4... do i need to reformat?
+autocmd Filetype python setlocal expandtab tabstop=8 shiftwidth=4 softtabstop=4
+" not sure if the VIM I generally use is new enough to use the 'shiftwidth()'
+" format
+" TODO do something similar for other languages.
+" some guy was saying "filetype plugin indent on" worked for him, but how? I
+" have that up top, so it must be overridden?
+let g:pyindent_continue = '&shiftwidth'
 
 autocmd Filetype sh setlocal expandtab tabstop=4 shiftwidth=4
 
