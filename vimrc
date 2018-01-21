@@ -67,7 +67,7 @@ set cinkeys-=0#
 set cinoptions+=#1s
 
 " TODO what is tabstop exactly? i had it at 4... do i need to reformat?
-autocmd Filetype python setlocal expandtab tabstop=8 shiftwidth=4 softtabstop=4
+au Filetype python setlocal expandtab tabstop=8 shiftwidth=4 softtabstop=4
 " not sure if the VIM I generally use is new enough to use the 'shiftwidth()'
 " format
 " TODO do something similar for other languages.
@@ -75,27 +75,78 @@ autocmd Filetype python setlocal expandtab tabstop=8 shiftwidth=4 softtabstop=4
 " have that up top, so it must be overridden?
 let g:pyindent_continue = '&shiftwidth'
 
-autocmd Filetype sh setlocal expandtab tabstop=4 shiftwidth=4
+" sets new python files to executable by default
+" TODO tabs to spaces in vimrc
+au BufWritePre *.py if !filereadable(expand('%')) | 
+	\let b:is_new = 1 | endif
+au BufWritePost *.py if get(b:, 'is_new', 0) | 
+	\silent execute '!chmod +x %' | endif
 
-autocmd! BufNewFile,BufRead *.ino,*.pde setlocal ft=arduino
-autocmd Filetype arduino setlocal expandtab tabstop=2 shiftwidth=2
+" TODO also map in insert mode?
+" see http://vim.wikia.com/wiki/Python_-_check_syntax_and_run_script
+" first <cr> necessary?
+" also see:
+" https://stackoverflow.com/questions/18948491/running-python-code-in-vim
+" TODO maybe make it so it shows up in window / split at bottom, w/ hotkey
+" to exit that window?
+" TODO open file -> (in template) add some command -> press F5 in insert (<F5>
+" just inserted)
+" TODO open file -> (in template) add some command -> press F5 in command before
+" writing file -> command not apparently run, but pressing :w yields "Warning:
+" Mode of file "hi.py" has changed since editing started." fix
+" TODO why will this not seem to run if the python file is not executable?
+" i can normally call a non-executable python script by passing it to the
+" interpreter...
+" TODO see
+" https://stackoverflow.com/questions/12030965/
+" change-the-mapping-of-f5-on-the-basis-of-specific-file-type
+au BufRead *.py nmap <F5> :w<cr>:!python %<cr>
+au BufRead *.py imap <F5> <Esc>:w<cr>!python %<cr>
 
-autocmd! BufNewFile,BufRead *.launch setlocal ft=launch
-autocmd Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
+" TODO how to define these kind of options together, for reuse with diff
+" filetypes?
+au BufNewFile *.py 0r ~/.vim/skel.py
+au BufNewFile *.py normal G
+au BufNewFile *.py startinsert
 
-autocmd! BufNewFile,BufRead *.md setlocal ft=markdown
-autocmd Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
+
+au Filetype sh setlocal expandtab tabstop=4 shiftwidth=4
+au BufWritePre *.sh if !filereadable(expand('%')) | 
+	\let b:is_new = 1 | endif
+" TODO why can't i just do this directly in above?
+au BufWritePost *.sh if get(b:, 'is_new', 0) | 
+	\silent execute '!chmod +x %' | endif
+au BufRead *.sh nmap <F5> :w<cr>:!bash %<cr>
+au BufRead *.sh imap <F5> <Esc>:w<cr>!bash %<cr>
+au BufNewFile *.sh 0r ~/.vim/skel.sh
+au BufNewFile *.sh normal G
+au BufNewFile *.sh startinsert
+
+" TODO what does au! do again? might be undesirable / affect order
+" TODO move cursor to inside setup and enter insert
+au! BufNewFile,BufRead *.ino,*.pde setlocal ft=arduino
+au Filetype arduino setlocal expandtab tabstop=2 shiftwidth=2
+" TODO augroup on (ft?) to only specify *.ino,*.pde once, and similarly for
+" other languages?
+" this had to come after the aus
+au BufNewFile *.ino,*.pde 0r ~/.vim/skel.ino
+
+au! BufNewFile,BufRead *.launch setlocal ft=launch
+au Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
+
+au! BufNewFile,BufRead *.md setlocal ft=markdown
+au Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
 
 " Trying to include some txt settings for my usual habits of making lots of
 " nested bulleted lists, with indents at one level, often with - as prefix.
 " TODO make it more like markdown?
-autocmd Filetype text setlocal expandtab tabstop=1 shiftwidth=1
+au Filetype text setlocal expandtab tabstop=1 shiftwidth=1
 
 set backspace=indent,eol,start
 set autoindent
 
 " TODO what was the purpose of this again?
-if has("autocmd")
+if has("au")
   filetype plugin indent on
 endif
 

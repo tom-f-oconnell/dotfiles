@@ -1,8 +1,13 @@
 
 fix youcompleteme install. subtree?
 
-setup encryption for just the sensitive lines in things like irssi config, pypi config
+setup encryption for just the sensitive lines in things like irssi config, pypi
+config
 
-clean things like recently opened files out of librecad, openscad, and other configs
+clean things like recently opened files out of librecad, openscad, and other
+configs
 
 add openscad
+
+automate vim plugin installation / submodule updates / unbreaking
+automate YouCompleteMe installation (./install.py --clang-completer)
