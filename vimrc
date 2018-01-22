@@ -125,11 +125,15 @@ au BufNewFile *.sh startinsert
 " TODO what does au! do again? might be undesirable / affect order
 " TODO move cursor to inside setup and enter insert
 au! BufNewFile,BufRead *.ino,*.pde setlocal ft=arduino
-au Filetype arduino setlocal expandtab tabstop=2 shiftwidth=2
+au Filetype arduino setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 " TODO augroup on (ft?) to only specify *.ino,*.pde once, and similarly for
 " other languages?
 " this had to come after the aus
 au BufNewFile *.ino,*.pde 0r ~/.vim/skel.ino
+
+" for tab delimiting keywords.txt, as supposed to
+au! BufNewFile,BufRead keywords.txt setlocal ft=arduino_keywords_txt
+au Filetype arduino_keywords_txt setlocal shiftwidth=8 noexpandtab softtabstop=0
 
 au! BufNewFile,BufRead *.launch setlocal ft=launch
 au Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
@@ -166,3 +170,4 @@ map <F3> :Connect<ENTER>1<ENTER><ENTER>
 
 " vim-markdown configuration
 let g:vim_markdown_folding_disabled = 1
+

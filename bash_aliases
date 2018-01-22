@@ -3,7 +3,7 @@ alias r=". ~/.bashrc"
 
 alias ga='git add'
 alias gca='git commit -am'
-alias gp='git push -u origin master'
+alias gp='git push --follow-tags'
 alias gst='git status'
 alias gl='git log'
 
@@ -22,8 +22,12 @@ alias lac='LAC'
 #alias plots='scp tom@eftm.duckdns.org:~/lab/hong/src/*html .'
 alias fiji='$HOME/Fiji.app/ImageJ-linux64'
 
+# TODO get vim formatting (e.g. gq) to work with bash comments (recomment new
+# lines) + string handling + command breaking
 alias snk='ssh -o PubkeyAuthentication=no'
-#alias atty='stty -F /dev/ttyACM0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts -hupcl'
+#alias atty='stty -F /dev/ttyACM0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost
+#-onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon
+#-crtscts -hupcl'
 
 alias x='xdg-open'
 alias rs='rsync -auvP'
