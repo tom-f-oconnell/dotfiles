@@ -5,6 +5,7 @@
 
 - clean: ['~', '~/.config']
 
+# TODO shortcut (just link all according to some convention?)
 - link: 
     ~/.bashrc:
     ~/.bash_aliases:
@@ -17,6 +18,7 @@
     ~/.config/LibreCAD:
     ~/.config/inkscape:
 
-# TODO is this git update-submodules necessary? how different from one in ./install?
-- shell: []
-#  - git update-submodules
+# TODO print output of these commands
+- shell:
+  - git submodule update --init --recursive
+  - vim/bundle/YouCompleteMe/install.py

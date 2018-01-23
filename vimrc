@@ -171,3 +171,7 @@ map <F3> :Connect<ENTER>1<ENTER><ENTER>
 " vim-markdown configuration
 let g:vim_markdown_folding_disabled = 1
 
+" TODO automatically delete through comment when deleting from middle of comment
+" block? or just use gq?
+
+" TODO shortcut/macro to insert date
