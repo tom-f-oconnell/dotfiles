@@ -114,29 +114,6 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
-# opens a file in Fiji, and appends current directory before argument so Fiji doesn't freak out
-function fp() {
-    $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
-}
-
-function g() {
-    git commit -am "$1"
-}
-
-# for aliases where the arguments should go in the middle
-function ltx() {
-    FILE=$1
-    PREFIX=${FILE%%.*}
-    latex $1
-    RET=$?
-    rm "$PREFIX.log"; rm "$PREFIX.aux"
-    if [ $RET -eq 0 ]
-    then
-        dvipdfm $PREFIX.dvi; rm "$PREFIX.dvi"
-        xdg-open $PREFIX.pdf
-    fi
-}
-
 # added by Anaconda2 4.2.0 installer
 #export PATH="$HOME/anaconda2/bin:$PATH"
 
@@ -171,12 +148,13 @@ fi
 #export PATH="$HOME/util:$PATH"
 #export PATH="$HOME/src/pdfocr:$PATH"
 
-
+# TODO still used?
 if [ -f "$HOME/.variables" ]; then
     . "$HOME/.variables"
 fi
 
-# see Litmus' answer https://stackoverflow.com/questions/18880024/start-ssh-agent-on-login
+# see Litmus' answer
+# https://stackoverflow.com/questions/18880024/start-ssh-agent-on-login
 SSH_ENV="$HOME/.ssh/environment"
 
 function start_agent {

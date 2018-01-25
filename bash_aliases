@@ -1,4 +1,48 @@
 
+# opens a file in Fiji, and appends current directory before argument so Fiji 
+# doesn't freak out
+function fp() {
+    $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
+}
+
+# TODO some function / alias to remind me to use shortcuts for git commands
+# if i call the long forms. general approach, for any aliased commands?
+function g() {
+    git commit -am "$1"
+}
+
+# for aliases where the arguments should go in the middle
+function ltx() {
+    FILE=$1
+    PREFIX=${FILE%%.*}
+    latex $1
+    RET=$?
+    rm "$PREFIX.log"; rm "$PREFIX.aux"
+    if [ $RET -eq 0 ]
+    then
+        dvipdfm $PREFIX.dvi; rm "$PREFIX.dvi"
+        xdg-open $PREFIX.pdf
+    fi
+}
+
+function gtest() {
+    mkdir test
+    cd test
+    # TODO only continue if worked / warn
+    cp -i ~/src/gtest_template/test/* .
+    # TODO only continue if in git repo
+    git submodule add git@github.com:google/googletest.git gtest
+    #GITROOT=`git rev-parse --show-toplevel`
+    #pushd .
+    #cd $GITROOT
+    # i guess you don't actually need to do these two when you first add it?
+    # just on later clones? and is updated needed? (need to make a new commit if
+    # it changes?)
+    #git submodule init
+    #git submodule update
+    #popd
+}
+
 alias r=". ~/.bashrc"
 
 alias ga='git add'

@@ -11,3 +11,7 @@ add openscad
 
 automate vim plugin installation / submodule updates / unbreaking
 automate YouCompleteMe installation (./install.py --clang-completer)
+
+firefox plugins (maybe only if firefox is detected as installed)
+-want standard interface to copy / paste urls / file list
++multiple tab handling
