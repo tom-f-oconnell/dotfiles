@@ -48,7 +48,9 @@ alias r=". ~/.bashrc"
 alias ga='git add'
 alias gca='git commit -am'
 alias gp='git push --follow-tags'
-alias gst='git status'
+alias gpr='git pull --rebase'
+# git "[i]nfo"
+alias gi='git status'
 alias gl='git log'
 
 clone_fn() {
