@@ -46,6 +46,7 @@ function gtest() {
 alias r=". ~/.bashrc"
 
 alias ga='git add'
+alias gaa='git add --all'
 alias gca='git commit -am'
 alias gp='git push --follow-tags'
 alias gpr='git pull --rebase'

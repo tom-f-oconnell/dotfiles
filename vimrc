@@ -144,7 +144,11 @@ au Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
 " Trying to include some txt settings for my usual habits of making lots of
 " nested bulleted lists, with indents at one level, often with - as prefix.
 " TODO make it more like markdown?
+" TODO Filetype and FileType both valid?
 au Filetype text setlocal expandtab tabstop=1 shiftwidth=1
+
+" TODO set vs setlocal? BufFilePost in others too?
+au BufNewFile,BufRead,BufFilePost *.cir setlocal filetype=spice
 
 set backspace=indent,eol,start
 set autoindent
