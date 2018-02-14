@@ -180,4 +180,9 @@ else
     start_agent;
 fi
 
+# TODO maybe don't do this
+# https://unix.stackexchange.com/questions/17715/
+# how-can-i-set-all-subdirectories-of-a-directory-into-path/17856#17856
+export PATH="$( find $HOME/src/dotfiles/util/ -type d -printf "%p:" )$PATH"
 export PATH="$HOME/src/scripts:$PATH"
+

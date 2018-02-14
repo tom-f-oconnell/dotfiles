@@ -15,3 +15,7 @@ automate YouCompleteMe installation (./install.py --clang-completer)
 firefox plugins (maybe only if firefox is detected as installed)
 -want standard interface to copy / paste urls / file list
 +multiple tab handling
+
+install GithubCloner requirements
+
+how to add all scripts to path / symlink them to somewhere that in it?

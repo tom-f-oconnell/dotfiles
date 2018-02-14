@@ -22,3 +22,6 @@
 [submodule "vim/bundle/vim-fireplace"]
 	path = vim/bundle/vim-fireplace
 	url = git@github.com:tpope/vim-fireplace.git
+[submodule "util/GithubCloner"]
+	path = util/GithubCloner
+	url = git@github.com:mazen160/GithubCloner

@@ -19,6 +19,10 @@
     ~/.config/inkscape:
 
 # TODO print output of these commands
+# TODO do i want submodule update to be recursive? manually specify?
+# TODO if already running w/ root permissions, maybe don't do user on last pip
+# install line?
 - shell:
   - git submodule update --init --recursive
   - vim/bundle/YouCompleteMe/install.py
+  - pip3 install --user -r util/GithubCloner/requirements.txt
