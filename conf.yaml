@@ -22,7 +22,15 @@
 # TODO do i want submodule update to be recursive? manually specify?
 # TODO if already running w/ root permissions, maybe don't do user on last pip
 # install line?
+# TODO need to use git://? will that work w/ SSH key set later?
 - shell:
+  - ./get_scripts.sh
+  -
+    description: "Running movein.sh"
+    command: "sudo ~/src/scripts/movein.sh"
+    stdout: True
+    stderr: True
+    stdin: True
   - git submodule update --init --recursive
   - vim/bundle/YouCompleteMe/install.py
   - pip3 install --user -r util/GithubCloner/requirements.txt

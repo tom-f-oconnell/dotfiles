@@ -114,6 +114,9 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
+# TODO check
+export EDITOR="/usr/bin/vi"
+
 # added by Anaconda2 4.2.0 installer
 #export PATH="$HOME/anaconda2/bin:$PATH"
 
@@ -185,4 +188,3 @@ fi
 # how-can-i-set-all-subdirectories-of-a-directory-into-path/17856#17856
 export PATH="$( find $HOME/src/dotfiles/util/ -type d -printf "%p:" )$PATH"
 export PATH="$HOME/src/scripts:$PATH"
-
