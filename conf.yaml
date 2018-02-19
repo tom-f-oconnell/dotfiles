@@ -5,6 +5,19 @@
 
 - clean: ['~', '~/.config']
 
+# TODO more idiomatic way?
+- shell:
+  -
+    command: "if [ ! -L ~/.bashrc ]; then rm -i ~/.bashrc; fi"
+    stdout: True
+    stderr: True
+    stdin: True
+  -
+    command: "if [ ! -L ~/.profile ]; then rm -i ~/.profile; fi"
+    stdout: True
+    stderr: True
+    stdin: True
+
 # TODO shortcut (just link all according to some convention?)
 - link: 
     ~/.bashrc:
@@ -23,14 +36,35 @@
 # TODO if already running w/ root permissions, maybe don't do user on last pip
 # install line?
 # TODO need to use git://? will that work w/ SSH key set later?
+# TODO i kind of want stdout/err/in for all things. way to make it default?
 - shell:
-  - ./get_scripts.sh
+  - 
+    description: "Getting accessory scripts repo"
+    command: "./get_scripts.sh"
+    stdout: True
+    stderr: True
+    stdin: True
   -
-    description: "Running movein.sh"
+    description: "Running ~/src/scripts/movein.sh"
     command: "sudo ~/src/scripts/movein.sh"
     stdout: True
     stderr: True
     stdin: True
-  - git submodule update --init --recursive
-  - vim/bundle/YouCompleteMe/install.py
-  - pip3 install --user -r util/GithubCloner/requirements.txt
+  - 
+    description: "Updating submodules"
+    command: "git submodule update --init --recursive"
+    stdout: True
+    stderr: True
+    stdin: True
+  - 
+    description: "Installing YouCompleteMe"
+    command: "sudo ./ycm_deps.sh && vim/bundle/YouCompleteMe/install.py"
+    stdout: False
+    stderr: True
+    stdin: True
+  - 
+    description: "Installing requirements for GithubCloner"
+    command: "pip3 install --user -r util/GithubCloner/requirements.txt"
+    stdout: False
+    stderr: True
+    stdin: True

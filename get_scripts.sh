@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
-mkdir ~/src
+mkdir -p ~/src
 cd ~/src
-git clone git://github.com/tom-f-oconnell/scripts.git
+
+if [ ! -d ~/src/scripts ] ; then
+    git clone git://github.com/tom-f-oconnell/scripts.git
+else
+    cd scripts
+    git pull --rebase || (exit 0)
+fi
