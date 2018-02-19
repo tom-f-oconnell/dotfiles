@@ -68,3 +68,4 @@
     stdout: False
     stderr: True
     stdin: True
+  - ./ui_settings.sh
