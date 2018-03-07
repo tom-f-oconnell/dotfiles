@@ -154,5 +154,9 @@ alias labpython='pgrep python -u lab | sudo xargs kill'
 alias tompython='(pgrep python -u tom | sudo xargs kill); (pgrep record -u tom | sudo xargs kill)'
 
 # TODO could use same set of env vars i was planning on using for analysis
-alias transfer_data='rsync -avPurz -e "ssh -vi $HOME/.ssh/for_rsync_to_analysis" $HOME/data/. tom@gerty:/home/tom/data'
-alias transfer_data2='rsync -avPurz -e "ssh -vi $HOME/.ssh/for_rsync_to_analysis" $HOME/data/. tom@cthulhu:/home/tom/data'
+# TODO how-to on setting up this kind of key -> lab github
+alias transfer_data='rsync -avPurz -e "ssh -vi $HOME/.ssh/for_rsync_to_analysis" $HOME/data tom@gerty:/home/tom/data'
+alias transfer_data2='rsync -avPurz -e "ssh -vi $HOME/.ssh/for_rsync_to_analysis" $HOME/data tom@cthulhu:/home/tom/data'
+# TODO why does the syntax seem to be different w/o -e? (same paths put data
+# inside data)
+alias transfer_data3='rsync -avPurz $HOME/data tom@atlas:/home/tom/'
