@@ -54,12 +54,15 @@ alias gpr='git pull --rebase'
 alias gi='git status'
 alias gl='git log'
 
+# wait, what is second argument for again? why not intervening flash?
 clone_fn() {
 	echo "Argument 1: $1"
 	echo "Argument 2: $2"
 	git clone git://github.com/$1 $2
 }
 alias c="clone_fn"
+# would this work?
+#alias ct="clone_fn tom-f-oconnell/"
 
 alias wow='wine /media/tb/Games/wow-4.3.4/wow_434.exe 1>/dev/null 2>/dev/null &'
 
@@ -160,3 +163,5 @@ alias transfer_data2='rsync -avPurz -e "ssh -vi $HOME/.ssh/for_rsync_to_analysis
 # TODO why does the syntax seem to be different w/o -e? (same paths put data
 # inside data)
 alias transfer_data3='rsync -avPurz $HOME/data tom@atlas:/home/tom/'
+
+alias v='vi'
