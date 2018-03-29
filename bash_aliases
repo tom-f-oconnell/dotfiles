@@ -164,4 +164,13 @@ alias transfer_data2='rsync -avPurz -e "ssh -vi $HOME/.ssh/for_rsync_to_analysis
 # inside data)
 alias transfer_data3='rsync -avPurz $HOME/data tom@atlas:/home/tom/'
 
+# TODO provide option to specify a subdirectory / automate this whole process
+#alias gather_tracking='rsync -avPurz $HOME'
+
 alias v='vi'
+
+# It seems if it was saved w/ a diff version of python or something, nothing is
+# printed? kind of odd, considering it worked with 3 and I thought i would have
+# saved the temporary mappings I tested it on in 2 (ROS). Syntax for Python 2?
+alias pickle='python -mpickle'
+alias pickle3='python3 -mpickle'

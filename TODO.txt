@@ -19,3 +19,6 @@ firefox plugins (maybe only if firefox is detected as installed)
 install GithubCloner requirements
 
 how to add all scripts to path / symlink them to somewhere that in it?
+
+include instructions for how I would like to install VIM plugins (Vundle?
+pathogen (does it support github?)? submodules?
