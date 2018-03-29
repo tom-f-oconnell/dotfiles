@@ -1,4 +1,35 @@
 
+" can this be reversed? not sure I mind?
+set nocompatible
+filetype off
+" set the runtime path to include Vundle and initialize
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+" alternatively, pass a path where Vundle should install plugins
+"call vundle#begin('~/some/path/here')
+
+" let Vundle manage Vundle, required
+Plugin 'VundleVim/Vundle.vim'
+
+" TODO which other plugins do I want to manage with Vundle?
+Plugin 'tyru/current-func-info.vim'
+
+" All of your Plugins must be added before the following line
+call vundle#end()
+" To ignore plugin indent changes, instead use:
+"filetype plugin on
+
+" Brief help
+" :PluginList       - lists configured plugins
+" :PluginInstall    - installs plugins; append `!` to update or just 
+"                     :PluginUpdate
+" :PluginSearch foo - searches for foo; append `!` to refresh local cache
+" :PluginClean      - confirms removal of unused plugins; append `!` to
+"                     auto-approve removal
+
+" see :h vundle for more details or wiki for FAQ
+
+
 " Not sure exactly what pathogen does?
 execute pathogen#infect()
 
@@ -36,6 +67,8 @@ command W w
 " some the the practices I normally take to break up lines
 
 " Cutoff, beyond which, vim will wrap, breaking with a new-line
+" TODO should this actually be 79 to follow PEP8? maybe set in python files?
+" does this / PEP8 count newline?
 set textwidth=80
 
 " So that *I* can manually keep lines to 80 characters
@@ -45,7 +78,12 @@ set textwidth=80
 " there.
 " TODO make this relative to current textwidth (maybe one of two diff colors
 " if text is between current tw and 80, one color for either direction?)
+" TODO make exception for URLs if possible. i often don't want to break those.
 au BufWinEnter * let w:m2=matchadd('ErrorMsg', '\%>80v.\+', -1)
+
+" TODO maybe if i would get "No identifier under cursor" error (trying to enter
+" insert mode when caps lock is on), switch caps lock off and enter insert mode?
+" TODO or always display some indicator that caps lock is on (if possible)?
 
 " set colorcolumn=80
 " To change the color of the colorcolumn use :highlight ColorColumn, e.g.
@@ -138,14 +176,17 @@ au Filetype arduino_keywords_txt setlocal shiftwidth=8 noexpandtab softtabstop=0
 au! BufNewFile,BufRead *.launch setlocal ft=launch
 au Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
 
+set spellfile=$HOME/src/dotfiles/vim/spell/spellfile.utf-8.add
 au! BufNewFile,BufRead *.md setlocal ft=markdown
 au Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
+au Filetype markdown setlocal spell spelllang=en_us
 
 " Trying to include some txt settings for my usual habits of making lots of
 " nested bulleted lists, with indents at one level, often with - as prefix.
 " TODO make it more like markdown?
 " TODO Filetype and FileType both valid?
 au Filetype text setlocal expandtab tabstop=1 shiftwidth=1
+au Filetype text setlocal spell spelllang=en_us
 
 " TODO set vs setlocal? BufFilePost in others too?
 au BufNewFile,BufRead,BufFilePost *.cir setlocal filetype=spice
@@ -179,3 +220,6 @@ let g:vim_markdown_folding_disabled = 1
 " block? or just use gq?
 
 " TODO shortcut/macro to insert date
+
+" show the current function name on statusline. works for at least Python.
+let &statusline .= ' [%{cfi#format("%s", "")}]'
