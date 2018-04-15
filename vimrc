@@ -181,6 +181,13 @@ au! BufNewFile,BufRead *.md setlocal ft=markdown
 au Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
 au Filetype markdown setlocal spell spelllang=en_us
 
+" To exclude spellcheck from certain .txt files
+au! BufNewFile,BufRead *requirements.txt setlocal ft=special_txt
+" TODO why do I explicitly need to set this? don't for source files for
+" instance... (still inheriting some text / default properties that are set
+" differently be default for autodetected code files?)
+au Filetype special_txt setlocal nospell
+
 " Trying to include some txt settings for my usual habits of making lots of
 " nested bulleted lists, with indents at one level, often with - as prefix.
 " TODO make it more like markdown?
@@ -239,5 +246,3 @@ set laststatus=2
 " should make mouse scrolling work inside tmux
 " enables mouse (just scrolling? selection, etc?) in [a]ll modes
 set mouse=a
-
-" TODO disable spellcheck in requirements.txt files
