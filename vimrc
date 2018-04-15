@@ -222,4 +222,22 @@ let g:vim_markdown_folding_disabled = 1
 " TODO shortcut/macro to insert date
 
 " show the current function name on statusline. works for at least Python.
-let &statusline .= ' [%{cfi#format("%s", "")}]'
+" TODO possible to work in whitespace / empty lines in function too? (doesn't
+" now)
+" TODO fix false positives (e.g. in choice_analysis, in top-level code after
+" press, the status bar says we are still in the function press)
+" TODO uncomment after adding default info back (at least line #)
+" https://unix.stackexchange.com/questions/224771/what-is-the-format-of-the-default-statusline?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+"let &statusline .= ' %{cfi#format("%s", "")}'
+" TODO just display func name in another color? (or flank w/ symbols like
+" ex?)
+"hi statusline ctermfg=5 ctermbg=0
+
+" should make it so the statusline is always displayed
+set laststatus=2
+
+" should make mouse scrolling work inside tmux
+" enables mouse (just scrolling? selection, etc?) in [a]ll modes
+set mouse=a
+
+" TODO disable spellcheck in requirements.txt files
