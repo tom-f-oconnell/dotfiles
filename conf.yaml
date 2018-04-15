@@ -24,6 +24,7 @@
     ~/.bash_aliases:
     ~/.variables:
     ~/.profile:
+    ~/.inputrc:
     ~/.vimrc:
     ~/.vim:
     ~/.tmux.conf:

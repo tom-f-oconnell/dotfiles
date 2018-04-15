@@ -114,7 +114,6 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
-# TODO check
 export EDITOR="/usr/bin/vi"
 
 # added by Anaconda2 4.2.0 installer
