@@ -45,6 +45,8 @@ function gtest() {
 
 alias r=". ~/.bashrc"
 
+# TODO TODO alias mv to some function that first tries git mv, then mv if not
+# in a git repo
 alias ga='git add'
 alias gaa='git add --all'
 alias gca='git commit -am'
@@ -145,7 +147,7 @@ alias lu='cd $HOME/arduino-1.8.3/libraries rm -rf ros_lib && rosrun rosserial_ar
 # TODO central config file for specifying target of e or a? in .ros maybe (has to not get cleared)?
 # should it just be a launch file?
 # TODO way to launch most recent pair of camera and tracking pipeline?
-alias a='u & f'
+#alias a='u & f'
 
 # TODO refactor / rename this. maybe break mt_aliases into another file so they can be installed
 # and this can be generated from them?
@@ -174,3 +176,8 @@ alias v='vi'
 # saved the temporary mappings I tested it on in 2 (ROS). Syntax for Python 2?
 alias pickle='python -mpickle'
 alias pickle3='python3 -mpickle'
+
+alias ssid="nmcli -t -f active,ssid dev wifi | egrep '^yes' | cut -d\' -f2"
+
+# TODO detect venv? other tools to accomplish this?
+alias a='. env/bin/activate'
