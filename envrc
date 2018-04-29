@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+if which deactivate >/dev/null; then
+    deactivate
+fi

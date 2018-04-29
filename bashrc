@@ -187,3 +187,7 @@ fi
 # how-can-i-set-all-subdirectories-of-a-directory-into-path/17856#17856
 export PATH="$( find $HOME/src/dotfiles/util/ -type d -printf "%p:" )$PATH"
 export PATH="$HOME/src/scripts:$PATH"
+
+# One downside of direnv, as opposed to now unsupported autoenv, is that the
+# former cannot seem to automatically run virtualenv activate script.
+eval "$(direnv hook bash)"

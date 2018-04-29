@@ -180,4 +180,7 @@ alias pickle3='python3 -mpickle'
 alias ssid="nmcli -t -f active,ssid dev wifi | egrep '^yes' | cut -d\' -f2"
 
 # TODO detect venv? other tools to accomplish this?
+# TODO add pyvenv stuff (+ 16.04 install (DigitalOcean)?) to cheatsheet
+# TODO make "env" if not there, then source?
+# TODO need to fix pythonpath to avoid problems from ROS additions (or other)?
 alias a='. env/bin/activate'

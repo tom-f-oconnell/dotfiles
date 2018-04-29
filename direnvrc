@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# TODO fix
+#layout_activate() {
+#    # TODO maybe only do below if no argument passed in for env path
+#    #source env/bin/activate
+#    source $1/bin/activate
+#}

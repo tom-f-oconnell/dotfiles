@@ -32,6 +32,9 @@
     ~/.gitignore:
     ~/.config/LibreCAD:
     ~/.config/inkscape:
+    ~/.direnvrc:
+    # TODO automatically "direnv allow" this
+    ~/.envrc:
 
 # TODO print output of these commands
 # TODO do i want submodule update to be recursive? manually specify?
