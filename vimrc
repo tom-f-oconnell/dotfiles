@@ -195,6 +195,8 @@ au Filetype special_txt setlocal nospell
 au Filetype text setlocal expandtab tabstop=1 shiftwidth=1
 au Filetype text setlocal spell spelllang=en_us
 
+au Filetype yaml setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=0
+
 " TODO set vs setlocal? BufFilePost in others too?
 au BufNewFile,BufRead,BufFilePost *.cir setlocal filetype=spice
 
