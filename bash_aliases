@@ -184,3 +184,13 @@ alias ssid="nmcli -t -f active,ssid dev wifi | egrep '^yes' | cut -d\' -f2"
 # TODO make "env" if not there, then source?
 # TODO need to fix pythonpath to avoid problems from ROS additions (or other)?
 alias a='. env/bin/activate'
+
+# Starting vim in insert mode with paste option set.
+alias vip="vim +startinsert -c 'set paste'"
+
+# For faster debugging
+# -cc enters the first continue command, so script starts without delay.
+alias dpy="python -mipdb -cc"
+alias dpy2="python2 -mipdb -cc"
+alias dpy3="python3 -mipdb -cc"
+

@@ -123,17 +123,16 @@ export EDITOR="/usr/bin/vi"
 #export PATH="$HOME/anaconda3/bin:$PATH"
 #export PATH="$HOME/.local/bin:$PATH"
 
-if [ -f /opt/ros/kinetic/setup.bash ]; then
-  source /opt/ros/kinetic/setup.bash
-fi
+#if [ -f /opt/ros/kinetic/setup.bash ]; then
+#  source /opt/ros/kinetic/setup.bash
+#fi
 
-if [ -f $HOME/catkin/devel/setup.bash ]; then
-  source $HOME/catkin/devel/setup.bash
-fi
+#if [ -f $HOME/catkin/devel/setup.bash ]; then
+#  source $HOME/catkin/devel/setup.bash
+#fi
 #source $HOME/catkin/install/setup.bash
 
 # TODO better way to manage python path to include my modules nested within src?
-export PYTHONPATH="$PYTHONPATH:$HOME/src/al_imaging"
 
 if [ -d $HOME/src/SutterMP285 ]; then
   export PYTHONPATH="${PYTHONPATH}:$HOME/src/SutterMP285"
@@ -191,3 +190,11 @@ export PATH="$HOME/src/scripts:$PATH"
 # One downside of direnv, as opposed to now unsupported autoenv, is that the
 # former cannot seem to automatically run virtualenv activate script.
 eval "$(direnv hook bash)"
+
+
+# For rdkit cheminformatics library
+export RDBASE=$HOME/src/rdkit
+export LD_LIBRARY_PATH=$RDBASE/lib:$LD_LIBRARY_PATH
+export PYTHONPATH=$RDBASE:$PYTHONPATH
+
+export MATLAB_USE_USERWORK=1

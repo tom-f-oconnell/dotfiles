@@ -147,6 +147,7 @@ au BufNewFile *.py 0r ~/.vim/skel.py
 au BufNewFile *.py normal G
 au BufNewFile *.py startinsert
 
+au Filetype html setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 
 au Filetype sh setlocal expandtab tabstop=4 shiftwidth=4
 au BufWritePre *.sh if !filereadable(expand('%')) | 
@@ -248,3 +249,9 @@ set laststatus=2
 " should make mouse scrolling work inside tmux
 " enables mouse (just scrolling? selection, etc?) in [a]ll modes
 set mouse=a
+
+
+" Custom functions on the 'Leader' keyboard
+let mapleader = ","
+nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>
+
