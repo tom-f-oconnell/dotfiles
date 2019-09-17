@@ -197,7 +197,7 @@ alias dpy3="python3 -mipdb -cc"
 alias mb="cd /mnt/nas/mb_team"
 
 # Uses a script in my scripts repo.
-alias gitgit="git remote set-url origin $(git remote -v | change_git_auth.py g)"
-alias githttps="git remote set-url origin $(git remote -v | change_git_auth.py h)"
-alias gitssh="git remote set-url origin $(git remote -v | change_git_auth.py s)"
+alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url origin"
+alias githttps="git remote -v | change_git_auth.py h | xargs git remote set-url origin"
+alias gitssh="git remote -v | change_git_auth.py s | xargs git remote set-url origin"
 

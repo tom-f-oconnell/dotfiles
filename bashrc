@@ -107,6 +107,10 @@ if ! shopt -oq posix; then
   fi
 fi
 
+if [ -d $HOME/src/scripts ]; then
+  export PATH="$HOME/src/scripts:$PATH"
+fi
+
 # Alias definitions.
 # Some depend on completion, so important this comes after bash_completion
 # /usr/share/doc/bash-doc/examples in the bash-doc package (example aliases).
@@ -126,7 +130,7 @@ export EDITOR="/usr/bin/vi"
 #if [ -f /opt/ros/kinetic/setup.bash ]; then
 #  source /opt/ros/kinetic/setup.bash
 #fi
-
+#
 #if [ -f $HOME/catkin/devel/setup.bash ]; then
 #  source $HOME/catkin/devel/setup.bash
 #fi
@@ -140,10 +144,6 @@ fi
 
 if [ -d $HOME/catkin/src/multi_tracker/multi_tracker_analysis ]; then
   export PATH="$PATH:$HOME/catkin/src/multi_tracker/multi_tracker_analysis"
-fi
-
-if [ -d $HOME/src/scripts:$PATH ]; then
-  export PATH="$HOME/src/scripts:$PATH"
 fi
 
 #export PATH="$HOME/util:$PATH"
@@ -185,7 +185,6 @@ fi
 # https://unix.stackexchange.com/questions/17715/
 # how-can-i-set-all-subdirectories-of-a-directory-into-path/17856#17856
 export PATH="$( find $HOME/src/dotfiles/util/ -type d -printf "%p:" )$PATH"
-export PATH="$HOME/src/scripts:$PATH"
 
 # One downside of direnv, as opposed to now unsupported autoenv, is that the
 # former cannot seem to automatically run virtualenv activate script.
@@ -198,3 +197,19 @@ export LD_LIBRARY_PATH=$RDBASE/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=$RDBASE:$PYTHONPATH
 
 export MATLAB_USE_USERWORK=1
+# added by Anaconda3 2018.12 installer
+# >>> conda init >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$(CONDA_REPORT_ERRORS=false '/home/tom/anaconda3/bin/conda' shell.bash hook 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    \eval "$__conda_setup"
+else
+    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
+        CONDA_CHANGEPS1=false conda activate base
+    else
+        \export PATH="/home/tom/anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda init <<<
