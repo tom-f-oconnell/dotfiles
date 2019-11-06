@@ -138,6 +138,8 @@ au BufWritePost *.py if get(b:, 'is_new', 0) |
 " TODO see
 " https://stackoverflow.com/questions/12030965/
 " change-the-mapping-of-f5-on-the-basis-of-specific-file-type
+" TODO TODO maybe use shebang when possible, since that could specify python
+" version
 au BufRead *.py nmap <F5> :w<cr>:!python %<cr>
 au BufRead *.py imap <F5> <Esc>:w<cr>!python %<cr>
 
@@ -255,3 +257,5 @@ set mouse=a
 let mapleader = ","
 nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>
 
+noremap <F12> <Esc>:syntax sync fromstart<CR>
+inoremap <F12> <C-o>:syntax sync fromstart<CR>

@@ -195,9 +195,16 @@ alias dpy2="python2 -mipdb -cc"
 alias dpy3="python3 -mipdb -cc"
 
 alias mb="cd /mnt/nas/mb_team"
+alias mbr="cd /mnt/nas/mb_team/raw_data"
+alias mba="cd /mnt/nas/mb_team/analysis_output"
 
 # Uses a script in my scripts repo.
 alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url origin"
 alias githttps="git remote -v | change_git_auth.py h | xargs git remote set-url origin"
 alias gitssh="git remote -v | change_git_auth.py s | xargs git remote set-url origin"
+
+alias grepy="grep -r --include=\*.py"
+
+# TODO TODO alias to cd to a folder and then vi any .py files 1) w/ prefix of
+# foldername or 2) lone .py files
 

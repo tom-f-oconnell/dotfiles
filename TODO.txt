@@ -22,3 +22,11 @@ how to add all scripts to path / symlink them to somewhere that in it?
 
 include instructions for how I would like to install VIM plugins (Vundle?
 pathogen (does it support github?)? submodules?
+
+deal with ipython configuration (so it doesn't confirm on exit and stuf)
+see:
+https://stackoverflow.com/questions/7438112/disable-ipython-exit-confirmation
+file should be at:
+~/.ipython/profile_default/ipython_config.py
+
+

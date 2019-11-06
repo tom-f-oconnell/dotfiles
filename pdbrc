@@ -1,0 +1,8 @@
+
+import IPython 
+
+# Interactive shell
+# TODO maybe change to alias interactii import IPython; IPython.embed()
+# ? (or is IPython always installed when ipdb is, anyway?)
+alias interacti IPython.embed()
+
