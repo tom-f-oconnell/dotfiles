@@ -208,3 +208,5 @@ alias grepy="grep -r --include=\*.py"
 # TODO TODO alias to cd to a folder and then vi any .py files 1) w/ prefix of
 # foldername or 2) lone .py files
 
+alias dlwebsite="dlwebite.py"
+
