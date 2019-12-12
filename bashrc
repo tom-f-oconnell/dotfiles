@@ -25,6 +25,8 @@ shopt -s checkwinsize
 
 # If set, the pattern "**" used in a pathname expansion context will
 # match all files and zero or more directories and subdirectories.
+# TODO did i comment this or was that the default? some reason i don't want
+# this?
 #shopt -s globstar
 
 # make less more friendly for non-text input files, see lesspipe(1)
@@ -71,6 +73,15 @@ xterm*|rxvt*)
 *)
     ;;
 esac
+
+# Not sure if I did something to enable what seemed to be the previous behavior
+# of having limited vim-like behavior in bash (navigation but not e.g. deleting
+# a word), but this should also enable vim-like editing
+# TODO possible to make the vim command 'daw' work? seems like it doesn't work
+# with or without this line (and idk how i already got vim line-editing, but
+# 'vi' was not in $SHELLOPTS without this line, so it's not through this,
+# because set adds to that variable) ('dw' does work though, either way)
+set -o vi
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then

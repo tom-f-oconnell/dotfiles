@@ -197,6 +197,8 @@ alias dpy3="python3 -mipdb -cc"
 alias mb="cd /mnt/nas/mb_team"
 alias mbr="cd /mnt/nas/mb_team/raw_data"
 alias mba="cd /mnt/nas/mb_team/analysis_output"
+# TODO make aliases like mbr/mba above, but to go to latest fly dir / first of
+# latest unanalyzed (mbrl/mbal)
 
 # Uses a script in my scripts repo.
 alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url origin"

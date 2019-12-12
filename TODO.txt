@@ -29,4 +29,9 @@ https://stackoverflow.com/questions/7438112/disable-ipython-exit-confirmation
 file should be at:
 ~/.ipython/profile_default/ipython_config.py
 
-
+manage things like librecad / inkscape settings (that change a lot w/o much
+meaning) in some way where conf gets updated from that in git, but otherwise
+keeps local changes (which might have things like recently opened files), or
+at least overwrites local version with bare git version when necessary, but
+otherwise doesn't track local changes (possible?) (may require manually
+entering local changes into git..., by copying files or something)
