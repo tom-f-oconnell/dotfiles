@@ -34,10 +34,10 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys volume-down '<Alt>j'
 # This link suggests that repeat-interval should probably be positive,
 # but otherwise can be as small as I want (still an int type).
 # http://blog.rodolfocarvalho.net/2017/01/configuring-keyboard-repeat-rate-on.html
-# (default=30ms) may want to set this higher if not on a laggy system...
-gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 8
+# (default=30ms)
+gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 15
 # (default=500ms, checked from `gsettings reset ...`)
-gsettings set org.gnome.desktop.peripherals.keyboard delay 200 
+gsettings set org.gnome.desktop.peripherals.keyboard delay 280
 
 # In the meantime, Displays->Sticky edges->Off
 # This is so the mouse doesn't get stuck on the boundary between monitors.
