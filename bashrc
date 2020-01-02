@@ -131,20 +131,29 @@ fi
 
 export EDITOR="/usr/bin/vi"
 
-# added by Anaconda2 4.2.0 installer
-#export PATH="$HOME/anaconda2/bin:$PATH"
-
-# added by Anaconda3 4.1.1 installer
-#export PATH="$HOME/anaconda3/bin:$PATH"
-#export PATH="$HOME/.local/bin:$PATH"
-
-#if [ -f /opt/ros/kinetic/setup.bash ]; then
-#  source /opt/ros/kinetic/setup.bash
-#fi
-#
-#if [ -f $HOME/catkin/devel/setup.bash ]; then
-#  source $HOME/catkin/devel/setup.bash
-#fi
+# At one point, I decided I needed to either comment anaconda init or ROS init,
+# lest some conflict emerge (which was what again?).
+# See these two posts for discussion of problem + possible
+# (though a bit complicated) workaround:
+# https://github.com/conda/conda/issues/7980
+# https://gist.github.com/StefanFabian/17fa715e783cd2be6a32cd5bbb98acd9
+# TODO figure out if this is still necessary w/ latest anaconda
+# (i.e. if I call conda deactivate, can I then use ROS normally?)
+# TODO TODO TODO test on systems that actually have both installed
+# (blackbox has no ROS right now, and it can't get kinetic anyway cause 18.04)
+# TODO either way, maybe have my config management (dotbot) copy a separate
+# config file that has a flag saying which of the two the machine should be used
+# for (prompt / then edit to correct value, the system-specific value outside
+# source control)?
+# For now, I'm just going to opt to not have the conda environment loaded by
+# default, as: https://stackoverflow.com/questions/54429210
+if [ -f /opt/ros/kinetic/setup.bash ]; then
+  source /opt/ros/kinetic/setup.bash
+fi
+if [ -f $HOME/catkin/devel/setup.bash ]; then
+  source $HOME/catkin/devel/setup.bash
+fi
+# I think this can conflict with the devel environment.
 #source $HOME/catkin/install/setup.bash
 
 # TODO better way to manage python path to include my modules nested within src?
@@ -157,10 +166,10 @@ if [ -d $HOME/catkin/src/multi_tracker/multi_tracker_analysis ]; then
   export PATH="$PATH:$HOME/catkin/src/multi_tracker/multi_tracker_analysis"
 fi
 
-#export PATH="$HOME/util:$PATH"
-#export PATH="$HOME/src/pdfocr:$PATH"
+if [ -d $HOME/src/scripts:$PATH ]; then
+  export PATH="$HOME/src/scripts:$PATH"
+fi
 
-# TODO still used?
 if [ -f "$HOME/.variables" ]; then
     . "$HOME/.variables"
 fi
@@ -192,35 +201,149 @@ else
     start_agent;
 fi
 
+# TODO why did i want this / on which machine did/do i have the util dir again?
+# (not on 2019 blackbox, but maybe laptop or a lab machine?)
 # TODO maybe don't do this
 # https://unix.stackexchange.com/questions/17715/
 # how-can-i-set-all-subdirectories-of-a-directory-into-path/17856#17856
-export PATH="$( find $HOME/src/dotfiles/util/ -type d -printf "%p:" )$PATH"
-
-# One downside of direnv, as opposed to now unsupported autoenv, is that the
-# former cannot seem to automatically run virtualenv activate script.
-eval "$(direnv hook bash)"
-
+#export PATH="$( find $HOME/src/dotfiles/util/ -type d -printf "%p:" )$PATH"
 
 # For rdkit cheminformatics library
 export RDBASE=$HOME/src/rdkit
 export LD_LIBRARY_PATH=$RDBASE/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=$RDBASE:$PYTHONPATH
 
+# What did this flag do again?
 export MATLAB_USE_USERWORK=1
+
+# TODO deal w/ anaconda sections in a deployment-conda-version-specific manner
+# if necessary (try to avoid though) (may also want to delete any commented
+# blocks, in case conda still detects and tries to manage it)
 # added by Anaconda3 2018.12 installer
-# >>> conda init >>>
+## >>> conda init >>>
+## !! Contents within this block are managed by 'conda init' !!
+#__conda_setup="$(CONDA_REPORT_ERRORS=false '/home/tom/anaconda3/bin/conda' shell.bash hook 2> /dev/null)"
+#if [ $? -eq 0 ]; then
+#    \eval "$__conda_setup"
+#else
+#    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
+#        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
+#        CONDA_CHANGEPS1=false conda activate base
+#    else
+#        \export PATH="/home/tom/anaconda3/bin:$PATH"
+#    fi
+#fi
+#unset __conda_setup
+## <<< conda init <<<
+
+if [ -f "/opt/openfoam6/etc/bashrc" ]; then
+    source /opt/openfoam6/etc/bashrc
+fi
+
+# TODO only do this if it's installed?
+# Despite (trying to) move this below bashrc conda section, direnv still faces
+# problems trying to run conda commands (conda complains about not be setup
+# correctly, at least for deactivate). Currently using workaround in:
+# https://github.com/conda/conda/issues/7980
+# ...which is (in .envrc files) sourcing a specific conda config file before
+# any conda commands
+eval "$(direnv hook bash)"
+
+# >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$(CONDA_REPORT_ERRORS=false '/home/tom/anaconda3/bin/conda' shell.bash hook 2> /dev/null)"
+__conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
-    \eval "$__conda_setup"
+    eval "$__conda_setup"
 else
     if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
         . "/home/tom/anaconda3/etc/profile.d/conda.sh"
-        CONDA_CHANGEPS1=false conda activate base
     else
-        \export PATH="/home/tom/anaconda3/bin:$PATH"
+        export PATH="/home/tom/anaconda3/bin:$PATH"
     fi
 fi
 unset __conda_setup
-# <<< conda init <<<
+# <<< conda initialize <<<
+
+# Using existence of this file to since show_virtual_env()
+# can make files, but does not seem able to export environment variables
+# back to parent shell... (not sure if there's some way of doing this that
+# makes more sense...)
+# TODO using tty to prevent collisions from diff terminals ok?
+# tmux or stuff like that cause probs?
+export DIRENV_CONDA_FLAG_FILE_PREFIX="direnv_conda_env_"
+# TODO cases where hardcoding /tmp like this will hurt compat?
+DIRENV_PS1_UPDATE_FLAG_FILE="/tmp/${DIRENV_CONDA_FLAG_FILE_PREFIX}"
+# Also used to name the anaconda activate/deactivate hook scripts.
+export DIRENV_TTYSTR=`tty | sed -e "s:/dev/::" -e "s/\//_/g"`
+DIRENV_PS1_UPDATE_FLAG_FILE+="${DIRENV_TTYSTR}"
+# In case a previous file from same TTY ID (IDs presumably must have been
+# recycled) was somehow not deleted properly.
+rm -f "${DIRENV_PS1_UPDATE_FLAG_FILE}"
+export DIRENV_PS1_UPDATE_FLAG_FILE
+
+export DIRENV_CONDA_SCRIPT_PREFIX="direnv_ps1_fix_${DIRENV_TTYSTR}.sh"
+pass_ps1_ctrl_to_conda_str() {
+    # Just in case functions to update PS1 would for some reason not be run...
+    if [[ -f "$DIRENV_PS1_UPDATE_FLAG_FILE" ]]; then
+        local conda_prefix_to_deact=`cat $DIRENV_PS1_UPDATE_FLAG_FILE`
+
+        local activate_sh=""
+        local deactivate_sh=""
+        if [[ -n "$conda_prefix_to_deact" ]]; then
+            activate_sh="$conda_prefix_to_deact/etc/conda/activate.d/"
+            activate_sh+="$DIRENV_CONDA_SCRIPT_PREFIX"
+            deactivate_sh="$conda_prefix_to_deact/etc/conda/deactivate.d/"
+            deactivate_sh+="$DIRENV_CONDA_SCRIPT_PREFIX"
+        fi
+
+# TODO fix indentation to tabs and tab out heredoc if possible
+cat <<EOF
+rm -f "$DIRENV_PS1_UPDATE_FLAG_FILE"
+# The (terminal+env)-specific conda hooks that would delete the above
+# flag file upon manual conda activate / deactivate.
+rm -f "$activate_sh"
+rm -f "$deactivate_sh"
+
+EOF
+    else
+        printf ""
+    fi
+}
+pass_ps1_ctrl_to_conda() {
+    eval "$(pass_ps1_ctrl_to_conda_str)"
+}
+export -f pass_ps1_ctrl_to_conda_str
+export -f pass_ps1_ctrl_to_conda
+trap pass_ps1_ctrl_to_conda EXIT
+
+# TODO also test case going from having direnv_dir to it being empty/unset
+show_virtual_env() {
+  if [[ -n "$DIRENV_DIR" ]]; then
+    # I tried to adapt the wiki example which explains how to get this to work
+    # for EITHER conda or virtualenv, but this should hopefully get it to
+    # work with both, giving precedence for conda.
+    if [[ -n "$CONDA_DEFAULT_ENV" && -f "$DIRENV_PS1_UPDATE_FLAG_FILE" ]]; then
+      echo "($(basename $CONDA_DEFAULT_ENV)) "
+    elif [[ -n "$VIRTUAL_ENV" ]]; then
+      echo "($(basename $VIRTUAL_ENV)) "
+    else
+      return 0
+    fi
+  fi
+}
+export -f show_virtual_env
+PS1='$(show_virtual_env)'$PS1
+
+# So it can be restored if interaction between direnv and conda
+# screw up PS1.
+PS1_BACKUP="$PS1"
+reset_ps1() {
+    local previous_exit_status=$?;
+    if ! [[ -n "$CONDA_DEFAULT_ENV" || "$PS1" = "$PS1_BACKUP" ]]; then
+        export PS1="$PS1_BACKUP"
+    fi
+    return $previous_exit_status
+}
+export -f reset_ps1
+PROMPT_COMMAND+=" reset_ps1"
+

@@ -35,6 +35,7 @@
     ~/.direnvrc:
     # TODO automatically "direnv allow" this
     ~/.envrc:
+    ~/.condarc:
 
 # TODO print output of these commands
 # TODO do i want submodule update to be recursive? manually specify?

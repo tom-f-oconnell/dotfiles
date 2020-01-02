@@ -1,5 +1,3 @@
 #!/usr/bin/env bash
+pass_ps1_ctrl_to_conda
 
-if which deactivate >/dev/null; then
-    deactivate
-fi

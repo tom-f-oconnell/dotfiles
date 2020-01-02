@@ -1,8 +1,148 @@
 #!/usr/bin/env bash
 
-# TODO fix
-#layout_activate() {
-#    # TODO maybe only do below if no argument passed in for env path
-#    #source env/bin/activate
-#    source $1/bin/activate
-#}
+# Contents mostly copied from:
+# https://github.com/direnv/direnv/wiki/Python
+# TODO why isn't the installation of this stuff automated?
+
+################################################################################
+# venv (stdlib module)
+################################################################################
+realpath() {
+    [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
+}
+layout_python-venv() {
+    local python=${1:-python3}
+    [[ $# -gt 0 ]] && shift
+    unset PYTHONHOME
+    if [[ -n $VIRTUAL_ENV ]]; then
+        VIRTUAL_ENV=$(realpath "${VIRTUAL_ENV}")
+    else
+        local python_version
+        python_version=$("$python" -c "import platform; print(platform.python_version())")
+        if [[ -z $python_version ]]; then
+            log_error "Could not detect Python version"
+            return 1
+        fi
+        VIRTUAL_ENV=$PWD/.direnv/python-venv-$python_version
+    fi
+    export VIRTUAL_ENV
+    if [[ ! -d $VIRTUAL_ENV ]]; then
+        log_status "no venv found; creating $VIRTUAL_ENV"
+        "$python" -m venv "$VIRTUAL_ENV"
+    fi
+    PATH_add "$VIRTUAL_ENV/bin"
+}
+
+################################################################################
+# pyenv
+################################################################################
+use_pyenv() {
+  unset PYENV_VERSION
+  # Because each python version is prepended to the PATH, add them in reverse order
+  for ((j = $#; j >= 1; j--)); do
+    local python_version=${!j}
+    local pyenv_python=$(pyenv root)/versions/${python_version}/bin/python
+    if [[ ! -x "$pyenv_python" ]]; then
+      log_error "Error: $pyenv_python can't be executed."
+      return 1
+    fi
+
+    unset PYTHONHOME
+    local ve=$($pyenv_python -c "import pkgutil; print('venv' if pkgutil.find_loader('venv') else ('virtualenv' if pkgutil.find_loader('virtualenv') else ''))")
+
+    case $ve in
+      "venv")
+        VIRTUAL_ENV=$(direnv_layout_dir)/python-$python_version
+        export VIRTUAL_ENV
+        if [[ ! -d $VIRTUAL_ENV ]]; then
+          $pyenv_python -m venv "$VIRTUAL_ENV"
+        fi
+        PATH_add "$VIRTUAL_ENV"/bin
+        ;;
+      "virtualenv")
+        layout_python "$pyenv_python"
+        ;;
+      *)
+        log_error "Error: neither venv nor virtualenv are available to ${pyenv_python}."
+        return 1
+        ;;
+    esac
+
+    # e.g. Given "use pyenv 3.6.9 2.7.16", PYENV_VERSION becomes "3.6.9:2.7.16"
+    [[ -z "$PYENV_VERSION" ]] && PYENV_VERSION=$python_version || PYENV_VERSION="${python_version}:$PYENV_VERSION"
+  done
+
+  export PYENV_VERSION
+}
+
+################################################################################
+# anaconda
+################################################################################
+add_conda_env_hooks() {
+  if ! [[ -n "$CONDA_PREFIX" ]]; then
+    (>&2 echo "CONDA_PREFIX was not set. required to add hooks.");
+    exit 1;
+  fi
+  # TODO TODO refactor so it's a loop that just adds the "de"
+  # prefix on the second iteration... (and in bashrc stuff)
+  local activate_dir="$CONDA_PREFIX/etc/conda/activate.d"
+  local deactivate_dir="$CONDA_PREFIX/etc/conda/deactivate.d"
+  mkdir -p $activate_dir
+  mkdir -p $deactivate_dir
+
+  # Using separate files for each terminal, so we don't have to edit
+  # any existing files if multiple terminals have the same env open.
+
+  # I could not seem to export these such that the deactivate script could
+  # actually use them (I could echo them in shell after this ran, but
+  # printenv in deactivate did not include them, so I'm just going to
+  # define nessary information to derive them in bashrc portion).
+  local activate_sh="$activate_dir/$DIRENV_CONDA_SCRIPT_PREFIX"
+  local deactivate_sh="$deactivate_dir/$DIRENV_CONDA_SCRIPT_PREFIX"
+  local sh_contents="#!/bin/bash\n$(pass_ps1_ctrl_to_conda_str)"
+
+  # Hack to have anaconda not complain when it can't find the other hook
+  # (whichever gets deleted first).
+  local act_sh="${sh_contents}\ntouch ${deactivate_sh}\n\n"
+  local deact_sh="${sh_contents}\ntouch ${activate_sh}\n\n"
+
+  # Intentionally overwriting anything that might already be there.
+  #echo "WRITING TO $activate_sh"
+  printf "$act_sh" > $activate_sh
+  #echo "WRITING TO $deactivate_sh"
+  printf "$deact_sh" > $deactivate_sh
+
+  #echo ""
+  #echo "Activate script:"
+  #printf "$act_sh"
+  #echo "Deactivate script:"
+  #printf "$deact_sh"
+  #echo ""
+}
+layout_anaconda() {
+  # Could set PS1 here if it were possible to pass parent shell's PS1 to the
+  # subshell, but that seems like one of the few variables that's not just a 
+  # regular environment variable, and it may not be possible.
+  local env_name=""
+  if [ -n "$1" ]; then
+    # Explicit environment name from layout command.
+    env_name="$1"
+  elif (grep -q name: environment.yml); then
+    # Detect environment name from `environment.yml` file in `.envrc` directory
+    env_name=`grep name: environment.yml | sed -e 's/name: //' | cut -d "'" -f 2 | cut -d '"' -f 2`
+  else
+    (>&2 echo No conda environment found, despite \'layout anaconda\' in .envrc);
+    exit 1;
+  fi;
+
+  #echo "CONDA_DEFAULT_ENV: $CONDA_DEFAULT_ENV"
+  #echo "env_name: $env_name"
+  if ! [[ "$CONDA_DEFAULT_ENV" = "$env_name" ]]; then
+    touch "$DIRENV_PS1_UPDATE_FLAG_FILE"
+    source ~/anaconda3/etc/profile.d/conda.sh
+    conda activate $env_name
+    echo "${CONDA_PREFIX}" > $DIRENV_PS1_UPDATE_FLAG_FILE
+    add_conda_env_hooks
+  fi
+}
+
