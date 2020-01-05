@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# TODO set dotfiles up to copy this rather than link, and rename
+# to indicate it is for *deployment-specific* environment variables
+# (if not obvious enough from their usual purpose...)
 
 export MT_DIR=$HOME/catkin/src/multi_tracker
 export MT_SRC_DIR=$HOME/demo/demo_1/src
@@ -8,7 +11,7 @@ export MT_OUTPUT_DIR=$HOME/demo/demo_1/data
 export MT_PLAYBACK_DIR=$MT_DIR/examples/sample_data
 
 # used by some of my data acquisition / analysis tools
-export HONG_NAS="/home/tom"
+export HONG_NAS="/mnt/nas"
 
 export EXP_DIR="$HOME/data"
 export DATA_DIR="/mnt/nas/Kristina/direct2nas_experiments"

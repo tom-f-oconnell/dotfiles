@@ -5,7 +5,7 @@
 # TODO why isn't the installation of this stuff automated?
 
 ################################################################################
-# venv (stdlib module)
+# venv (stdlib module in 3.3+)
 ################################################################################
 realpath() {
     [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
@@ -14,6 +14,7 @@ layout_python-venv() {
     local python=${1:-python3}
     [[ $# -gt 0 ]] && shift
     unset PYTHONHOME
+    # TODO rename to indicate VIRTUAL_ENV is a path to where env is stored
     if [[ -n $VIRTUAL_ENV ]]; then
         VIRTUAL_ENV=$(realpath "${VIRTUAL_ENV}")
     else
@@ -23,7 +24,12 @@ layout_python-venv() {
             log_error "Could not detect Python version"
             return 1
         fi
-        VIRTUAL_ENV=$PWD/.direnv/python-venv-$python_version
+        # May want to change back at some point. Mostly just wanted the shorter
+        # prefix to PS1.
+        #VIRTUAL_ENV=$PWD/.direnv/python-venv-$python_version
+        # Putting in a subdirectory, so the PS1 prefix doesn't have the leading
+        # ".", but it is still hidden in the project root.
+        VIRTUAL_ENV=$PWD/.direnv/venv
     fi
     export VIRTUAL_ENV
     if [[ ! -d $VIRTUAL_ENV ]]; then
@@ -31,6 +37,34 @@ layout_python-venv() {
         "$python" -m venv "$VIRTUAL_ENV"
     fi
     PATH_add "$VIRTUAL_ENV/bin"
+}
+
+################################################################################
+# Just use for Python <3.3, where venv is not available.
+################################################################################
+layout_virtualenv() {
+    # TODO should i be handling VIRTUAL_ENV as in above?
+    local venv_path
+    if [[ -n "$1" ]]; then
+        venv_path=$(realpath "$1")
+    else
+        venv_path=$PWD/.direnv/venv
+    fi
+    if [[ ! -d $venv_path ]]; then
+        log_status "no virtualenv found; creating $venv_path"
+        local sys_packages
+        if [[ -n "$USE_SYSTEM_SITE_PACKAGES" ]]; then
+            sys_packages=true
+        fi
+        if [[ "$sys_packages" = "true" ]]; then
+            virtualenv --system-site-packages --python=python2 "$venv_path"
+        elif [[ "$sys_packages" = "false" ]]; then
+            virtualenv --python=python2 "$venv_path"
+        else
+            echo "unrecognized value for USE_SYSTEM_SITE_PACKAGES (true/false)"
+        fi
+    fi
+    source ${venv_path}/bin/activate
 }
 
 ################################################################################
@@ -127,6 +161,7 @@ layout_anaconda() {
   if [ -n "$1" ]; then
     # Explicit environment name from layout command.
     env_name="$1"
+  # TODO have this fail w/ better error messge if environment.yml is missing
   elif (grep -q name: environment.yml); then
     # Detect environment name from `environment.yml` file in `.envrc` directory
     env_name=`grep name: environment.yml | sed -e 's/name: //' | cut -d "'" -f 2 | cut -d '"' -f 2`

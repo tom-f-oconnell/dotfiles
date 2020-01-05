@@ -85,6 +85,9 @@ alias x='xdg-open'
 alias rs='rsync -auvP'
 alias cpconf='cp $HOME/catkin/src/multi_tracker/examples/sample_data/config_20160412_134708_N1.py .; mv config_20160412_134708_N1.py config_`ls -p | grep bag | sed s/_delta_video.bag//g`.py'
 alias py='python'
+alias py3='python3'
+alias p='python'
+alias p3='python3'
 alias i='ipython'
 alias j='jupyter notebook'
 
@@ -120,23 +123,23 @@ alias mtdir='rosrun multi_tracker mk_date_dir.py'
 # TODO maybe have expdir make a directory for whicever acquisition pipeline i'm using at the moment?
 alias expdir='rosrun multi_tracker mk_date_dir.py'
 
-# could quote roslaunch in those for which i dont want to use above roslaunch alias
-# or use other methods of escaping like 1 (2?) backslashes preceding
-# p for Play
-alias p='roslaunch multi_tracker play_delta_video.launch'
-# t for Tracking
-alias t='roslaunch multi_tracker tracking.launch'
-# f for roi_Finder.py
-alias f='roslaunch multi_tracker detect_roi_tracking.launch'
-# u for Usb_cam
-alias u='roslaunch multi_tracker rectified_usb_cam.launch'
-# d for Directory
-# TODO how to cd to it? have it return directory name?
-alias d='expdir'
-# c for Camera
-# should i use any unrectified cameras?
-# TODO make this
-#alias c='roslaunch multi_tracker pointgrey_usb.launch'
+## could quote roslaunch in those for which i dont want to use above roslaunch alias
+## or use other methods of escaping like 1 (2?) backslashes preceding
+## p for Play
+#alias p='roslaunch multi_tracker play_delta_video.launch'
+## t for Tracking
+#alias t='roslaunch multi_tracker tracking.launch'
+## f for roi_Finder.py
+#alias f='roslaunch multi_tracker detect_roi_tracking.launch'
+## u for Usb_cam
+#alias u='roslaunch multi_tracker rectified_usb_cam.launch'
+## d for Directory
+## TODO how to cd to it? have it return directory name?
+#alias d='expdir'
+## c for Camera
+## should i use any unrectified cameras?
+## TODO make this
+##alias c='roslaunch multi_tracker pointgrey_usb.launch'
 
 alias arduino='~/arduino-1.8.0/arduino'
 
@@ -200,15 +203,51 @@ alias mba="cd /mnt/nas/mb_team/analysis_output"
 # TODO make aliases like mbr/mba above, but to go to latest fly dir / first of
 # latest unanalyzed (mbrl/mbal)
 
+alias ..="cd .."
+alias d="cd ~/src/dotfiles && ls"
+alias s="cd ~/src/scripts && ls"
+alias 2p="cd ~/src/python_2p_analysis && ls"
+alias 2pp="cd ~/src/python_2p_analysis && vi populate_db.py"
+alias 2pg="cd ~/src/python_2p_analysis && vi gui.py"
+alias 2pu="cd ~/src/python_2p_analysis/hong2p && vi util.py"
+alias 2ps="cd ~/src/python_2p_analysis/scripts && ls"
+alias cu="cd ~/src/chemutils && ls"
+alias no="cd ~/src/natural_odors && ls"
+
 # Uses a script in my scripts repo.
 alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url origin"
 alias githttps="git remote -v | change_git_auth.py h | xargs git remote set-url origin"
 alias gitssh="git remote -v | change_git_auth.py s | xargs git remote set-url origin"
 
-alias grepy="grep -r --include=\*.py"
+alias grepy="grep -r --exclude-dir=.direnv --include=\*.py"
 
 # TODO TODO alias to cd to a folder and then vi any .py files 1) w/ prefix of
 # foldername or 2) lone .py files
 
 alias dlwebsite="dlwebsite.py"
+
+alias bashrc="vi ~/.bashrc"
+alias brc="vi ~/.bashrc"
+alias sb="echo 'reloading ~/.bashrc'; source ~/.bashrc"
+alias bashaliases="vi ~/.bash_aliases"
+alias ba="vi ~/.bash_aliases"
+alias ba="vi ~/.bash_aliases"
+
+# First part will deactivate conda if it is active, failing silenting if no
+# conda. This is because conda can prevent gsettings from being saved, see err:
+# "...Using the 'memory' GSettings backend.  Your settings will not be saved or
+# shared with other applications."
+# TODO close ALL open envs (I think activating a non-base and then something
+# else will cause deactivate to essentially pop one off the stack)
+# TODO reactivate any closed conda envs after gsettings
+# (or since that might impose some lag, at least warn that conda was closed
+# IF it was)
+# TODO TODO this might not be deactivating correctly...
+# (which python changes, but lots of CONDA env vars are still there, and PS1
+# does not change. maybe make it also update PS1? do something other than this
+# redirect?)
+alias gsettings="conda deactivate &> /dev/null; gsettings"
+
+# Pass a PID
+alias plin="pstree -l -s -p"
 

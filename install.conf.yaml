@@ -35,6 +35,8 @@
     ~/.direnvrc:
     # TODO automatically "direnv allow" this
     ~/.envrc:
+    # TODO some way to toggle this between base default enabled / not.
+    # probably copy rather than link, to keep changes out of version control.
     ~/.condarc:
 
 # TODO print output of these commands

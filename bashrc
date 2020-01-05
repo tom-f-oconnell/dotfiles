@@ -147,14 +147,14 @@ export EDITOR="/usr/bin/vi"
 # source control)?
 # For now, I'm just going to opt to not have the conda environment loaded by
 # default, as: https://stackoverflow.com/questions/54429210
-if [ -f /opt/ros/kinetic/setup.bash ]; then
-  source /opt/ros/kinetic/setup.bash
-fi
-if [ -f $HOME/catkin/devel/setup.bash ]; then
-  source $HOME/catkin/devel/setup.bash
-fi
-# I think this can conflict with the devel environment.
-#source $HOME/catkin/install/setup.bash
+#if [ -f /opt/ros/kinetic/setup.bash ]; then
+#  source /opt/ros/kinetic/setup.bash
+#fi
+#if [ -f $HOME/catkin/devel/setup.bash ]; then
+#  source $HOME/catkin/devel/setup.bash
+#fi
+## I think this can conflict with the devel environment.
+##source $HOME/catkin/install/setup.bash
 
 # TODO better way to manage python path to include my modules nested within src?
 
@@ -346,4 +346,22 @@ reset_ps1() {
 }
 export -f reset_ps1
 PROMPT_COMMAND+=" reset_ps1"
+# TODO TODO may have to investigate circumstances where the above
+# (+ other direnv stuff) causes direnv to add serious lag to commands
+
+
+# Re-defining the command_not_found_handle, which should be defined in
+# /etc/bash.bashrc
+# Using information from these two posts:
+# https://superuser.com/questions/787424
+# https://stackoverflow.com/questions/1203583
+eval "$(echo "orig_command_not_found_handle()"; declare -f command_not_found_handle | tail -n +2)"
+command_not_found_handle() {
+    if [ -f "$1" ]; then
+        echo "cmd not found. editing file in current directory."
+        vi "$1"
+    else
+        orig_command_not_found_handle "$@"
+    fi
+}
 

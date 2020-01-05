@@ -30,7 +30,8 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys volume-up '<Alt>k'
 gsettings set org.gnome.settings-daemon.plugins.media-keys volume-down '<Alt>j'
 # TODO play / pause?
 
-
+# TODO aliases for switching between a more responsive (as below) and less
+# responsive set of settings, for going easy w/ the repetetive strain...
 # This link suggests that repeat-interval should probably be positive,
 # but otherwise can be as small as I want (still an int type).
 # http://blog.rodolfocarvalho.net/2017/01/configuring-keyboard-repeat-rate-on.html
@@ -60,4 +61,5 @@ gsettings set org.compiz.unityshell:/org/compiz/profiles/unity/plugins/unityshel
 # solution i came up w/ to disable sticky edges. nothing there works w/ 16.04
 # from cli
 
+set_keyboard_shortcuts.py 'VIM term close + passthrough' 'ctrl_q_hotkey.sh' '<Control>Q'
 

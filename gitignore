@@ -44,3 +44,10 @@ Thumbs.db
 
 *.lprof
 
+# A common name for Python virtual environment (venv) directory.
+.venv/
+# Where direnv will put some of its stuff (like venv dirs).
+.direnv/
+
+build/
+

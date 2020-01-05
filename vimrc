@@ -221,9 +221,11 @@ set completeopt-=preview
 " Too busy. Want a way to spellcheck quickly though, and then turn it off.
 " set spell spelllang=en_us
 
+" Commented since I don't use these anymore, and might be better use out of
+" these F keys
 " For Overtone / Clojure interfacing
-map <F2> :Eval<ENTER>
-map <F3> :Connect<ENTER>1<ENTER><ENTER>
+"map <F2> :Eval<ENTER>
+"map <F3> :Connect<ENTER>1<ENTER><ENTER>
 
 " vim-markdown configuration
 let g:vim_markdown_folding_disabled = 1
@@ -259,3 +261,32 @@ nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>
 
 noremap <F12> <Esc>:syntax sync fromstart<CR>
 inoremap <F12> <C-o>:syntax sync fromstart<CR>
+
+" TODO are my .sh tab settings correct?
+" (apparently, some spec says to use tabs?)
+
+
+set pastetoggle=<F2>
+
+
+" The link says this should enable/disable paste mode automatically, for
+" certain types of pasting.
+" https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
+" See link for code to also make this work in tmux, if I feel the need.
+
+" TODO TODO any reason i can't / shouldn't also have this enable insert mode?
+" (i guess i'd have to change it to not be "inoremap" then, since that
+" specifies an insert mode binding
+
+let &t_SI .= "\<Esc>[?2004h"
+let &t_EI .= "\<Esc>[?2004l"
+inoremap <special> <expr> <Esc>[200~ XTermPasteBegin()
+
+" I'm not really sure how this is also setting nopaste at the end, but I tested
+" it, and it is.
+function! XTermPasteBegin()
+  set pastetoggle=<Esc>[201~
+  set paste
+  return ""
+endfunction
+
