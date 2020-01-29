@@ -226,7 +226,8 @@ alias githttps="git remote -v | change_git_auth.py h | xargs git remote set-url 
 alias gitssh="git remote -v | change_git_auth.py s | xargs git remote set-url origin"
 
 # Main difference between -r and -R seems to be that -R follows symlinks.
-alias grepy="grep -R --exclude-dir=.direnv --include=\*.py"
+# Using this syntax for multiple exclude-dir b/c it's friendly with grepym.
+alias grepy="grep -R --exclude-dir=.direnv --exclude-dir=site-packages --include=\*.py"
 # This will lookup and use the alias definition above at runtime.
 alias grepym="grep_py_in_my_repos.py"
 

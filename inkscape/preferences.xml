@@ -336,8 +336,8 @@
        style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:15px;line-height:125%;letter-spacing:0px;word-spacing:0px"
        selcue="1">
       <group
-         id="lineheight"
-         display_unit="9" />
+         display_unit="9"
+         id="lineheight" />
     </eventcontext>
     <eventcontext
        id="nodes"
@@ -423,12 +423,12 @@
        offset="0"
        offsetunits="pt" />
     <group
-       id="measure"
-       fontsize="10"
-       unit="mm"
-       precision="2"
+       offset="5"
        scale="100"
-       offset="5" />
+       precision="2"
+       unit="mm"
+       fontsize="10"
+       id="measure" />
   </group>
   <group
      id="palette">
@@ -733,8 +733,8 @@
        on-blur="0.50"
        animate-time="100" />
     <group
-       id="printing"
-       asbitmap="0" />
+       asbitmap="0"
+       id="printing" />
   </group>
   <group
      id="printing">
@@ -826,8 +826,8 @@
        id="wheelscroll"
        value="40" />
     <group
-       value="0"
-       id="spacepans" />
+       id="spacepans"
+       value="0" />
     <group
        id="wheelzooms"
        value="0" />
