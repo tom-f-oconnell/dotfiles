@@ -120,6 +120,7 @@ fi
 
 if [ -d $HOME/src/scripts ]; then
   export PATH="$HOME/src/scripts:$PATH"
+  export PYTHONSTARTUP="$HOME/src/scripts/python_startup.py"
 fi
 
 # Alias definitions.

@@ -141,8 +141,8 @@ au BufWritePost *.py if get(b:, 'is_new', 0) |
 " TODO maybe use shebang when possible, since that could specify python
 " version (now i'm exclusively using shebang, and incidentally also probably
 " relying on file being executable
-au BufRead *.py nmap <F5> :w<cr>:!%<cr>
-au BufRead *.py imap <F5> <Esc>:w<cr>!%<cr>
+au BufRead *.py nmap <F5> :w<cr>:!./%<cr>
+au BufRead *.py imap <F5> <Esc>:w<cr>!./%<cr>
 "au BufRead *.py nmap <F5> :w<cr>:!python %<cr>
 "au BufRead *.py imap <F5> <Esc>:w<cr>!python %<cr>
 
