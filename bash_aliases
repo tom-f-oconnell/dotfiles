@@ -63,6 +63,7 @@ clone_fn() {
 	git clone git://github.com/$1 $2
 }
 alias c="clone_fn"
+# TODO this this. if not working, get something w/ same fn working
 # would this work?
 #alias ct="clone_fn tom-f-oconnell/"
 
@@ -88,17 +89,19 @@ alias py='python'
 alias py3='python3'
 alias p='python'
 alias p3='python3'
+alias wp='which python'
+alias wp3='which python3'
 alias i='ipython'
 alias j='jupyter notebook'
 
 alias cm='cd ~/catkin && catkin_make'
 
-alias cs='cd $MT_SRC_DIR'
-alias ca='cd $MT_ANALYSIS_DIR'
-alias co='cd $MT_OUTPUT_DIR'
-alias ci='cd $MT_INPUT_DIR'
-alias cr='cd $MT_PLAYBACK_DIR'
-alias trajecgui='trajectory_viewer_gui_v2.py'
+#alias cs='cd $MT_SRC_DIR'
+#alias ca='cd $MT_ANALYSIS_DIR'
+#alias co='cd $MT_OUTPUT_DIR'
+#alias ci='cd $MT_INPUT_DIR'
+#alias cr='cd $MT_PLAYBACK_DIR'
+#alias trajecgui='trajectory_viewer_gui_v2.py'
 
 # if this ever causes problems with logs, can also include ROS_LOG_DIR=/home/user/.ros/log
 alias roslaunch='ROS_HOME=`pwd` roslaunch'
@@ -106,10 +109,10 @@ alias roslaunch='ROS_HOME=`pwd` roslaunch'
 alias rl='ROS_HOME=`pwd` roslaunch'
 
 # TODO had alias e=exit on blackbox, and c=clear, and i might prefer those
-alias e='cd $EXP_DIR'
-alias cdc='cd ~/src/al_imaging'
+#alias e='cd $EXP_DIR'
+#alias cdc='cd ~/src/al_imaging'
 # d=data
-alias cdd='cd /media/threeA/Tom/flies/'
+#alias cdd='cd /media/threeA/Tom/flies/'
 # & cdd that uses env var to go to data
 
 alias fd='roscd'
@@ -204,6 +207,9 @@ alias mba="cd /mnt/nas/mb_team/analysis_output"
 # latest unanalyzed (mbrl/mbal)
 
 alias ..="cd .."
+alias src="cd ~/src"
+alias sr="cd ~/src"
+alias cs="cd ~/src"
 alias d="cd ~/src/dotfiles && ls"
 alias s="cd ~/src/scripts && ls"
 alias 2p="cd ~/src/python_2p_analysis && ls"
@@ -219,7 +225,10 @@ alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url or
 alias githttps="git remote -v | change_git_auth.py h | xargs git remote set-url origin"
 alias gitssh="git remote -v | change_git_auth.py s | xargs git remote set-url origin"
 
-alias grepy="grep -r --exclude-dir=.direnv --include=\*.py"
+# Main difference between -r and -R seems to be that -R follows symlinks.
+alias grepy="grep -R --exclude-dir=.direnv --include=\*.py"
+# This will lookup and use the alias definition above at runtime.
+alias grepym="grep_py_in_my_repos.py"
 
 # TODO TODO alias to cd to a folder and then vi any .py files 1) w/ prefix of
 # foldername or 2) lone .py files
@@ -250,4 +259,7 @@ alias gsettings="conda deactivate &> /dev/null; gsettings"
 
 # Pass a PID
 alias plin="pstree -l -s -p"
+
+# https://www.cyberciti.biz/faq/how-to-find-my-public-ip-address-from-command-line-on-a-linux/
+alias pubip="dig +short myip.opendns.com @resolver1.opendns.com"
 
