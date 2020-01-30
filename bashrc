@@ -118,11 +118,6 @@ if ! shopt -oq posix; then
   fi
 fi
 
-if [ -d $HOME/src/scripts ]; then
-  export PATH="$HOME/src/scripts:$PATH"
-  export PYTHONSTARTUP="$HOME/src/scripts/python_startup.py"
-fi
-
 # Alias definitions.
 # Some depend on completion, so important this comes after bash_completion
 # /usr/share/doc/bash-doc/examples in the bash-doc package (example aliases).
@@ -264,6 +259,15 @@ else
 fi
 unset __conda_setup
 # <<< conda initialize <<<
+
+# Moved this stuff after conda setup, so that (in a fresh shell) conda isn't
+# doing its setup with a potentially-error-full custom startup script of mine.
+# One example of a problem: the eval in the conda setup means if
+# usercustomize.py prints anything, it will also be eval'd.
+if [ -d $HOME/src/scripts ]; then
+  export PATH="$HOME/src/scripts:$PATH"
+  export PYTHONPATH="${PYTHONPATH}:$HOME/src/scripts/python_startup"
+fi
 
 # Using existence of this file to since show_virtual_env()
 # can make files, but does not seem able to export environment variables
