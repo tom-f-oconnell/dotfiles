@@ -8,3 +8,5 @@ alias interacti IPython.embed()
 
 alias ppd pp dir(%1)
 
+alias t type(%1)
+
