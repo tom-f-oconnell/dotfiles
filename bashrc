@@ -267,6 +267,8 @@ unset __conda_setup
 if [ -d $HOME/src/scripts ]; then
   export PATH="$HOME/src/scripts:$PATH"
   export PYTHONPATH="${PYTHONPATH}:$HOME/src/scripts/python_startup"
+  # This is a variable read by my scripts/python_startup/excepthook.py module.
+  export PYMISTAKE_DEBUG_UNCAUGHT="1"
 fi
 
 # Using existence of this file to since show_virtual_env()

@@ -200,6 +200,7 @@ alias dpy="python -mipdb -cc"
 alias dpy2="python2 -mipdb -cc"
 alias dpy3="python3 -mipdb -cc"
 
+alias nt="cd /mnt/nas/Tom"
 alias mb="cd /mnt/nas/mb_team"
 alias mbr="cd /mnt/nas/mb_team/raw_data"
 alias mba="cd /mnt/nas/mb_team/analysis_output"
@@ -242,6 +243,9 @@ alias sb="echo 'reloading ~/.bashrc'; source ~/.bashrc"
 alias bashaliases="vi ~/.bash_aliases"
 alias ba="vi ~/.bash_aliases"
 alias ba="vi ~/.bash_aliases"
+
+# [d]isable [c]ustom [e]xcepthook
+alias dce="PYMISTAKE_DISABLE=1"
 
 # First part will deactivate conda if it is active, failing silenting if no
 # conda. This is because conda can prevent gsettings from being saved, see err:
