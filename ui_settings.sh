@@ -70,3 +70,11 @@ gsettings set org.gnome.desktop.interface clock-show-date true
 # TODO some way to get this in MM/DD format, rather than month like "Mar"?
 gsettings set com.canonical.indicator.datetime show-date true
 
+# TODO find equivalent gnome settings for these. assuming these only work w/
+# unity?
+
+# Default is 'locale-default'. Hopefully custom doesn't break any localization
+# stuff? strftime should take care of that i guess...
+gsettings set com.canonical.indicator.datetime time-format 'custom'
+gsettings set com.canonical.indicator.datetime custom-time-format '%b  %-m-%d  %a %l:%M %p'
+
