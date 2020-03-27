@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 temp_config=$(mktemp)
-echo $temp_config
+echo "Writing temp dotbot config to ${temp_config}, with shell directives removed"
+echo ""
 ./write_link_only_dotbot_config.py $temp_config
 ./install $temp_config
 
