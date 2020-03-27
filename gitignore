@@ -53,3 +53,6 @@ build/
 
 *.egg-info/
 
+# LibreOffice Calc (the speadsheet one) seems to make these sometimes.
+.~lock.*#
+

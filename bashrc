@@ -127,6 +127,13 @@ fi
 
 export EDITOR="/usr/bin/vi"
 
+# Really just wanted vi tab completion to go right to the <x>.py rather than
+# <x>.egg-info/ for my (installed) single-file modules.
+# But couldn't figure out a way to modify the vi command tab completion
+# specificaly (though it seems possible).
+# https://stackoverflow.com/questions/32189015
+export FIGNORE=".egg-info"
+
 # At one point, I decided I needed to either comment anaconda init or ROS init,
 # lest some conflict emerge (which was what again?).
 # See these two posts for discussion of problem + possible
