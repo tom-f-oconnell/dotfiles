@@ -41,6 +41,7 @@
     # TODO some way to toggle this between base default enabled / not.
     # probably copy rather than link, to keep changes out of version control.
     ~/.condarc:
+    # TODO if install normally run as root, check owner of link is not root
     # Even though the link seems to have 777 permissions, that doesn't seem to
     # matter, I guess as long as the target's permissions are correct?
     # Or the config perms actually don't matter?

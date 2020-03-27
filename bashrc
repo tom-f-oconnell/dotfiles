@@ -177,11 +177,26 @@ fi
 # https://stackoverflow.com/questions/18880024/start-ssh-agent-on-login
 SSH_ENV="$HOME/.ssh/environment"
 
+# was trying to eval / exec this (not sure whether either could work),
+# so we can grep the correct command when grepping ps output.
+# (otherwise, adding the -t <NNNN> flag to ssh-agent would require
+# changing the grep pattern to also include this flag...)
+# (for now, just going to remove the end of line restriction?)
+#AGENT_CMD="/usr/bin/ssh-agent -t 28800"
+
+# TODO TODO TODO AddKeysToAgent in config seems to be working, but now i only
+# have access to that agent in one terminal (doesn't work in a new one).
+# fix!!!!! (looks like multiple agents are being created, b/c 
+# SSH_AGENT_PID differs in each shell)
 function start_agent {
+    # TODO modify this so the "succeeded" message is on the same line
+    # (use printf?)
     echo "Initialising new SSH agent..."
     # The -t flag should set the lifetime of keys within the agent.
     # 28800 is how many seconds there are in 8 hours.
     /usr/bin/ssh-agent -t 28800 | sed 's/^echo/#echo/' > "${SSH_ENV}"
+    #/usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
+    #exec ${AGENT_CMD} | sed 's/^echo/#echo/' > "${SSH_ENV}"
     echo succeeded
     chmod 600 "${SSH_ENV}"
     . "${SSH_ENV}" > /dev/null
@@ -201,7 +216,10 @@ function start_agent {
 if [ -f "${SSH_ENV}" ]; then
     . "${SSH_ENV}" > /dev/null
     #ps ${SSH_AGENT_PID} doesn't work under cywgin
-    ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ > /dev/null || {
+
+    # see comment near AGENT_CMD above
+    #ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ > /dev/null || {
+    ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent > /dev/null || {
         start_agent;
     }
 else

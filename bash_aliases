@@ -100,6 +100,9 @@ alias fiji='$HOME/Fiji.app/ImageJ-linux64'
 
 # TODO get vim formatting (e.g. gq) to work with bash comments (recomment new
 # lines) + string handling + command breaking
+
+alias sshx='ssh -X'
+# TODO what was this for again? forcing use of password? but why?
 alias snk='ssh -o PubkeyAuthentication=no'
 #alias atty='stty -F /dev/ttyACM0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost
 #-onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon
