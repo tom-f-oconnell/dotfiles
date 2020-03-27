@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+temp_config=$(mktemp)
+echo $temp_config
+./write_link_only_dotbot_config.py $temp_config
+./install $temp_config
+

@@ -2,9 +2,15 @@
 
 set -e
 
-CONFIG="install.conf.yaml"
+if [ "$#" -eq 0 ]; then
+    CONFIG="install.conf.yaml"
+else
+    if [ "$#" -ne 1 ]; then
+        echo "Too many arguments!"
+    fi
+    CONFIG="$1"
+fi
 DOTBOT_DIR="dotbot"
-
 DOTBOT_BIN="bin/dotbot"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

@@ -170,17 +170,28 @@ if [ -f "$HOME/.variables" ]; then
     . "$HOME/.variables"
 fi
 
+# As alternative to ssh-agent being started on login, see:
+# https://stackoverflow.com/questions/17846529#24347344
+
 # see Litmus' answer
 # https://stackoverflow.com/questions/18880024/start-ssh-agent-on-login
 SSH_ENV="$HOME/.ssh/environment"
 
 function start_agent {
     echo "Initialising new SSH agent..."
-    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
+    # The -t flag should set the lifetime of keys within the agent.
+    # 28800 is how many seconds there are in 8 hours.
+    /usr/bin/ssh-agent -t 28800 | sed 's/^echo/#echo/' > "${SSH_ENV}"
     echo succeeded
     chmod 600 "${SSH_ENV}"
     . "${SSH_ENV}" > /dev/null
-    /usr/bin/ssh-add;
+    # TODO delete some of the above (up to everything besides just starting
+    # ssh-agent), if that was only necessary for this ssh-add call).
+    # trying to have 'AddKeysToAgent yes' in ~/.ssh/config do this now, so that
+    # the password is only needed the first time the key is used, not on login
+    # https://superuser.com/questions/325662
+    # /how-to-make-ssh-agent-automatically-add-the-key-on-demand
+    #/usr/bin/ssh-add;
 }
 
 # Source SSH settings, if applicable
@@ -340,6 +351,13 @@ show_virtual_env() {
 }
 export -f show_virtual_env
 PS1='$(show_virtual_env)'$PS1
+# TODO fix how above doesn't seem to let conda clear PS1 in case where
+# base env is enabled by default (base) comes before $(show_virtual_env).
+# if that's the source of the problem, maybe prepend it to backup ps1
+# in POST_COMMAND every time, so conda can so its stuff first?
+# TODO and make my envrc stuff not conflict w/ systems configured to have base
+# enabled by default (should probably never / only under certain circumstances
+# deactivate then. can prob use conda to lookup config as part.)
 
 # So it can be restored if interaction between direnv and conda
 # screw up PS1.

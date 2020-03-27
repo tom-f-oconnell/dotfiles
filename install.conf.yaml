@@ -6,6 +6,9 @@
 - clean: ['~', '~/.config']
 
 # TODO more idiomatic way?
+# TODO TODO and is this actually what i want? alter dotbot linking / relinking /
+# link creation logic to just do this automatically / or with flag?
+# (now it just fails, right?)
 - shell:
   -
     command: "if [ ! -L ~/.bashrc ]; then rm -i ~/.bashrc; fi"
@@ -38,6 +41,7 @@
     # TODO some way to toggle this between base default enabled / not.
     # probably copy rather than link, to keep changes out of version control.
     ~/.condarc:
+    ~/.ssh/config: ssh_config
 
 # TODO print output of these commands
 # TODO do i want submodule update to be recursive? manually specify?
@@ -77,3 +81,4 @@
     stderr: True
     stdin: True
   - ./ui_settings.sh
+
