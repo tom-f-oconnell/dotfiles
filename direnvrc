@@ -11,28 +11,58 @@ realpath() {
     [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
 }
 layout_python-venv() {
-    local python=${1:-python3}
+    # TODO what does this line do?
     [[ $# -gt 0 ]] && shift
+    # TODO why?
     unset PYTHONHOME
     # TODO rename to indicate VIRTUAL_ENV is a path to where env is stored
     if [[ -n $VIRTUAL_ENV ]]; then
         VIRTUAL_ENV=$(realpath "${VIRTUAL_ENV}")
     else
-        local python_version
-        python_version=$("$python" -c "import platform; print(platform.python_version())")
-        if [[ -z $python_version ]]; then
-            log_error "Could not detect Python version"
-            return 1
-        fi
+        #local python_version
+        #python_version=$("$python" -c "import platform; print(platform.python_version())")
+        #if [[ -z $python_version ]]; then
+        #    log_error "Could not detect Python version"
+        #    return 1
+        #fi
         # May want to change back at some point. Mostly just wanted the shorter
         # prefix to PS1.
         #VIRTUAL_ENV=$PWD/.direnv/python-venv-$python_version
+
         # Putting in a subdirectory, so the PS1 prefix doesn't have the leading
         # ".", but it is still hidden in the project root.
         VIRTUAL_ENV=$PWD/.direnv/venv
     fi
     export VIRTUAL_ENV
     if [[ ! -d $VIRTUAL_ENV ]]; then
+        local python
+        if [ -n "$1" ]; then
+            python=$1
+        elif [ -n "$CONDA_EXE" ]; then
+            log_status "conda at $CONDA_EXE taking precedence over other python"
+            python="$(dirname $CONDA_EXE)/python"
+            if ! [[ -x "$python" ]]; then
+                log_error "conda python not found where expected ($python)"
+                exit 1
+            fi
+        else
+            declare -a arr=("python3.8" "python3.7" "python3.6" "python3" "python")
+            echo "checking python versions in precedence order:"
+            for pycmd in "${arr[@]}"
+            do
+                if [ -x "$(command -v $pycmd)" ]; then
+                    log_status "using $pycmd"
+                    python=$pycmd
+                    break
+                else
+                    log_status "$pycmd not found"
+                fi
+            done
+            if [ -z "$python" ]; then
+                log_error "no python found! can not make venv"
+                return 1
+            fi
+        fi
         log_status "no venv found; creating $VIRTUAL_ENV"
         "$python" -m venv "$VIRTUAL_ENV"
     fi
