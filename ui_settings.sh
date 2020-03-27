@@ -63,3 +63,10 @@ gsettings set org.compiz.unityshell:/org/compiz/profiles/unity/plugins/unityshel
 
 set_keyboard_shortcuts.py 'VIM term close + passthrough' 'ctrl_q_hotkey.sh' '<Control>Q'
 
+gsettings set org.gnome.desktop.interface clock-show-date true
+# This seems to be the applicable one in 16.04, but some comments here:
+# https://askubuntu.com/questions/83597 seem to indicate earlier and later
+# (18.04) versions might use the former key? Could be a Unity / Gnome thing.
+# TODO some way to get this in MM/DD format, rather than month like "Mar"?
+gsettings set com.canonical.indicator.datetime show-date true
+
