@@ -43,6 +43,29 @@ function gtest() {
     #popd
 }
 
+function _check_one_nonexistant_dir_arg() {
+    if [ "$#" -ne 1 ]; then
+        echo "Usage: $0 DIRECTORY_TO_MAKE" >&2
+        return 1
+    elif [ -d "$1" ]; then
+        echo "directory '$1' already exists"
+        return 1
+    fi
+    return 0
+}
+
+function pyp() {
+    if _check_one_nonexistant_dir_arg "$@"; then
+        mkdir $1
+        cd $1
+        echo "assuming python3 is installed (venv not available otherwise)"
+        echo "layout python-venv" > .envrc
+        # TODO maybe conda deactivate first (if applicable)?
+        direnv allow
+        git init
+    fi
+}
+
 alias r=". ~/.bashrc"
 
 # TODO TODO alias mv to some function that first tries git mv, then mv if not
@@ -237,6 +260,7 @@ alias grepym="grep_py_in_my_repos.py"
 
 alias dlwebsite="dlwebsite.py"
 
+alias lr='ls -ltr'
 alias bashrc="vi ~/.bashrc"
 alias brc="vi ~/.bashrc"
 alias sb="echo 'reloading ~/.bashrc'; source ~/.bashrc"
