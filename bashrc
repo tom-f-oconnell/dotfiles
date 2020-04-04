@@ -281,6 +281,11 @@ fi
 # any conda commands
 eval "$(direnv hook bash)"
 
+# TODO TODO TODO possible to make a conda init block that will work across all
+# my conda installations? otherwise how to deal w/ the fact that conda wants to
+# put this in bashrc, but i want to manage bashrc in source control, in a
+# deployment independent manner...
+
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
@@ -346,7 +351,6 @@ rm -f "$DIRENV_PS1_UPDATE_FLAG_FILE"
 # flag file upon manual conda activate / deactivate.
 rm -f "$activate_sh"
 rm -f "$deactivate_sh"
-
 EOF
     else
         printf ""
