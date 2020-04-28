@@ -183,22 +183,64 @@ add_conda_env_hooks() {
   #printf "$deact_sh"
   #echo ""
 }
+is_existing_conda_env() {
+    # Not sure if the following line is any more portable:
+    # conda info --envs
+    conda env list 2>/dev/null | awk '/^[^#]/ {print $1}' | grep -Fxq "$1"
+    # TODO more idiomatic way to do this? just want to pass through the return
+    # code of the last command above...
+    return $?
+}
 layout_anaconda() {
   # Could set PS1 here if it were possible to pass parent shell's PS1 to the
   # subshell, but that seems like one of the few variables that's not just a 
   # regular environment variable, and it may not be possible.
   local env_name=""
+  local env_from_file=0
+  local env_from_basename=0
   if [ -n "$1" ]; then
     # Explicit environment name from layout command.
     env_name="$1"
+
   # TODO have this fail w/ better error messge if environment.yml is missing
+  # (or if it is malformed and doesn't have the 'name:' string to match)
   elif (grep -q name: environment.yml); then
     # Detect environment name from `environment.yml` file in `.envrc` directory
     env_name=`grep name: environment.yml | sed -e 's/name: //' | cut -d "'" -f 2 | cut -d '"' -f 2`
+    env_from_file=1
   else
-    (>&2 echo No conda environment found, despite \'layout anaconda\' in .envrc);
-    exit 1;
+    env_name=$(basename `pwd`)
+    env_from_basename=1
   fi;
+
+  # TODO maybe disable the "direnv: ([direnv export bash]) is taking a while to
+  # execute..." message when we actually have to make the conda env? possible?
+
+  # TODO and maybe silence some of the prints conda makes during / after setting
+  # up env. particularly the ones instructing you to activate / deactivate?
+
+  # To reverse the creation below:
+  # conda env remove -n <env-name>
+  if ! is_existing_conda_env "$env_name"
+  then
+      if [ $env_from_file -eq 0 ]
+      then
+          if [ $env_from_basename -eq 1 ]
+          then
+              log_status "Using current directory name as environment name."
+          fi
+          log_status "conda env '${env_name}' did not exist. Making empty env."
+          log_status "Install at least one package before using."
+          conda create --yes --name ${env_name}
+
+          # This command does not seem to accept any values for the name
+          # parameter... see: https://github.com/conda/conda/issues/3859
+          #conda env create --name ${env_name}
+      else
+          log_status "conda env '${env_name}' did not exist. Making from environment.yml."
+          conda env create --file environment.yml
+      fi
+  fi
 
   #echo "CONDA_DEFAULT_ENV: $CONDA_DEFAULT_ENV"
   #echo "env_name: $env_name"
