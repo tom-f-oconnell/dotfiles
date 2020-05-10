@@ -25,8 +25,7 @@ shopt -s checkwinsize
 
 # If set, the pattern "**" used in a pathname expansion context will
 # match all files and zero or more directories and subdirectories.
-# TODO did i comment this or was that the default? some reason i don't want
-# this?
+# TODO some reason i don't want this as the default?
 #shopt -s globstar
 
 # make less more friendly for non-text input files, see lesspipe(1)
@@ -168,15 +167,15 @@ export FIGNORE=".egg-info"
 
 # TODO better way to manage python path to include my modules nested within src?
 
-if [ -d $HOME/src/SutterMP285 ]; then
+if [ -d "$HOME/src/SutterMP285" ]; then
   export PYTHONPATH="${PYTHONPATH}:$HOME/src/SutterMP285"
 fi
 
-if [ -d $HOME/catkin/src/multi_tracker/multi_tracker_analysis ]; then
+if [ -d "$HOME/catkin/src/multi_tracker/multi_tracker_analysis" ]; then
   export PATH="$PATH:$HOME/catkin/src/multi_tracker/multi_tracker_analysis"
 fi
 
-if [ -d $HOME/src/scripts:$PATH ]; then
+if [ -d "$HOME/src/scripts" ]; then
   export PATH="$HOME/src/scripts:$PATH"
 fi
 
@@ -255,6 +254,25 @@ export PYTHONPATH=$RDBASE:$PYTHONPATH
 # What did this flag do again?
 export MATLAB_USE_USERWORK=1
 
+if [ -f "/opt/openfoam6/etc/bashrc" ]; then
+    source /opt/openfoam6/etc/bashrc
+fi
+
+if [ -x "$(command -v direnv)" ]; then
+    # Despite (trying to) move this below bashrc conda section, direnv still
+    # faces problems trying to run conda commands (conda complains about not be
+    # setup correctly, at least for deactivate). Currently using workaround in:
+    # https://github.com/conda/conda/issues/7980
+    # ...which is (in .envrc files) sourcing a specific conda config file before
+    # any conda commands
+    eval "$(direnv hook bash)"
+fi
+
+# TODO TODO TODO possible to make a conda init block that will work across all
+# my conda installations? otherwise how to deal w/ the fact that conda wants to
+# put this in bashrc, but i want to manage bashrc in source control, in a
+# deployment independent manner...
+
 # TODO deal w/ anaconda sections in a deployment-conda-version-specific manner
 # if necessary (try to avoid though) (may also want to delete any commented
 # blocks, in case conda still detects and tries to manage it)
@@ -274,24 +292,6 @@ export MATLAB_USE_USERWORK=1
 #fi
 #unset __conda_setup
 ## <<< conda init <<<
-
-if [ -f "/opt/openfoam6/etc/bashrc" ]; then
-    source /opt/openfoam6/etc/bashrc
-fi
-
-# TODO only do this if it's installed?
-# Despite (trying to) move this below bashrc conda section, direnv still faces
-# problems trying to run conda commands (conda complains about not be setup
-# correctly, at least for deactivate). Currently using workaround in:
-# https://github.com/conda/conda/issues/7980
-# ...which is (in .envrc files) sourcing a specific conda config file before
-# any conda commands
-eval "$(direnv hook bash)"
-
-# TODO TODO TODO possible to make a conda init block that will work across all
-# my conda installations? otherwise how to deal w/ the fact that conda wants to
-# put this in bashrc, but i want to manage bashrc in source control, in a
-# deployment independent manner...
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -425,4 +425,12 @@ command_not_found_handle() {
         orig_command_not_found_handle "$@"
     fi
 }
+
+# https://stackoverflow.com/questions/38859145
+if grep -q Microsoft /proc/version; then
+    # Since the $HOME I set by modifying that passwd file is still better as the
+    # parent of this, but virtually all times I open a WSL terminal, I'll want
+    # to go here.
+    cd ~/src
+fi
 
