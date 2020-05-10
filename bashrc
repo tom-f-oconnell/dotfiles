@@ -319,6 +319,8 @@ if [ -d $HOME/src/scripts ]; then
   export PYMISTAKE_DEBUG_UNCAUGHT="1"
 fi
 
+# TODO TODO only do all the direnv + conda hacks if BOTH are installed
+
 # Using existence of this file to since show_virtual_env()
 # can make files, but does not seem able to export environment variables
 # back to parent shell... (not sure if there's some way of doing this that

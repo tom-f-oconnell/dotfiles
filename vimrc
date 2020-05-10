@@ -213,6 +213,8 @@ au Filetype arduino setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 " this had to come after the aus
 au BufNewFile *.ino,*.pde 0r ~/.vim/skel.ino
 
+au BufNewFile .envrc 0r ~/.vim/envrc_skel
+
 " for tab delimiting keywords.txt, as supposed to
 au! BufNewFile,BufRead keywords.txt setlocal ft=arduino_keywords_txt
 au Filetype arduino_keywords_txt setlocal shiftwidth=8 noexpandtab softtabstop=0
