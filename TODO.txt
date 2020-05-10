@@ -55,6 +55,10 @@ script to set up these things (as much as possible?) within WSL bash
   - Layout -> Screen Buffer Size -> Height (change from ~63 -> 1000 for more
     history i can scroll up to see)
 
+- option to automatically backup all config files that would need to be deleted,
+  for links to be made?
+  (+ option to restore from that backup)
+
 other things not automated for WSL setup:
 - changing home folder to a non-buried one
   https://superuser.com/questions/1132626
