@@ -41,3 +41,38 @@ b/c it seems like it's all deployment specific stuff. and if it isn't, maybe
 it should be. probably want some file for that. maybe copy a commented
 template?
 
+script to set up these things (as much as possible?) within WSL bash
+(different paths for configs at a minimum. some other things need set.)
+  (see some of my chrome bookmarks under music_production folder)
++ test that vimrc option to disable bell in WSL has no effect outside 
+  windows
++ need to change vimrc vundle begin call in windows install only?
+  how do i want to manage?
+  see: http://www.edwardhk.com/os/windows/install-youcompleteme-for-vim-in-win10-bash-ubuntu/
++ script all changes to WSL terminal, which I manually changed by right clicking
+  the top of a WSL bash window -> Properties:
+  - Options -> Use Ctrl-C / V as copy paste
+  - Layout -> Screen Buffer Size -> Height (change from ~63 -> 1000 for more
+    history i can scroll up to see)
+
+other things not automated for WSL setup:
+- changing home folder to a non-buried one
+  https://superuser.com/questions/1132626
+
+- change WSL settings so Unix permissions can work in normal Windows folders (my
+  understanding)
+  https://stackoverflow.com/questions/46610256
+
+- adding line to ~/.profile to disable less/man/git diff error bell
+  https://stackoverflow.com/questions/36724209
+
+- change ls to not error w/ some windows shortcuts (but still look OK)
+  (do NOT want this to apply to ubuntu most likely)
+  https://unix.stackexchange.com/questions/445917
+
+- uncomment / add that 'set bell-style none' line to /etc/inputrc
+  (need sudo)
+
+- setup ~/.ssh dir w/ correct permissions?
+  (should be possible w/ 'metadata' option?)
+

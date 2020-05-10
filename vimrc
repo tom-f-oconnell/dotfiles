@@ -4,15 +4,59 @@ set nocompatible
 filetype off
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
+
+" TODO maybe detect location of dotfiles dir on install and then replace 
+" both this + an absolute path in vundle#begin call with that?
+" Windows only
+" (test visualbell OK on Linux or special case in VIM / deployment)
+set visualbell
+" Uncomment if I can NOT fix default WSL home location. Otherwise delete.
+"set rtp+=/mnt/c/Users/tom/src/dotfiles/vim/bundle/Vundle.vim
+
+" TODO TODO configure s.t. vundle doesn't add stuff to my dotfiles repo
+" in a way that would either be confusing or interfere with anything.
+" this probably means either telling git to ignore some dir or have vundle
+" always install to some other path.
 call vundle#begin()
 " alternatively, pass a path where Vundle should install plugins
 "call vundle#begin('~/some/path/here')
 
+" TODO i didn't seem to need to specify paths explicitly w/ vundle on ubuntu...
+" is that cause pathogen was actually managing YouCompleteMe despite it being
+" under 'bundle'?
+" how can i get it to work on WSL and ubuntu in a way that doesn't require
+" explicitly hardcoding in each plugin??
+
+" TODO test paths above (rtp + begin) allow this to work in my dotbot repo
+" (don't want to have to manually download this, and want vundle to be able
+" to update / manage itself as "required" too. test!)
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
 
-" TODO which other plugins do I want to manage with Vundle?
+" TODO test vundle can always compile this (ideally on WSL too)
+" if it can't, may want to handle this one manually.
+Plugin 'Valloric/YouCompleteMe'
+
+" For "aligning text" figure out how to use.
+Plugin 'godlygeek/tabular'
+
+" Shows indicator in left col of which lines differ from HEAD, etc.
+" TODO delete if i don't like it. haven't used much.
+Plugin 'airblade/vim-gitgutter'
+
+" TODO try dense-analysis/ale for linting, but drop if annoying.
+" https://www.reddit.com/r/vim/comments/c2f1bl top comment says he prefers
+" offline 'black' b/c ALE is annoying.
+
+" I think I used to use this to display this in the status bar. Try again?
 Plugin 'tyru/current-func-info.vim'
+
+" TODO more modern version of this? some other site seemed to have something
+" that highlighted the opening and closing whatever; did it close them too?
+Plugin 'Raimondi/delimitMate'
+
+Plugin 'plasticboy/vim-markdown'
+Plugin 'lervag/vimtex'
 
 " All of your Plugins must be added before the following line
 call vundle#end()
@@ -28,10 +72,6 @@ call vundle#end()
 "                     auto-approve removal
 
 " see :h vundle for more details or wiki for FAQ
-
-
-" Not sure exactly what pathogen does?
-execute pathogen#infect()
 
 syntax on
 filetype plugin indent on
