@@ -3,6 +3,9 @@
       create: true
       relink: true
 
+# TODO why is a run on WSL saying there was a problem with the clean step?
+# "An error was encountered while executing action clean
+# Action clean not handled" ?
 - clean: ['~', '~/.config']
 
 # TODO more idiomatic way?
@@ -55,7 +58,7 @@
 # TODO i kind of want stdout/err/in for all things. way to make it default?
 - shell:
   - 
-    description: "Getting accessory scripts repo"
+    description: "Getting/updating accessory scripts repo"
     command: "./get_scripts.sh"
     stdout: True
     stderr: True
@@ -72,11 +75,14 @@
     stdout: False
     stderr: True
     stdin: True
-  - 
-    description: "Installing requirements for GithubCloner"
-    command: "pip3 install --user -r util/GithubCloner/requirements.txt"
-    stdout: False
-    stderr: True
-    stdin: True
   - ./ui_settings.sh
+
+# TODO uncomment if i figure out how to add that submodule back there w/o
+# issues...
+#  - 
+#    description: "Installing requirements for GithubCloner"
+#    command: "pip3 install --user -r util/GithubCloner/requirements.txt"
+#    stdout: False
+#    stderr: True
+#    stdin: True
 

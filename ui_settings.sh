@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 
+# https://stackoverflow.com/questions/38859145
+if grep -q Microsoft /proc/version; then
+    # Doesn't make sense to try to change these in WSL.
+    exit 0
+fi
+
+# Make Amazon application icon hidden in dashboard search
+# can't install package that contains it (unity-webapps-common)
+# because it has other important stuff
+cp /usr/share/applications/ubuntu-amazon-default.desktop \
+    ~/.local/share/applications/ubuntu-amazon-default.desktop
+# TODO do in an idempotent way
+echo Hidden=true >> ~/.local/share/applications/ubuntu-amazon-default.desktop
+
 # See: https://askubuntu.com/questions/558446
 # for possible reasons Anaconda / other things could break gsettings
 # (so would need to check whether it's broken and work around, since
