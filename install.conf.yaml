@@ -67,8 +67,8 @@
     stderr: True
     stdin: True
   - 
-    description: "Installing YouCompleteMe"
-    command: "sudo ./ycm_deps.sh && vim/bundle/YouCompleteMe/install.py"
+    description: "Installing VIM extensions"
+    command: "./install_vim_extensions.sh"
     stdout: False
     stderr: True
     stdin: True

@@ -1,1 +1,4 @@
 .netrwhist
+# So modules that Vundle clones into dotfiles/vim/bundle will not cause
+# confusion in the git output. We want to let Vundle track them.
+bundle/

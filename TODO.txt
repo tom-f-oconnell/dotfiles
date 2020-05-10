@@ -63,18 +63,8 @@ other things not automated for WSL setup:
   understanding)
   https://stackoverflow.com/questions/46610256
 
-- adding line to ~/.profile to disable less/man/git diff error bell
-  https://stackoverflow.com/questions/36724209
-
-- change ls to not error w/ some windows shortcuts (but still look OK)
-  (do NOT want this to apply to ubuntu most likely)
-  https://unix.stackexchange.com/questions/445917
-
 - uncomment / add that 'set bell-style none' line to /etc/inputrc
   (need sudo)
-
-- setup ~/.ssh dir w/ correct permissions?
-  (should be possible w/ 'metadata' option?)
 
 - test that path in gitconfig can be replaced by either ~ or $HOME, and do that
   if so. otherwise, change on WSL install to replace w/ new $HOME (which is NOT
@@ -84,5 +74,5 @@ other things not automated for WSL setup:
 - need to either fix ssh_config permissions on ubuntu (assuming git just won't
   track / commit them in windows) to 600 (double check correct perms online) OR
   have a windows specific deploy that changes permissions to correct value after
-  cloning.
+  cloning (doing this now, but delete if former is possible).
 
