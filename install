@@ -16,7 +16,11 @@ DOTBOT_BIN="bin/dotbot"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd "${BASEDIR}"
-git submodule update --init --recursive "${DOTBOT_DIR}"
+#git submodule update --init --recursive "${DOTBOT_DIR}"
+
+# Opting to always do this now, so that my `link_only` script also works to
+# install Vundle plugins.
+git submodule update --init --recursive
 
 "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" -c "${CONFIG}"
 
@@ -26,4 +30,13 @@ git submodule update --init --recursive "${DOTBOT_DIR}"
 # See https://unix.stackexchange.com/questions/258512 for one way to modify
 # this variable.
 #"${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" -c "${CONFIG}" "${@}"
+
+# TODO delete if the permissions can be fixed from ubuntu s.t. they will work
+# initially when cloned on WSL
+# (or refactor link_only stuff so it outputs YAML that includes this step and
+# global submodule recursive update)
+# https://stackoverflow.com/questions/38859145
+if grep -q Microsoft /proc/version; then
+    chmod 600 ssh_config
+fi
 

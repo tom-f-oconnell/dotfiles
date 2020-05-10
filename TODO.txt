@@ -81,3 +81,8 @@ other things not automated for WSL setup:
   /home/tom. it is /mnt/c/Users/tom/src now)
   (works on windows w/ git 2.17.1, though still should test on ubuntu)
 
+- need to either fix ssh_config permissions on ubuntu (assuming git just won't
+  track / commit them in windows) to 600 (double check correct perms online) OR
+  have a windows specific deploy that changes permissions to correct value after
+  cloning.
+

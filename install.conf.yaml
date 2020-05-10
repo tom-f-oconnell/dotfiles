@@ -67,12 +67,6 @@
     stderr: True
     stdin: True
   - 
-    description: "Updating submodules"
-    command: "git submodule update --init --recursive"
-    stdout: True
-    stderr: True
-    stdin: True
-  - 
     description: "Installing YouCompleteMe"
     command: "sudo ./ycm_deps.sh && vim/bundle/YouCompleteMe/install.py"
     stdout: False
