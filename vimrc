@@ -10,8 +10,6 @@ set rtp+=~/.vim/bundle/Vundle.vim
 " Windows only
 " (test visualbell OK on Linux or special case in VIM / deployment)
 set visualbell
-" Uncomment if I can NOT fix default WSL home location. Otherwise delete.
-"set rtp+=/mnt/c/Users/tom/src/dotfiles/vim/bundle/Vundle.vim
 
 " TODO TODO configure s.t. vundle doesn't add stuff to my dotfiles repo
 " in a way that would either be confusing or interfere with anything.
