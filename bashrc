@@ -95,6 +95,13 @@ if [ -x /usr/bin/dircolors ]; then
     alias egrep='egrep --color=auto'
 fi
 
+# https://stackoverflow.com/questions/38859145
+if grep -q Microsoft /proc/version; then
+    # To silence errors about inaccessible symlinks.
+    # https://unix.stackexchange.com/questions/445917
+    alias ls='ls --color=tty 2>/dev/null'
+fi
+
 # colored GCC warnings and errors
 #export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 

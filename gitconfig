@@ -4,4 +4,4 @@
 [push]
 	default = simple
 [core]
-	excludesfile = /home/tom/.gitignore
+	excludesfile = ~/.gitignore

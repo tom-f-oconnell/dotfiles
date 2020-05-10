@@ -16,9 +16,23 @@ if [ -n "$BASH_VERSION" ]; then
     fi
 fi
 
+# set PATH so it includes user's private bin if it exists
+if [ -d "$HOME/bin" ] ; then
+    PATH="$HOME/bin:$PATH"
+fi
 
-# set PATH so it includes user's private bin directories
-PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+# set PATH so it includes user's private bin if it exists
+if [ -d "$HOME/.local/bin" ] ; then
+    PATH="$HOME/.local/bin:$PATH"
+fi
+
+# https://stackoverflow.com/questions/38859145
+if grep -q Microsoft /proc/version; then
+    # To disable Windows beep in less/man/git diff
+    # https://stackoverflow.com/questions/36724209
+    export LESS="$LESS -R -Q"
+fi
 
 # TODO set GPG key. check keys
 # (had export GPGKEY=687D8AAF)
+

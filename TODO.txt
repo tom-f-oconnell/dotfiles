@@ -76,3 +76,8 @@ other things not automated for WSL setup:
 - setup ~/.ssh dir w/ correct permissions?
   (should be possible w/ 'metadata' option?)
 
+- test that path in gitconfig can be replaced by either ~ or $HOME, and do that
+  if so. otherwise, change on WSL install to replace w/ new $HOME (which is NOT
+  /home/tom. it is /mnt/c/Users/tom/src now)
+  (works on windows w/ git 2.17.1, though still should test on ubuntu)
+
