@@ -42,6 +42,8 @@ Plugin 'godlygeek/tabular'
 " TODO delete if i don't like it. haven't used much.
 Plugin 'airblade/vim-gitgutter'
 
+Plugin 'henrik/vim-indexed-search'
+
 " TODO try dense-analysis/ale for linting, but drop if annoying.
 " https://www.reddit.com/r/vim/comments/c2f1bl top comment says he prefers
 " offline 'black' b/c ALE is annoying.
@@ -70,6 +72,23 @@ call vundle#end()
 "                     auto-approve removal
 
 " see :h vundle for more details or wiki for FAQ
+
+" https://stackoverflow.com/questions/57014805
+function! IsWSL()
+  if has("unix")
+    let lines = readfile("/proc/version")
+    if lines[0] =~ "Microsoft"
+      return 1
+    endif
+  endif
+  return 0
+endfunction
+
+" TODO test this isn't triggered in ubuntu
+if IsWSL()
+    " Type :colorscheme<space> and start pressing tab to see the options.
+    colo pablo
+endif
 
 syntax on
 filetype plugin indent on

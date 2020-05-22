@@ -64,6 +64,10 @@ layout_python-venv() {
             fi
         fi
         log_status "no venv found; creating $VIRTUAL_ENV"
+        # This is the command that has failed w/ Error: Command '[
+        # '/mnt/c/Users/tom/src/sc2_replay_analyzer/.direnv/venv/bin/python3.8',
+        # '-Im', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero
+        # exit status 1.]' in WSL ubuntu 18.04 (w/ 3.8 from deadsnakes selected)
         "$python" -m venv "$VIRTUAL_ENV"
     fi
     PATH_add "$VIRTUAL_ENV/bin"

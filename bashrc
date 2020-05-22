@@ -434,5 +434,14 @@ if grep -q Microsoft /proc/version; then
     # parent of this, but virtually all times I open a WSL terminal, I'll want
     # to go here.
     cd ~/src
+
+    # This should allow matplotlib to work in WSL,
+    # after following other steps here:
+    # https://stackoverflow.com/questions/43397162
+    export DISPLAY=localhost:0.0
 fi
 
+# Delete me. Just trying to improve visibility of directories on windows
+# (including in prompt ideally).
+# (not working...)
+#export LS_COLORS=$(echo $LS_COLORS | sed 's/di=01;34/di=01;94/g')

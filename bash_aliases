@@ -112,6 +112,13 @@ alias snk='ssh -o PubkeyAuthentication=no'
 alias x='xdg-open'
 alias rs='rsync -auvP'
 alias cpconf='cp $HOME/catkin/src/multi_tracker/examples/sample_data/config_20160412_134708_N1.py .; mv config_20160412_134708_N1.py config_`ls -p | grep bag | sed s/_delta_video.bag//g`.py'
+
+
+if [ -x "$(command -v python3)" ]; then
+    if ! [ -x "$(command -v python)" ]; then
+        alias python='python3'
+    fi
+fi
 alias py='python'
 alias py3='python3'
 alias p='python'
@@ -254,6 +261,9 @@ alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url or
 alias githttps="git remote -v | change_git_auth.py h | xargs git remote set-url origin"
 alias gitssh="git remote -v | change_git_auth.py s | xargs git remote set-url origin"
 
+
+# TODO add a version of this that only searches files tracked by git
+# (to automatically avoid any build artifacts, like python egg stuff, etc)
 # Main difference between -r and -R seems to be that -R follows symlinks.
 # Using this syntax for multiple exclude-dir b/c it's friendly with grepym.
 alias grepy="grep -R --exclude-dir=.direnv --exclude-dir=site-packages --include=\*.py"
