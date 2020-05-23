@@ -10,6 +10,13 @@ then
     sudo apt-get update
 fi
 
+read -p "'update all git submodules? (y/n)" -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    git submodule update --init --recursive
+fi
+
 # TODO test this works on fresh 16.04, 18.04, and WSL
 # (see old version of this file when it was named ycm_deps.sh if those
 # deps work better than these ones)
