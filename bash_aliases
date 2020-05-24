@@ -121,9 +121,13 @@ alias cpconf='cp $HOME/catkin/src/multi_tracker/examples/sample_data/config_2016
 # my Windows 10 setup, using the Python 3.8 that I think I installed from
 # the Windows store?
 if [[ "$(uname)" =~ ^MINGW.*  ]]; then
-    # https://stackoverflow.com/questions/32597209
-    alias python='winpty python'
-    alias python3='winpty python3'
+    # A crude empirical test to distinguish Git Bash from the MINGW that came
+    # with MSYS2, Windows 10 5/24/2020
+    if printenv | grep -i git | grep -i path -q; then
+        # https://stackoverflow.com/questions/32597209
+        alias python='winpty python'
+        alias python3='winpty python3'
+    fi
 fi
 
 if [ -x "$(command -v python3)" ]; then
@@ -162,11 +166,18 @@ alias rl='ROS_HOME=`pwd` roslaunch'
 # & cdd that uses env var to go to data
 
 alias fd='roscd'
-# TODO idk why this worked in one terminal, but now seems to have issues in new ones...
-# see where .bash_aliases is sourced in whatever sources completion stuff i suppose
-_completion_loader roscd
-# got from `complete -p roscd`
-complete -o nospace -F _roscomplete_sub_dir fd
+# TODO remove this check that command exists if i can figure out a more widely
+# applicable command that is equivalent
+# TODO test this if actually triggers when _completion_loader would normally
+# succeed where it is called here (correctly installed / pre-existing)
+if [ -x "$(command -v _completion_loader)" ]; then
+    # TODO idk why this worked in one terminal, but now seems to have issues in
+    # new ones...  see where .bash_aliases is sourced in whatever sources
+    # completion stuff i suppose
+    _completion_loader roscd
+    # got from `complete -p roscd`
+    complete -o nospace -F _roscomplete_sub_dir fd
+fi
 
 alias mtdir='rosrun multi_tracker mk_date_dir.py'
 # TODO maybe have expdir make a directory for whicever acquisition pipeline i'm using at the moment?
@@ -221,6 +232,9 @@ alias transfer_data3='rsync -avPurz $HOME/data tom@atlas:/home/tom/'
 # TODO provide option to specify a subdirectory / automate this whole process
 #alias gather_tracking='rsync -avPurz $HOME'
 
+if ! [ -x "$(command -v vi)" ]; then
+    alias vi='vim'
+fi
 alias v='vi'
 
 # It seems if it was saved w/ a diff version of python or something, nothing is
@@ -231,11 +245,51 @@ alias pickle3='python3 -mpickle'
 
 alias ssid="nmcli -t -f active,ssid dev wifi | egrep '^yes' | cut -d\' -f2"
 
-# TODO detect venv? other tools to accomplish this?
+# TODO may need to rename this if this ends up shadowing some executable i use
+
+# TODO TODO try to fix MINGW displaying of python venv in PS1? easy enough
+# to be worth it? (for MSYS2 stuff)
+#
+# This SO post explains using parens rather than curly braces to enclose
+# function body, so function will be evaluated in subshell, and I can use
+# shopt to only change opions for the subshell.
+# https://stackoverflow.com/questions/12179633
+function activate() {
+    out=$(
+    shopt -s dotglob
+    shopt -s nullglob
+    possible=(*/bin/activate */Scripts/activate)
+    if [ "${#possible[@]}" -eq "0" ]; then
+        # TODO maybe also print paths that were searched here / globs
+        echo "No virtual env activation scripts found."
+        return 1
+    elif [ "${#possible[@]}" -eq "1" ]; then
+        # TODO source the script (or indicate to calling code that we should, if
+        # i'm in a subshell probaly can't source...)
+        echo "${possible[0]}"
+        return 0
+    else
+        echo "Too many (${#possible[@]}) virtual env activation scripts found!"
+        printf '%s\n' "${possible[@]}"
+        return 1
+    fi
+    )
+    # This return code means we can expect the output to be a filename.
+    if [ "$?" -eq "0" ]; then
+        echo "Sourcing activation script found at: ${out}"
+        source "$out"
+        return 0
+    else
+        printf '%s\n' "${out}"
+        return 1
+    fi
+}
 # TODO add pyvenv stuff (+ 16.04 install (DigitalOcean)?) to cheatsheet
-# TODO make "env" if not there, then source?
 # TODO need to fix pythonpath to avoid problems from ROS additions (or other)?
-alias a='. env/bin/activate'
+# TODO TODO make "env" if not there, then source? (modify activate fn above to
+# do this!)
+alias a='activate'
+alias e='echo'
 
 # Starting vim in insert mode with paste option set.
 alias vip="vim +startinsert -c 'set paste'"
@@ -257,7 +311,15 @@ alias ..="cd .."
 alias src="cd ~/src"
 alias sr="cd ~/src"
 alias cs="cd ~/src"
-alias d="cd ~/src/dotfiles && ls"
+
+# Leaving this commented in case my old habits of using this are more ingrained
+# than I realized. I'm trying to change this alias to point to `diff` though.
+#alias d="cd ~/src/dotfiles && ls"
+alias d="diff"
+alias dot="cd ~/src/dotfiles && ls"
+# Not using `do` because that is some other keyword.
+alias dt="dot"
+
 alias s="cd ~/src/scripts && ls"
 alias 2p="cd ~/src/python_2p_analysis && ls"
 alias 2pp="cd ~/src/python_2p_analysis && vi populate_db.py"

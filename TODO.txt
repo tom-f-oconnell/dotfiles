@@ -22,6 +22,10 @@
   - clean all current symlinks that were created from WSL bash
     (for example, check git bash can load ~/.profile)
 
+- maybe provide update (overwriting copy to all) and gather changes
+  (overwriting copy from all?) functions to parallel the symlink
+
+
 fix youcompleteme install. subtree?
 
 setup encryption for just the sensitive lines in things like irssi config, pypi

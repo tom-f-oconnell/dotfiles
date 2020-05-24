@@ -244,21 +244,21 @@ au Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
 set spellfile=$HOME/src/dotfiles/vim/spell/spellfile.utf-8.add
 au! BufNewFile,BufRead *.md setlocal ft=markdown
 au Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
-au Filetype markdown setlocal spell spelllang=en_us
+" TODO TODO now that i'm disabling spell by default, make some hotkey
+" to quickly toggle the spellcheck visuals (share w/ txt below)
+au Filetype markdown setlocal nospell spelllang=en_us
 
 " To exclude spellcheck from certain .txt files
 au! BufNewFile,BufRead *requirements.txt setlocal ft=special_txt
-" TODO why do I explicitly need to set this? don't for source files for
-" instance... (still inheriting some text / default properties that are set
-" differently be default for autodetected code files?)
-au Filetype special_txt setlocal nospell
 
 " Trying to include some txt settings for my usual habits of making lots of
 " nested bulleted lists, with indents at one level, often with - as prefix.
 " TODO make it more like markdown?
 " TODO Filetype and FileType both valid?
 au Filetype text setlocal expandtab tabstop=1 shiftwidth=1
-au Filetype text setlocal spell spelllang=en_us
+" TODO TODO now that i'm disabling spell by default, make some hotkey
+" to quickly toggle the spellcheck visuals
+au Filetype text setlocal nospell spelllang=en_us
 
 au Filetype yaml setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=0
 

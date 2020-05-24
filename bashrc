@@ -186,9 +186,10 @@ fi
 # As alternative to ssh-agent being started on login, see:
 # https://stackoverflow.com/questions/17846529#24347344
 
+SSH_DIR="$HOME/.ssh"
 # see Litmus' answer
 # https://stackoverflow.com/questions/18880024/start-ssh-agent-on-login
-SSH_ENV="$HOME/.ssh/environment"
+SSH_ENV="$SSH_DIR/environment"
 
 # was trying to eval / exec this (not sure whether either could work),
 # so we can grep the correct command when grepping ps output.
@@ -222,21 +223,23 @@ function start_agent {
     #/usr/bin/ssh-add;
 }
 
-# Source SSH settings, if applicable
-# TODO only do this from first time i use ssh / git, not from first shell?
-# TODO also consider using user Micah's answer to same question, which should
-# kill ssh_agent when no more bash processes (?)
-if [ -f "${SSH_ENV}" ]; then
-    . "${SSH_ENV}" > /dev/null
-    #ps ${SSH_AGENT_PID} doesn't work under cywgin
+if [ -d "${SSH_DIR}" ]; then
+    # Source SSH settings, if applicable
+    # TODO only do this from first time i use ssh / git, not from first shell?
+    # TODO also consider using user Micah's answer to same question, which
+    # should kill ssh_agent when no more bash processes (?)
+    if [ -f "${SSH_ENV}" ]; then
+        . "${SSH_ENV}" > /dev/null
+        #ps ${SSH_AGENT_PID} doesn't work under cywgin
 
-    # see comment near AGENT_CMD above
-    #ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ > /dev/null || {
-    ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent > /dev/null || {
+        # see comment near AGENT_CMD above
+        #ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ > /dev/null || {
+        ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent > /dev/null || {
+            start_agent;
+        }
+    else
         start_agent;
-    }
-else
-    start_agent;
+    fi
 fi
 
 # TODO why did i want this / on which machine did/do i have the util dir again?
@@ -413,20 +416,24 @@ PROMPT_COMMAND+=" reset_ps1"
 # (+ other direnv stuff) causes direnv to add serious lag to commands
 
 
+# TODO TODO extend this to echo variables if their name is to be evaluated
+# by itself (or maybe have it `declare -p <variable-name>`?)
+
 # Re-defining the command_not_found_handle, which should be defined in
 # /etc/bash.bashrc
 # Using information from these two posts:
 # https://superuser.com/questions/787424
 # https://stackoverflow.com/questions/1203583
-eval "$(echo "orig_command_not_found_handle()"; declare -f command_not_found_handle | tail -n +2)"
-command_not_found_handle() {
-    if [ -f "$1" ]; then
-        echo "cmd not found. editing file in current directory."
-        vi "$1"
-    else
-        orig_command_not_found_handle "$@"
-    fi
-}
+# MINGW didn't like these.
+#eval "$(echo "orig_command_not_found_handle()"; declare -f command_not_found_handle | tail -n +2)"
+#command_not_found_handle() {
+#    if [ -f "$1" ]; then
+#        echo "cmd not found. editing file in current directory."
+#        vi "$1"
+#    else
+#        orig_command_not_found_handle "$@"
+#    fi
+#}
 
 # https://stackoverflow.com/questions/38859145
 if grep -q Microsoft /proc/version; then
@@ -441,7 +448,11 @@ if grep -q Microsoft /proc/version; then
     export DISPLAY=localhost:0.0
 fi
 
+# TODO fix how mingw (git bash) colors seem screwed up by my ~/.bashrc or other
+# settings (the colors of the prompt mostly)
+
 # Delete me. Just trying to improve visibility of directories on windows
 # (including in prompt ideally).
 # (not working...)
 #export LS_COLORS=$(echo $LS_COLORS | sed 's/di=01;34/di=01;94/g')
+
