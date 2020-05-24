@@ -1,26 +1,55 @@
 
 # TODO figure out some way to actually deploy this w/ dotbot, so changes are
 # tracked immediately, rather than needing to copy this to my dotfiles repo
-# manually (can i make $profile a windows shortcut or something like that?
-# something like a symlink supported?)
+# (something like a windows shortcut / symlink / hardlink supported for
+# $profile?)
 # TODO if nothing else, maybe make aliases for the copy to / from dotfiles?
 
-# Edit this file by typing the following in a powershell:
-# vim $profile
-
-# Currently copying this with:
+# Currently copying to dotfiles manually with:
 # cp $profile ~/src/dotfiles/powershell_profile
+
+# Edit this from a PowerShell terminal with:
+# vim $profile
+# Can reload this script (just like in bash) with:
+# . $profile
 
 Set-Alias -Name py2 -Value C:\Python27\python.exe
 
 Set-Alias -Name vi -Value vim
 
-# TODO try to make this just return the .Source variable
-# (get-command <command>).Source works manually
-# TODO and modify to get full Value for an alias if <cmd> is an alias?
-Set-Alias -Name which -Value get-command
+# Using same name of my bash alias for [s]ourcing ~/.[b]ashrc,
+# plus sp = [s]ource [p]rofile is already defined.
+# TODO doesn't work. find workaround.
+#Set-Alias -Name sb -Value ". $profile"
 
-# TODO TODO make an alias (maybe to some more complicated fn) that searches
-# all directories (non-recursively) in current dir for a */Scripts/Activate.ps1
-# script, and runs it to activate the python virtual environment
+function which ($command) {
+  $cmd = get-command $command
+  if ($cmd.CommandType -eq "Alias") {
+    $cmd.ReferencedCommand.Source
+  # maybe there are other command types we want to special case
+  } else {
+    $cmd.Source
+  }
+}
+
+function activate {
+  $subdirs = Get-ChildItem -Attributes Directory
+  foreach ($d in $subdirs) {
+    # TODO test whether i need to put quotes around variable, like i might need
+    # to in bash (for file / dir names with spaces in them)
+    $test_activate_script_path = Join-Path $d.Name -ChildPath "Scripts\Activate.ps1"
+    # Leaf as opposed to Container, the latter of which includes directories.
+    # Leaf should mean it is a file.
+    if (Test-Path $test_activate_script_path -PathType Leaf) {
+      $activate_script_path = $test_activate_script_path
+      break
+    }
+  }
+  if (Test-Path variable:activate_script_path) {
+    echo "Running activation script found at: $activate_script_path"
+    & .\$activate_script_path
+  } else {
+    echo "No directories in current path seem to be virtual environments!"
+  }
+}
 
