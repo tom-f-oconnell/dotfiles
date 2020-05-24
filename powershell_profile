@@ -1,0 +1,26 @@
+
+# TODO figure out some way to actually deploy this w/ dotbot, so changes are
+# tracked immediately, rather than needing to copy this to my dotfiles repo
+# manually (can i make $profile a windows shortcut or something like that?
+# something like a symlink supported?)
+# TODO if nothing else, maybe make aliases for the copy to / from dotfiles?
+
+# Edit this file by typing the following in a powershell:
+# vim $profile
+
+# Currently copying this with:
+# cp $profile ~/src/dotfiles/powershell_profile
+
+Set-Alias -Name py2 -Value C:\Python27\python.exe
+
+Set-Alias -Name vi -Value vim
+
+# TODO try to make this just return the .Source variable
+# (get-command <command>).Source works manually
+# TODO and modify to get full Value for an alias if <cmd> is an alias?
+Set-Alias -Name which -Value get-command
+
+# TODO TODO make an alias (maybe to some more complicated fn) that searches
+# all directories (non-recursively) in current dir for a */Scripts/Activate.ps1
+# script, and runs it to activate the python virtual environment
+
