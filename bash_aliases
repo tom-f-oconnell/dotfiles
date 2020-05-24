@@ -114,6 +114,18 @@ alias rs='rsync -auvP'
 alias cpconf='cp $HOME/catkin/src/multi_tracker/examples/sample_data/config_20160412_134708_N1.py .; mv config_20160412_134708_N1.py config_`ls -p | grep bag | sed s/_delta_video.bag//g`.py'
 
 
+# TODO actually re-setup my windows ~/.bash[rc/_aliases], so it works for git
+# bash (in addition to still working for WSL)
+
+# Trying to detect Git Bash on Windows, to alias python so it works on
+# my Windows 10 setup, using the Python 3.8 that I think I installed from
+# the Windows store?
+if [[ "$(uname)" =~ ^MINGW.*  ]]; then
+    # https://stackoverflow.com/questions/32597209
+    alias python='winpty python'
+    alias python3='winpty python3'
+fi
+
 if [ -x "$(command -v python3)" ]; then
     if ! [ -x "$(command -v python)" ]; then
         alias python='python3'

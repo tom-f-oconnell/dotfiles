@@ -52,4 +52,5 @@ function activate {
     echo "No directories in current path seem to be virtual environments!"
   }
 }
+Set-Alias -Name a -Value activate
 
