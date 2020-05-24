@@ -49,6 +49,11 @@
     # matter, I guess as long as the target's permissions are correct?
     # Or the config perms actually don't matter?
     ~/.ssh/config: ssh_config
+    # TODO TODO come up with some way to have this only trigger on windows
+    # (dotbot support any conditions on install machine properties?)
+    # TODO TODO also make sure this directory is created if it does not exist
+    # (on windows at least)
+    ~/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1: powershell_profile
 
 # TODO print output of these commands
 # TODO do i want submodule update to be recursive? manually specify?

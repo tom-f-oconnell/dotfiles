@@ -1,5 +1,21 @@
 #!/usr/bin/env bash
 
+# This is here to prevent dotbot-in-WSL from setting up symlinks that only
+# work inside WSL.
+# Though now that I've looked a bit into it, it's not clear if there is ANY
+# way to make symlinks that would work in both...
+
+# https://stackoverflow.com/questions/38859145
+if grep -q Microsoft /proc/version; then
+    # TODO TODO might need to fix how python/python3 both yield
+    # "Permission denied" errors when trying to run from git bash though...
+    # "bash: /c/Users/tom/AppData/Local/Microsoft/WindowsApps/python3:
+    # Permission denied"
+    echo "Do not run install from a WSL shell. Use Git Bash or similar."
+    echo "Exiting."
+    exit 1
+fi
+
 set -e
 
 if [ "$#" -eq 0 ]; then

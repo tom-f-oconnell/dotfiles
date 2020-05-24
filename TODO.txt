@@ -1,4 +1,27 @@
 
+- after reading this (and similar posts, some linking to this):
+  https://devblogs.microsoft.com/commandline/do-not-change-linux-files-using-windows-apps-and-tools/
+  i'm not so sure moving my WSL home directory to be equal to my windows
+  home directory was a good idea...
+  might want to re-organize things, and that will affect my options
+  for trying to get dotbot working on windows too
+  
+  see also:
+  https://www.reddit.com/r/bashonubuntuonwindows/comments/fty89r
+  (this last microsoft link might have the kernel of a real solution)
+  https://devblogs.microsoft.com/commandline/whats-new-for-wsl-in-windows-10-version-1903/
+
+- TODO force (check) git bash or similar is used to run dotbot on
+  windows (not WSL because symlinks created in there don't seem to work for
+  windows programs, and probably not powershell because of all the bash parts 
+  of dotbot)
+  (if there is an environment dotbot could actually succesfully be run from,
+  that would set up files accessible / modifiable from both WSL and windows,
+  then yea force that, but as-per the above TODO item, i'm not sure this is
+  possible)
+  - clean all current symlinks that were created from WSL bash
+    (for example, check git bash can load ~/.profile)
+
 fix youcompleteme install. subtree?
 
 setup encryption for just the sensitive lines in things like irssi config, pypi
