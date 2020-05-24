@@ -311,15 +311,18 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+if [ -d $HOME/src/scripts ]; then
+  export PATH="$HOME/src/scripts:$PATH"
+fi
+
 # Moved this stuff after conda setup, so that (in a fresh shell) conda isn't
 # doing its setup with a potentially-error-full custom startup script of mine.
 # One example of a problem: the eval in the conda setup means if
 # usercustomize.py prints anything, it will also be eval'd.
-if [ -d $HOME/src/scripts ]; then
-  export PATH="$HOME/src/scripts:$PATH"
-  export PYTHONPATH="${PYTHONPATH}:$HOME/src/scripts/python_startup"
-  # This is a variable read by my scripts/python_startup/excepthook.py module.
-  export PYMISTAKE_DEBUG_UNCAUGHT="1"
+PYMISTAKE_PATH=$HOME/src/pymistake
+if [ -d $PYMISTAKE_PATH ]; then
+  export PYTHONPATH="${PYTHONPATH}:${PYMISTAKE_PATH}"
+  #export PYMISTAKE_DEBUG="1"
 fi
 
 # TODO TODO only do all the direnv + conda hacks if BOTH are installed
