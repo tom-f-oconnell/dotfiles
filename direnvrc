@@ -146,7 +146,14 @@ use_pyenv() {
 ################################################################################
 # anaconda
 ################################################################################
+
+# TODO summarize what this function was doing. i think it was adding extra stuff
+# that conda should do when it activates (this / any?) environment?
 add_conda_env_hooks() {
+  # This function is NOT called if DIRENV_PS1_UPDATE_FLAG_FILE is not set.
+  # (this was an environment variable that I came up with as part of hack
+  # to get conda ps1 to work w/ direnv)
+
   if ! [[ -n "$CONDA_PREFIX" ]]; then
     (>&2 echo "CONDA_PREFIX was not set. required to add hooks.");
     exit 1;
@@ -195,6 +202,7 @@ is_existing_conda_env() {
     # code of the last command above...
     return $?
 }
+# TODO maybe alias so 'layout conda ...' also works, in case i forget
 layout_anaconda() {
   # Could set PS1 here if it were possible to pass parent shell's PS1 to the
   # subshell, but that seems like one of the few variables that's not just a 
@@ -249,11 +257,33 @@ layout_anaconda() {
   #echo "CONDA_DEFAULT_ENV: $CONDA_DEFAULT_ENV"
   #echo "env_name: $env_name"
   if ! [[ "$CONDA_DEFAULT_ENV" = "$env_name" ]]; then
-    touch "$DIRENV_PS1_UPDATE_FLAG_FILE"
+    if ! [ -z "$DIRENV_PS1_UPDATE_FLAG_FILE" ]; then
+        # TODO probably delete this touch call... seems redundant w/ overwriting
+        # redirection below...
+        touch "$DIRENV_PS1_UPDATE_FLAG_FILE"
+    fi
+
+    # This might have been copied from my ~/.bashrc in an effort to copy effect
+    # of 'eval "$(conda shell.bash hook)"'.
+    # TODO maybe just use the eval in comment above? or was there some other
+    # reason?
+    # TODO at least ~assert this exists
     source ~/anaconda3/etc/profile.d/conda.sh
+
     conda activate $env_name
-    echo "${CONDA_PREFIX}" > $DIRENV_PS1_UPDATE_FLAG_FILE
-    add_conda_env_hooks
+
+    # TODO TODO TODO maybe assert that this is modified at least here?
+    # (print appropriate error and tell user to disable direnv for now)
+    # (at least disable for conda)
+
+    # (i have now encountered one case where direnv w/ my hacks stopped working
+    # correctly, and this is /usr/bin/python even here!)
+    echo $(which python)
+
+    if ! [ -z "$DIRENV_PS1_UPDATE_FLAG_FILE" ]; then
+        echo "${CONDA_PREFIX}" > $DIRENV_PS1_UPDATE_FLAG_FILE
+        add_conda_env_hooks
+    fi
   fi
 }
 

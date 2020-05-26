@@ -1,3 +1,8 @@
 #!/usr/bin/env bash
-pass_ps1_ctrl_to_conda
+
+# TODO make the test more general (don't use bash double square brackets?)
+# + check it works in both cases
+if [[ "$(type -t pass_ps1_ctrl_to_conda)" == "function" ]]; then
+    pass_ps1_ctrl_to_conda
+fi
 
