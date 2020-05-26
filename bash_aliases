@@ -82,6 +82,7 @@ alias gpr='git pull --rebase'
 # git "[i]nfo"
 alias gi='git status'
 alias gl='git log'
+alias gd='git diff'
 
 # wait, what is second argument for again? why not intervening flash?
 clone_fn() {
@@ -376,6 +377,7 @@ function activate() {
     fi
 }
 alias a='activate'
+alias ca='conda activate'
 
 # TODO TODO TODO have all these first try 'conda deactivate' (or call that if
 # applicable) (so probably make a bash fn and call that here)
