@@ -344,7 +344,7 @@ function activate() {
             # TODO maybe refactor so same command used to print is eval-ed
             # to create the venv...
             printf "Making virtual env with 'python3 -m venv "
-            printf "$default_venv_name'"
+            printf "$default_venv_name'\n"
 
             # python3 because this isn't supported with python 2, which might
             # be what "python" refers to in some places.
