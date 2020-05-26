@@ -1,4 +1,8 @@
 
+# TODO TODO maybe modify how all aliases (+ maybe fns?) are defined in here, so
+# that warnings get printed (when ~/.bashrc (and thus this) is sourced) in cases
+# where one of my definitions shadows something, so that i can change the name
+
 # opens a file in Fiji, and appends current directory before argument so Fiji 
 # doesn't freak out
 function fp() {
@@ -130,6 +134,11 @@ if [[ "$(uname)" =~ ^MINGW.*  ]]; then
     fi
 fi
 
+# TODO might want to test some other way if the RHS of either could be something
+# other than empty or an executable file (what -x tests for) (for example, an
+# alias)
+# TODO TODO check all other uses of command across my dotfiles don't make the
+# same mistake
 if [ -x "$(command -v python3)" ]; then
     if ! [ -x "$(command -v python)" ]; then
         alias python='python3'
@@ -166,18 +175,24 @@ alias rl='ROS_HOME=`pwd` roslaunch'
 # & cdd that uses env var to go to data
 
 alias fd='roscd'
-# TODO remove this check that command exists if i can figure out a more widely
-# applicable command that is equivalent
-# TODO test this if actually triggers when _completion_loader would normally
-# succeed where it is called here (correctly installed / pre-existing)
-if [ -x "$(command -v _completion_loader)" ]; then
-    # TODO idk why this worked in one terminal, but now seems to have issues in
-    # new ones...  see where .bash_aliases is sourced in whatever sources
-    # completion stuff i suppose
-    _completion_loader roscd
-    # got from `complete -p roscd`
-    complete -o nospace -F _roscomplete_sub_dir fd
-fi
+
+# TODO TODO TODO replace this check of completion_loader w/ something that
+# works for functions (what _completion_loader is here, as you can see w/
+# "type _completion_loader" on blackbox (which has it defined))
+# ('type' might work. try to use a test as shell indep as possible.)
+
+#if [ -x "$(command -v _completion_loader)" ]; then
+#    # TODO idk why this worked in one terminal, but now seems to have issues in
+#    # new ones...  see where .bash_aliases is sourced in whatever sources
+#    # completion stuff i suppose
+#
+#    # TODO _completion_loader isn't a ROS thing, though, right?
+#    # should i also be testing for ROS presence first?
+#    _completion_loader roscd
+#
+#    # got from `complete -p roscd`
+#    complete -o nospace -F _roscomplete_sub_dir fd
+#fi
 
 alias mtdir='rosrun multi_tracker mk_date_dir.py'
 # TODO maybe have expdir make a directory for whicever acquisition pipeline i'm using at the moment?
@@ -244,12 +259,50 @@ alias ssid="nmcli -t -f active,ssid dev wifi | egrep '^yes' | cut -d\' -f2"
 
 # TODO TODO try to fix MINGW displaying of python venv in PS1? easy enough
 # to be worth it? (for MSYS2 stuff)
-#
+
+# This is intended to return 0 (for True, because BASH) if the function is
+# called from within EITHER a normal virtual environment OR a conda environment.
+function in_virtual_env() {
+    # Contains both commented attempt and solution I ended up using:
+    # https://stackoverflow.com/questions/15454174
+
+    # Assuming that this will always work in the case where we ARE in some
+    # kind of virtual env, because AFAIK, 'python' is always pointing to the
+    # venv python in any kind of venv (including conda ones).
+    # Will just let this fail if no python available.
+
+    # This came from a comment by BrendanSimon on kjo's answer.
+    # May have some edge cases, as the comment didn't get much scrutiny...
+    # This at least seems to work correctly (w/ error check after) for the
+    # python3.6 venv and conda base env on blackbox (May 2020).
+    INVENV=$( python -c 'import sys ; print( 0 if sys.prefix == sys.base_prefix else 1 )' 2>/dev/null )
+    if ! [ "$?" -eq 0 ]; then
+        # Presumably the python check erring means we are NOT in a venv...
+        # 1 for False here (b/c BASH)
+        return 1
+    fi
+    return $IN_VENV
+
+    # didn't work w/ python3.6 venv created w: python -m venv venv
+    #IN_VENV=$(python -c 'import sys; print ("1" if hasattr(sys, "real_prefix") else "0")')
+
+    # didn't seem to be set by conda
+    #if [[ "$VIRTUAL_ENV" != "" ]]; then
+}
+
 # This SO post explains using parens rather than curly braces to enclose
 # function body, so function will be evaluated in subshell, and I can use
 # shopt to only change opions for the subshell.
 # https://stackoverflow.com/questions/12179633
 function activate() {
+    # If a virtual env is already active, just notify and exit.
+    # Originally I was thinking of not notifying, but I don't want this to
+    # create hard-to-debug situations down the line.
+    if in_virtual_env; then
+        echo "Some virtual environment already active"
+        return 3
+    fi
+
     out=$(
     shopt -s dotglob
     shopt -s nullglob
@@ -259,30 +312,69 @@ function activate() {
         echo "No virtual env activation scripts found."
         return 1
     elif [ "${#possible[@]}" -eq "1" ]; then
-        # TODO source the script (or indicate to calling code that we should, if
-        # i'm in a subshell probaly can't source...)
         echo "${possible[0]}"
         return 0
     else
         echo "Too many (${#possible[@]}) virtual env activation scripts found!"
         printf '%s\n' "${possible[@]}"
-        return 1
+        return 2
     fi
     )
+    subshell_exit_code=$?
     # This return code means we can expect the output to be a filename.
-    if [ "$?" -eq "0" ]; then
+    if [ "$subshell_exit_code" -eq "0" ]; then
         echo "Sourcing activation script found at: ${out}"
         source "$out"
         return 0
     else
         printf '%s\n' "${out}"
-        return 1
+
+        # TODO maybe pass extra args through to activate function, so they can
+        # be passed to the venv creation in this case?
+        if [ "$subshell_exit_code" -eq "1" ]; then
+            default_venv_name="venv"
+
+            # Because otherwise some kind of operations are still carried out,
+            # but I'm not sure whether it will effectively clear an environment
+            # that has already had stuff installed into it (or not).
+            if [ -d "$default_venv_name" ]; then
+                printf "Would have made virtual env at $default_venv_name, "
+                printf "but it already exists!\n"
+            fi
+            # TODO maybe refactor so same command used to print is eval-ed
+            # to create the venv...
+            printf "Making virtual env with 'python3 -m venv "
+            printf "$default_venv_name'"
+
+            # python3 because this isn't supported with python 2, which might
+            # be what "python" refers to in some places.
+            python3 -m venv $default_venv_name
+            venv_exit_code=$?
+            if ! [ "$venv_exit_code" -eq "0" ]; then
+                printf "Creating virtual env failed with exit code: "
+                printf "$venv_exit_code\n"
+            else
+                # TODO could maybe refactor so searching code is its own fn
+                # (probably use parens rather than curly for fn body so shopt
+                # still works), so that i can call it w/ a lower number of paths
+                # (we know which parent dir, just not whether 'bin' or 'Scripts'
+                # in the second level here...)
+                # (doesn't matter much though)
+
+                # Assuming this will succeed (and will not recurse further)
+                # (it should succeed, given we just made it...)
+                activate
+                return
+            fi
+        fi
+
+        # TODO this work to return diff numbers, or is this treated like a
+        # string, and is that bad here?
+        # TODO test that the 1 and 2 are preserved, and check they are treated
+        # just like the 0 in the "return 0" above!
+        return $subshell_exit_code
     fi
 }
-# TODO add pyvenv stuff (+ 16.04 install (DigitalOcean)?) to cheatsheet
-# TODO need to fix pythonpath to avoid problems from ROS additions (or other)?
-# TODO TODO make "env" if not there, then source? (modify activate fn above to
-# do this!)
 alias a='activate'
 
 # TODO TODO TODO have all these first try 'conda deactivate' (or call that if
@@ -314,10 +406,57 @@ alias src="cd ~/src"
 alias sr="cd ~/src"
 alias cs="cd ~/src"
 
+# It's important this is not named "deactivate", as basically all venv tools
+# will probably shadow anything with that name when they activate an
+# environment.
+function my_deactivate() {
+    # TODO decide if i want to support any cases where 'type' is not available.
+    # maybe default to certain behavior then...
+    deactivate_type="$(type -t deactivate)"
+
+    if ! [ "$?" -eq 0 ]; then
+        echo "No virtual environment active"
+        return 0
+    fi
+
+    # This is the type I got for deactivate when in a venv created like:
+    # python3 -m venv venv  (w/ Python 3.6)
+    if [ "$deactivate_type" == "function" ]; then
+        # TODO if there are some conda versions where this will also be a fn,
+        # maybe test for them (having an active env in current shell) some other
+        # way
+        deactivate
+
+    elif [ "$deactivate_type" == "file" ]; then
+        # could also get path to that file (for instance by calling type
+        # again without the -t flag), and check it's executable?
+
+        # TODO could also verify this exists, in at least some form
+        # (not using command -v because it seems it is at least sometimes a fn)
+        #conda_type="$(type -t conda)"
+
+        conda deactivate
+    else
+        echo "In my_deactivate, unexpected deactivate type: $deactivate_type"
+        return 1
+    fi
+}
+
+# Using this to overload the 'd' alias, to have more functionality on my one
+# character aliases. We can always tell it's intended to be 'deactivate', if 
+# there are no arguments.
+function diff_or_deactivate() {
+    if [ "$#" -eq 0 ]; then
+        my_deactivate
+    else
+        diff $@
+    fi
+}
+
 # Leaving this commented in case my old habits of using this are more ingrained
 # than I realized. I'm trying to change this alias to point to `diff` though.
 #alias d="cd ~/src/dotfiles && ls"
-alias d="diff"
+alias d="diff_or_deactivate"
 alias dot="cd ~/src/dotfiles && ls"
 # Not using `do` because that is some other keyword.
 alias dt="dot"
@@ -331,6 +470,11 @@ alias 2pk="cd ~/src/python_2p_analysis/hong2p && vi kc_mix_analysis.py"
 alias 2ps="cd ~/src/python_2p_analysis/scripts && ls"
 alias cu="cd ~/src/chemutils && ls"
 alias no="cd ~/src/natural_odors && ls"
+
+
+# TODO maybe add an alias (or put in my scripts repo?) for what Victor Yarema
+# describes here: https://stackoverflow.com/questions/33024085 for displaying
+# which step along the rebasing progress you are
 
 # Uses a script in my scripts repo.
 alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url origin"
@@ -354,6 +498,7 @@ alias dlwebsite="dlwebsite.py"
 alias lr='ls -ltr'
 alias bashrc="vi ~/.bashrc"
 alias brc="vi ~/.bashrc"
+alias vrc="vi ~/.vimrc"
 alias sb="echo 'reloading ~/.bashrc'; source ~/.bashrc"
 alias bashaliases="vi ~/.bash_aliases"
 alias ba="vi ~/.bash_aliases"
