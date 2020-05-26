@@ -207,11 +207,6 @@ alias arduino='~/arduino-1.8.0/arduino'
 # TODO maybe find whichever arduino is actually installed?
 alias lu='cd $HOME/arduino-1.8.3/libraries rm -rf ros_lib && rosrun rosserial_arduino make_libraries.py .'
 
-# TODO central config file for specifying target of e or a? in .ros maybe (has to not get cleared)?
-# should it just be a launch file?
-# TODO way to launch most recent pair of camera and tracking pipeline?
-#alias a='u & f'
-
 # TODO refactor / rename this. maybe break mt_aliases into another file so they can be installed
 # and this can be generated from them?
 alias mt_aliases='printf "e - cd to experiment directory (set with \$EXP_DIR)\np - play back delta video\nt - standard tracking pipeline\nf - detect rois and launch a tracking pipeline for each\nu - launch rectified usb_cam node (camera must have been calibrated)\nd - makes a directory named as the date, and populates it with template configuration files\nc - launch unrectified pointgrey camera\n"'
@@ -289,6 +284,13 @@ function activate() {
 # TODO TODO make "env" if not there, then source? (modify activate fn above to
 # do this!)
 alias a='activate'
+
+# TODO TODO TODO have all these first try 'conda deactivate' (or call that if
+# applicable) (so probably make a bash fn and call that here)
+alias deact='deactivate'
+alias deac='deactivate'
+alias de='deactivate'
+
 alias e='echo'
 
 # Starting vim in insert mode with paste option set.
