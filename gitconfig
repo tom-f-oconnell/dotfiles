@@ -1,7 +1,13 @@
 [user]
 	email = toconnel@caltech.edu
-	name = Tom O'Connell
-[push]
-	default = simple
+    name = Tom O'Connell
+
 [core]
-	excludesfile = ~/.gitignore
+    excludesfile = ~/.gitignore
+
+# This works for both pull and push. No need to set upstream when first setting
+# up.
+# https://stackoverflow.com/questions/658885
+[branch "master"]
+	merge = refs/heads/master
+	remote = origin
