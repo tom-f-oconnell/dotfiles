@@ -261,16 +261,15 @@ if [ -f "/opt/openfoam6/etc/bashrc" ]; then
     source /opt/openfoam6/etc/bashrc
 fi
 
-# TODO TODO uncomment after fixing conda issues encountered on blackbox 18.04
-#if [ -x "$(command -v direnv)" ]; then
+if [ -x "$(command -v direnv)" ]; then
     # Despite (trying to) move this below bashrc conda section, direnv still
     # faces problems trying to run conda commands (conda complains about not be
     # setup correctly, at least for deactivate). Currently using workaround in:
     # https://github.com/conda/conda/issues/7980
     # ...which is (in .envrc files) sourcing a specific conda config file before
     # any conda commands
-    #eval "$(direnv hook bash)"
-#fi
+    eval "$(direnv hook bash)"
+fi
 
 # TODO TODO TODO possible to make a conda init block that will work across all
 # my conda installations? otherwise how to deal w/ the fact that conda wants to
