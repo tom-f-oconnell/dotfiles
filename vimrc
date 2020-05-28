@@ -174,8 +174,11 @@ let g:pyindent_continue = '&shiftwidth'
 " TODO tabs to spaces in vimrc
 au BufWritePre *.py if !filereadable(expand('%')) | 
 	\let b:is_new = 1 | endif
+" The '| e' adds an :e (edit=reload) command after the chmod, so that VIM
+" doesn't warn that the file mode has changed and ask whether you want to
+" load it (happens on first save if vim created the file that session)
 au BufWritePost *.py if get(b:, 'is_new', 0) | 
-	\silent execute '!chmod +x %' | endif
+	\silent execute '!chmod +x %' | e | endif
 
 " TODO also map in insert mode?
 " see http://vim.wikia.com/wiki/Python_-_check_syntax_and_run_script
@@ -216,7 +219,7 @@ au BufWritePre *.sh if !filereadable(expand('%')) |
 	\let b:is_new = 1 | endif
 " TODO why can't i just do this directly in above?
 au BufWritePost *.sh if get(b:, 'is_new', 0) | 
-	\silent execute '!chmod +x %' | endif
+	\silent execute '!chmod +x %' | e | endif
 au BufRead *.sh nmap <F5> :w<cr>:!bash %<cr>
 au BufRead *.sh imap <F5> <Esc>:w<cr>!bash %<cr>
 au BufNewFile *.sh 0r ~/.vim/skel.sh
