@@ -48,6 +48,7 @@ Thumbs.db
 .venv/
 # Where direnv will put some of its stuff (like venv dirs).
 .direnv/
+venv/
 
 build/
 
@@ -62,4 +63,11 @@ build/
 # cases... (w/ a .envrc that just contains 'layout python-venv', when conda is
 # what is ultimately selected)
 .cache/
+
+*.BACKUP
+*.out
+
+.ipynb_checkpoints/
+
+.vagrant/
 
