@@ -175,8 +175,44 @@ if [ -d "$HOME/catkin/src/multi_tracker/multi_tracker_analysis" ]; then
   export PATH="$PATH:$HOME/catkin/src/multi_tracker/multi_tracker_analysis"
 fi
 
-if [ -d "$HOME/src/scripts" ]; then
-  export PATH="$HOME/src/scripts:$PATH"
+# Using a subshell function here to cd safely
+function submodule_paths() (
+    if [ "$#" -ne 1 ]; then
+        echo "wrong number of arguments to submodule_paths. expect 1 directory."
+        return 2
+    fi
+    if ! [ -d "$1" ]; then
+        echo "argument to submodule_paths was not a directory!"
+        return 1
+    fi
+    cd "$1"
+    # Using '|' intead of '/' as sed separator character, to not need to worry
+    # about the '/'s that are in the $1 path
+    git submodule status | awk '{print $2}' | sed "s|.*|$1/&|"
+
+    # TODO maybe also loop over the lines that would be printed, and check each
+    # is a real directory, in case there are some weird cases where they aren't?
+    # (like in case submodules are still listed in git metadata but not on disk)
+)
+
+# TODO maybe return to doing something like this for things in ~/src/scripts
+# (or search some whitelist / submodules in that thing?)
+# https://unix.stackexchange.com/questions/17715/17856#17856
+#export PATH="$( find $HOME/src/dotfiles/util/ -type d -printf "%p:" )$PATH"
+
+MY_SCRIPTS_PATH="$HOME/src/scripts"
+if [ -d "$MY_SCRIPTS_PATH" ]; then
+    export PATH="$PATH:$MY_SCRIPTS_PATH"
+
+    for submodule_path in $(submodule_paths "$MY_SCRIPTS_PATH")
+    do
+        #echo "adding submodule at $submodule_path to PATH"
+
+        # TODO maybe some kind of assert that the directory exists?
+
+        # The output of my `submodule_paths` fn should contain *absolute* paths.
+        export PATH="$PATH:$submodule_path"
+    done
 fi
 
 if [ -f "$HOME/.variables" ]; then
@@ -242,13 +278,6 @@ if [ -d "${SSH_DIR}" ]; then
     fi
 fi
 
-# TODO why did i want this / on which machine did/do i have the util dir again?
-# (not on 2019 blackbox, but maybe laptop or a lab machine?)
-# TODO maybe don't do this
-# https://unix.stackexchange.com/questions/17715/
-# how-can-i-set-all-subdirectories-of-a-directory-into-path/17856#17856
-#export PATH="$( find $HOME/src/dotfiles/util/ -type d -printf "%p:" )$PATH"
-
 # For rdkit cheminformatics library
 export RDBASE=$HOME/src/rdkit
 export LD_LIBRARY_PATH=$RDBASE/lib:$LD_LIBRARY_PATH
@@ -310,10 +339,6 @@ else
 fi
 unset __conda_setup
 # <<< conda initialize <<<
-
-if [ -d $HOME/src/scripts ]; then
-  export PATH="$HOME/src/scripts:$PATH"
-fi
 
 # Moved this stuff after conda setup, so that (in a fresh shell) conda isn't
 # doing its setup with a potentially-error-full custom startup script of mine.
@@ -462,4 +487,6 @@ fi
 # (including in prompt ideally).
 # (not working...)
 #export LS_COLORS=$(echo $LS_COLORS | sed 's/di=01;34/di=01;94/g')
+
+export PATH="$PATH:/usr/local/nrn/x86_64/bin"
 
