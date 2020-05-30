@@ -1,4 +1,6 @@
 
+# TODO TODO TODO make sure all reused names are at least given local scope
+
 # TODO TODO maybe modify how all aliases (+ maybe fns?) are defined in here, so
 # that warnings get printed (when ~/.bashrc (and thus this) is sourced) in cases
 # where one of my definitions shadows something, so that i can change the name
@@ -6,7 +8,11 @@
 # TODO maybe something to print a reminder for any aliased command?
 # like (per alias) once within a session maybe? or once per reboot?
 
-# TODO TODO TODO make sure all reused names are at least given local scope
+# TODO TODO some command to search the targets of all aliases (+ fns?) for some
+# pattern (like 'git'), to print the aliases (+ fns?) (i.e. that use that
+# command)
+# (delete other comment about this if i can find it / if it still exists
+# somewhere below)
 
 # Takes one argument, a string to start the prompt with.
 # TODO option to require enter press?
@@ -28,10 +34,25 @@ function fp() {
     $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
 }
 
-# TODO some function / alias to remind me to use shortcuts for git commands
-# if i call the long forms. general approach, for any aliased commands?
-function g() {
-    git commit -am "$1"
+function git_commit_add() {
+    # TODO delete after debugging
+    echo "CHECK THAT LOGGED COMMIT MESSAGE IS ACTUALLY WHAT YOU WANT"
+    #
+
+    # TODO if possible, find some way to see if raw command that was entered to
+    # trigger this fn contains characters that bash would need escaped to have
+    # them preserved in the commit message (" and ' for instance, it seems),
+    # and warn / fail if we have them, or use the raw command to insert them
+    # escaped as appropriate
+    # TODO or maybe just assert that the # of args passed in is 1, forcing the
+    # message to be specified w/ some kind of quotes already around it?
+
+    # I wasn't able to find cases where any of these actually made a difference.
+    #local args="$(echo "$@" | sed -e 's/"/\"/g')"
+    #echo $@
+    #echo "\$@: $@"
+    #echo "args: $args"
+    git commit -am "$@"
 }
 
 # for aliases where the arguments should go in the middle
@@ -521,9 +542,15 @@ alias al="alias"
 
 # TODO TODO alias mv to some function that first tries git mv, then mv if not
 # in a git repo
+alias g='git'
 alias ga='git add'
 alias gaa='git add --all'
-alias gca='git commit -am'
+
+#alias gca='git commit -am'
+#alias gac='git commit -am'
+alias gca='git_commit_add'
+alias gac='git_commit_add'
+
 alias gc='git commit -m'
 alias gp='git push --follow-tags'
 alias gpr='git pull --rebase'
