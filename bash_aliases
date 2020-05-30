@@ -3,6 +3,11 @@
 # that warnings get printed (when ~/.bashrc (and thus this) is sourced) in cases
 # where one of my definitions shadows something, so that i can change the name
 
+# TODO maybe something to print a reminder for any aliased command?
+# like (per alias) once within a session maybe? or once per reboot?
+
+# TODO TODO TODO make sure all reused names are at least given local scope
+
 # Takes one argument, a string to start the prompt with.
 # TODO option to require enter press?
 function confirm() {
@@ -117,11 +122,17 @@ function in_virtual_env() {
     #if [[ "$VIRTUAL_ENV" != "" ]]; then
 }
 
+# TODO maybe i want to change this to ".venv" or (if one exists)
+# a widely accepted convention here
+export DEFAULT_VENV_NAME="venv"
+
 # This SO post explains using parens rather than curly braces to enclose
 # function body, so function will be evaluated in subshell, and I can use
 # shopt to only change opions for the subshell.
 # https://stackoverflow.com/questions/12179633
 # TODO may need to rename this if this ends up shadowing some executable i use
+# TODO TODO TODO TODO fix this. adding confirm for extra flags seems to have
+# broken things, or around same time
 function activate() {
     # If a virtual env is already active, just notify and exit.
     # Originally I was thinking of not notifying, but I don't want this to
@@ -131,7 +142,7 @@ function activate() {
         return 3
     fi
 
-    out=$(
+    local out=$(
     shopt -s dotglob
     shopt -s nullglob
     possible=(*/bin/activate */Scripts/activate)
@@ -153,6 +164,7 @@ function activate() {
     fi
     )
     subshell_exit_code=$?
+    echo "subshell_exit_code=$subshell_exit_code"
     # This return code means we can expect the output to be a filename.
     if [ "$subshell_exit_code" -eq "0" ]; then
         echo "Sourcing activation script found at: ${out}"
@@ -166,25 +178,32 @@ function activate() {
         # TODO maybe pass extra args through to activate function, so they can
         # be passed to the venv creation in this case?
         if [ "$subshell_exit_code" -eq "1" ]; then
-            # TODO maybe i want to change this to ".venv" or (if one exists)
-            # a widely accepted convention here
-            default_venv_name="venv"
-
             # Because otherwise some kind of operations are still carried out,
             # but I'm not sure whether it will effectively clear an environment
             # that has already had stuff installed into it (or not).
-            if [ -d "$default_venv_name" ]; then
-                printf "Would have made virtual env at $default_venv_name, "
+            if [ -d "$DEFAULT_VENV_NAME" ]; then
+                printf "Would have made virtual env at $DEFAULT_VENV_NAME, "
                 printf "but it already exists!\n"
+                return 4
             fi
+            # TODO make allow an env var to force one way or the other, without
+            # prompting
+            printf "Making virtual env with 'python3 -m venv "
+            printf "$DEFAULT_VENV_NAME"
+            local extra_venv_flags=""
+            # TODO TODO TODO test this works in both cases!
+            if confirm "Make venv with --system-site-packages?"; then
+                extra_venv_flags="--system-site-packages"
+                printf " $extra_venv_flags"
+            fi
+            print "'\n"
+
             # TODO maybe refactor so same command used to print is eval-ed
             # to create the venv...
-            printf "Making virtual env with 'python3 -m venv "
-            printf "$default_venv_name'\n"
 
             # python3 because this isn't supported with python 2, which might
             # be what "python" refers to in some places.
-            python3 -m venv $default_venv_name
+            python3 -m venv $DEFAULT_VENV_NAME $extra_venv_flags
             venv_exit_code=$?
             if ! [ "$venv_exit_code" -eq "0" ]; then
                 printf "Creating virtual env failed with exit code: "
@@ -261,6 +280,9 @@ function diff_or_deactivate() {
 
 # `hub` also uses this
 export GITHUB_USER="tom-f-oconnell"
+# Just setting this for possible `hub` benefit now, though it still requires
+# password on first use...
+export HUB_PROTOCOL="ssh"
 
 # `clone` (below) will use earlier entries in this array first.
 declare -a MY_GITHUB_ACCOUNTS=($GITHUB_USER "ejhonglab")
@@ -297,6 +319,10 @@ function pyp() {
                 fi
             fi
             if confirm "Make (and activate) venv?"; then
+                # TODO TODO maybe add prompt to select --system-site-packages
+                # flag
+                # TODO can i just set a sequence of space separate env vars
+                # before command?
                 nowarn="0" activate
             fi
         fi
@@ -327,12 +353,161 @@ function pyp() {
     fi
 }
 
+# Whether dir is subdir / root of a git repo.
+# https://stackoverflow.com/questions/2180270
+function is_git_dir() (
+    if ! [ -d "$1" ]; then
+        #echo "first argument to is_git_dir was not a directory! returning false"
+        return 1
+    fi
+    # since most git commands rely on being inside the git repo. this function
+    # is in a subshell (parens) to avoid changing working dir of caller.
+    cd "$1"
+    git rev-parse --git-dir > /dev/null 2>&1
+)
+
+# TODO test!
+# Does not seem to return True for something added but not committed, but that's
+# OK.
+function is_git_tracked() (
+    if ! [ -f "$1" ]; then
+        #echo "first argument to is_git_tracked was not a file! returning false"
+        return 1
+    fi
+    # since most git commands rely on being inside the git repo. this function
+    # is in a subshell (parens) to avoid changing working dir of caller.
+    cd $(dirname $1)
+    # https://stackoverflow.com/questions/2405305
+    git ls-files --error-unmatch "$1" > /dev/null 2>&1
+)
+
+# TODO TODO maybe optionally accept a line of files, and then use those instead
+# of all files?
+function link_to_vagrant() {
+    local vagrant_dirs_root=~/src/misc
+    if ! [ -d "$vagrant_dirs_root" ]; then
+        echo "$vagrant_dirs_root did not exist. clone my misc repo there."
+        return 1
+    fi
+
+    local lrd="$(lsb_release -d)"
+    local vagrant_dir
+    local logfile_prefix
+    if echo $lrd | grep "18.04" -q; then
+        vagrant_dir="${vagrant_dirs_root}/18.04_vagrant"
+        logfile_prefix="ubuntu-bionic-18.04"
+    elif echo $lrd | grep "16.04" -q; then
+        vagrant_dir="${vagrant_dirs_root}/16.04_vagrant"
+        # TODO check this one is right
+        logfile_prefix="ubuntu-xenial-16.04"
+    else
+        echo "lsb_release -d did not have either 16.04 or 18.04"
+        return 2
+    fi
+
+    if ! [ -d "$vagrant_dir" ]; then
+        echo "vagrant directory $vagrant_dir did not exist"
+        return 3
+    fi
+
+    if ! [ -z "${just_cleanup}" ]; then
+        printf "destroying vagrant machine (if exists)... "
+        vagrant destroy -f > /dev/null 2>&1 
+        echo "done"
+
+        #if is_git_tracked Vagrantfile; then
+        #    echo "Not cleaning up because Vagrantfile tracked by git"
+        #    return 1
+        #fi
+
+        #printf "removed "
+        # Just deletes Vagrant file in current dir. -maxdepth 1 is correct.
+        #find -maxdepth 1 -type l -name Vagrantfile -print -delete
+        #if [ -f Vagrantfile ]; then
+        if [ -L Vagrantfile ]; then
+            rm -fv Vagrantfile
+        fi
+        rm -rfv .vagrant/
+        # ex: ubuntu-bionic-18.04-cloudimg-console.log
+        rm -fv ${logfile_prefix}-cloudimg-console.log
+
+        return
+    fi
+
+    ln -sv $vagrant_dir/Vagrantfile .
+    #cp -v $vagrant_dir/Vagrantfile .
+
+    if confirm "start vagrant and ssh in?"; then
+        # This directory seems to contain only nested empty directories
+        # when my 18.04 virtualbox VM is down.
+        # -quit is to stop at first.
+        # TODO is this test command outputting a 0/1? or is my confirm above?
+        # i keep seeing it...
+        if find ${vagrant_dir}/.vagrant/ -type f -print -quit | wc -l ; then
+            vagrant up
+        fi
+        vagrant ssh
+    fi
+
+    # seems like the below style of approaches won't work, or will be hard to
+    # get to work
+
+    #if ! [ -z "${just_cleanup}" ]; then
+    #    # TODO maybe at least warn if args were passed...
+    #    echo "deleting *all* symbolic links under $vagrant_dir and exiting"
+    #    find $vagrant_dir -type l -delete
+    #    return
+    #fi
+
+    ##echo "linking to current directory under $vagrant_dir"
+    ##ln -rs . ${vagrant_dir}/$(basename `pwd`)
+
+    ## TODO is symlinking everything like this going to present problems?
+
+    #if [ -z "$1" ]; then
+    #    # The -r (relative) flag seems necessary for this to work as written.
+    #    echo "linking EVERYTHING in current directory under $vagrant_dir"
+    #    ln -rs * ${vagrant_dir}/.
+    #else
+    #    echo "linking files from arguments to $vagrant_dir:"
+    #    for f in "$@"
+    #    do
+    #        echo "$f"
+    #        # TODO check $f? abs and don't use -r?
+    #        ln -rs $f ${vagrant_dir}/.
+    #    done
+    #fi
+
+    ## TODO maybe either edit vagrant config or something else so that it cd's
+    ## into the symlinked dir upon up/ssh? (just symlinking everything now...)
+
+    #if confirm "cd to vagrant directory and ssh in?"; then
+    #    cd ${vagrant_dir}
+    #    # This directory seems to contain only nested empty directories
+    #    # when my 18.04 virtualbox VM is down.
+    #    # -quit is to stop at first.
+    #    if find ${vagrant_dir}/.vagrant/ -type f -print -quit | wc -l ; then
+    #        vagrant up
+    #    fi
+    #    vagrant ssh
+    #fi
+}
+
 alias a='activate'
 alias ca='conda activate'
 
 alias d="diff_or_deactivate"
 
 alias pp="pyp"
+
+alias vu="vagrant up"
+alias vd="vagrant destroy -f"
+alias vs="vagrant ssh"
+alias vb="vagrant box"
+# [v]agrant [l]ink (not a real command)
+alias vl="link_to_vagrant"
+# [v]agrant [c]leanup (not a real command)
+alias vc="just_cleanup=0 link_to_vagrant"
 
 alias t="type"
 alias w="which"
@@ -420,7 +595,7 @@ function clone_with_auth_retry() {
 
     # git exit code is 128 in both the case when cloning a (public, in test)
     # repo ssh fails AND the case where the repo does not exist
-    out="$(git clone git@github.com:$1 $2)"
+    local out="$(git clone git@github.com:$1 $2)"
     #out="$(git clone git@github.com:$1 $2 2>/dev/null)"
     #out="$(stderr_too 'git clone git@github.com:'$1' '$2)"
     c1_exit_code="$?"
@@ -443,7 +618,7 @@ function clone_with_auth_retry() {
         #git clone https://github.com/$1 $2
 
         #echo "git clone with ssh auth failed. retrying with no auth..."
-        out="$(git clone git://github.com/$1 $2)"
+        local out="$(git clone git://github.com/$1 $2)"
         #out="$(git clone git://github.com/$1 $2 2>/dev/null)"
         #out="$(stderr_too 'git clone git://github.com/'$1' '$2)"
         c2_exit_code="$?"
@@ -587,7 +762,21 @@ alias p='python'
 alias p3='python3'
 alias wp='which python'
 alias wp3='which python3'
-alias i='ipython'
+
+# TODO TODO maybe make something to count frequency of commands you use and make
+# like a huffman kind of tree from it (to assign shorter codes, maybe also
+# weight by keys in resting position, w/ weights falling off further away?
+# someone have a model for the ergonomic impact of each key?)
+
+# Trying this out for a bit:
+# TODO TODO wrap w/ a fn or something can can check if we have recently called
+# update, to avoid need for u?
+alias u='sudo apt update'
+alias i='sudo apt install -y'
+#alias i='ipython'
+alias ipy='ipython'
+alias ipy3='ipython3'
+
 alias j='jupyter notebook'
 
 alias cm='cd ~/catkin && catkin_make'
