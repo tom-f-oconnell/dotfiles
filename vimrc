@@ -1,4 +1,31 @@
 
+" TODO TODO figure out (editing this is needed) how to use the visual selection
+" yank i often use to copy/paste multiple lines in vim to copy lines to the
+" system clipboard (and maybe warn w/ appropriate error if i can't, b/c vim /
+" system settings?)
+" TODO for bonus points, maybe delete any asserts in the yanked it?
+" (or another hotkey to do so) (for executing stuff in debugger, which is also
+" the main goal above)
+
+" TODO make vim not start new lines when editing ~/.vimrc w/ comment
+" (if current edited line was a comment, this is the current behavior)
+
+" TODO TODO TODO setuptools setup.py skeleton
+
+" TODO maybe readme.md skeleton (if there's much of a standard format, like:
+" deps, install, usage, etc)?
+
+" TODO TODO if we would open one of those tmp files (happens when no arg?)
+" ...just don't open it (need to handle in bash, before vim?)
+
+" TODO possible to make shortcuts for searching only comments / code lines??
+" could occasionally be quite useful in files with lots of commented code
+" or extensive doc strings (googling didn't turn up much)
+
+" Note: if I decide to make my own vim plugin, definitely read this
+" http://vimcasts.org/blog/2014/02/follow-my-leader before implementing any type
+" of hotkeys.
+
 " can this be reversed? not sure I mind?
 set nocompatible
 filetype off
@@ -9,7 +36,11 @@ set rtp+=~/.vim/bundle/Vundle.vim
 " both this + an absolute path in vundle#begin call with that?
 " Windows only
 " (test visualbell OK on Linux or special case in VIM / deployment)
-set visualbell
+" set visualbell
+" The above visualbell setting was actually super annoying, with all the
+" flashes.
+" TODO test that the below still removes audible bell on windows
+set belloff=all
 
 " TODO TODO configure s.t. vundle doesn't add stuff to my dotfiles repo
 " in a way that would either be confusing or interfere with anything.
@@ -57,6 +88,11 @@ Plugin 'Raimondi/delimitMate'
 
 Plugin 'plasticboy/vim-markdown'
 Plugin 'lervag/vimtex'
+
+" Provides the cfi (current function info) function used below, in custom
+" statusline.
+" TODO (as per comments below) consider trying to replace w/ tagstack,etc
+Plugin 'tyru/current-func-info.vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()
@@ -161,6 +197,17 @@ set expandtab
 set cinkeys-=0#
 set cinoptions+=#1s
 
+" TODO how to define these kind of options together, for reuse with diff
+" filetypes?
+au! BufNewFile *.py 0r ~/.vim/skel.py
+" TODO copy name of current directory to default name of package
+" TODO move inside install_requires
+" TODO TODO uncomment after figuring out how to get this to override the .py
+" skeleton above. maybe see: https://vi.stackexchange.com/questions/23248
+"au! BufNewFile setup.py 0r ~/.vim/skel.setup.py
+au BufNewFile *.py normal G
+au BufNewFile *.py startinsert
+
 " TODO what is tabstop exactly? i had it at 4... do i need to reformat?
 au Filetype python setlocal expandtab tabstop=8 shiftwidth=4 softtabstop=4
 " not sure if the VIM I generally use is new enough to use the 'shiftwidth()'
@@ -168,17 +215,14 @@ au Filetype python setlocal expandtab tabstop=8 shiftwidth=4 softtabstop=4
 " TODO do something similar for other languages.
 " some guy was saying "filetype plugin indent on" worked for him, but how? I
 " have that up top, so it must be overridden?
+" TODO TODO what is this line actually doing?
+" (not used elsewhere in vimrc... builtin?)
 let g:pyindent_continue = '&shiftwidth'
 
-" sets new python files to executable by default
-" TODO tabs to spaces in vimrc
-au BufWritePre *.py if !filereadable(expand('%')) | 
-	\let b:is_new = 1 | endif
-" The '| e' adds an :e (edit=reload) command after the chmod, so that VIM
-" doesn't warn that the file mode has changed and ask whether you want to
-" load it (happens on first save if vim created the file that session)
-au BufWritePost *.py if get(b:, 'is_new', 0) | 
-	\silent execute '!chmod +x %' | e | endif
+" This link explains difference between au and au! (au=autocmd)
+" https://vi.stackexchange.com/questions/19849
+" The difference is that au! overwrites previous autocmds in the "group"
+" TODO check that all my usages of au vs au! are appropriate though
 
 " TODO also map in insert mode?
 " see http://vim.wikia.com/wiki/Python_-_check_syntax_and_run_script
@@ -206,11 +250,15 @@ au BufRead *.py imap <F5> <Esc>:w<cr>!./%<cr>
 "au BufRead *.py nmap <F5> :w<cr>:!python %<cr>
 "au BufRead *.py imap <F5> <Esc>:w<cr>!python %<cr>
 
-" TODO how to define these kind of options together, for reuse with diff
-" filetypes?
-au BufNewFile *.py 0r ~/.vim/skel.py
-au BufNewFile *.py normal G
-au BufNewFile *.py startinsert
+" sets new python files to executable by default
+" TODO tabs to spaces in vimrc
+au BufWritePre *.py if !filereadable(expand('%')) | 
+	\let b:is_new = 1 | endif
+" The '| e' adds an :e (edit=reload) command after the chmod, so that VIM
+" doesn't warn that the file mode has changed and ask whether you want to
+" load it (happens on first save if vim created the file that session)
+au BufWritePost *.py if get(b:, 'is_new', 0) | 
+	\silent execute '!chmod +x %' | e | endif
 
 au Filetype html setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 
@@ -222,11 +270,11 @@ au BufWritePost *.sh if get(b:, 'is_new', 0) |
 	\silent execute '!chmod +x %' | e | endif
 au BufRead *.sh nmap <F5> :w<cr>:!bash %<cr>
 au BufRead *.sh imap <F5> <Esc>:w<cr>!bash %<cr>
+
 au BufNewFile *.sh 0r ~/.vim/skel.sh
 au BufNewFile *.sh normal G
 au BufNewFile *.sh startinsert
 
-" TODO what does au! do again? might be undesirable / affect order
 " TODO move cursor to inside setup and enter insert
 au! BufNewFile,BufRead *.ino,*.pde setlocal ft=arduino
 au Filetype arduino setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
@@ -237,6 +285,7 @@ au BufNewFile *.ino,*.pde 0r ~/.vim/skel.ino
 
 au BufNewFile .envrc 0r ~/.vim/envrc_skel
 
+" TODO is it actually appropriate to use au! here? i don't above...
 " for tab delimiting keywords.txt, as supposed to
 au! BufNewFile,BufRead keywords.txt setlocal ft=arduino_keywords_txt
 au Filetype arduino_keywords_txt setlocal shiftwidth=8 noexpandtab softtabstop=0
@@ -252,7 +301,8 @@ au Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
 au Filetype markdown setlocal nospell spelllang=en_us
 
 " To exclude spellcheck from certain .txt files
-au! BufNewFile,BufRead *requirements.txt setlocal ft=special_txt
+" TODO TODO TODO revert change that deleted the "Filetype special_txt..." line
+au! BufNewFile,BufRead requirements.txt setlocal ft=special_txt
 
 " Trying to include some txt settings for my usual habits of making lots of
 " nested bulleted lists, with indents at one level, often with - as prefix.
@@ -268,10 +318,15 @@ au Filetype yaml setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=0
 " TODO set vs setlocal? BufFilePost in others too?
 au BufNewFile,BufRead,BufFilePost *.cir setlocal filetype=spice
 
+" This turns off automatic comment continuation on making new lines. Should
+" cover this file (which will be linked to by ~/.vimrc), as well as any other
+" vimscript.
+autocmd FileType vim setlocal formatoptions-=c formatoptions-=r formatoptions-=o
+
 set backspace=indent,eol,start
 set autoindent
 
-" TODO what was the purpose of this again?
+" TODO TODO what was the purpose of this again?
 if has("au")
   filetype plugin indent on
 endif
@@ -300,14 +355,52 @@ let g:vim_markdown_folding_disabled = 1
 
 " TODO shortcut/macro to insert date
 
-" show the current function name on statusline. works for at least Python.
-" TODO possible to work in whitespace / empty lines in function too? (doesn't
-" now)
-" TODO fix false positives (e.g. in choice_analysis, in top-level code after
-" press, the status bar says we are still in the function press)
-" TODO uncomment after adding default info back (at least line #)
-" https://unix.stackexchange.com/questions/224771/what-is-the-format-of-the-default-statusline?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
-"let &statusline .= ' %{cfi#format("%s", "")}'
+" statusline default approximation below from:
+" https://unix.stackexchange.com/questions/224771
+" start of default statusline
+set statusline=%f\ %h%w%m%r\ 
+" NOTE: preceding line has a trailing space character
+
+" these two lines were also in the SO answer, and pretty sure don't need first
+"set statusline+=%#warningmsg#
+" definitely don't need this line, but this might be a good addon
+"set statusline+=%{SyntasticStatuslineFlag()}
+
+" TODO TODO TODO hack saving last edited file + function name (using same thing 
+" to get function name below) to some repo level or global file, so that pytest
+" alias can run JUST this test, to skip potentially time intensive tests that
+" i'm not working on (and also just to prevent other tests from confusing me
+" when i'm reading the output)
+"
+" TODO shortcut to toggle old statusline?
+
+" TODO need to special case non python files here (to at least not append this
+" part?) certain file types (ones where cfi doesn't work)?
+" (does cfi actually *error* anywhere, or was it just that it wasn't installed?
+" probably just wasn't installed...)
+
+" (NOTE: these fixes are more important how that i'm trying to use this to hack
+" together something that runs only the most recent test i was editing in
+" pytest)
+" TODO TODO possible to work in whitespace / empty lines in function too?
+" (doesn't now)
+" TODO TODO fix false positives (e.g. in choice_analysis, in top-level code
+" after press, the status bar says we are still in the function press)
+" Show the current function name on statusline. Works* for at least Python.
+" TODO only enable this custom statusline (any of the mods, not just the
+" function name line) if python?
+" `cfi` requires the addon https://github.com/tyru/current-func-info.vim
+" TODO TODO see also Taglist extension and others bookmarked around the same
+" time. may ultimately provide a more reliable way to get function names.
+" (or is there something jedi based? does jedi have a notion of scope?)
+"set statusline+=' %{cfi#format("%s", "")}'
+"set statusline+=' %{cfi#format("%s", "")}'
+
+set statusline+=%*
+
+" end of default statusline (with ruler)
+set statusline+=%=%(%l,%c%V\ %=\ %P%)
+
 " TODO just display func name in another color? (or flank w/ symbols like
 " ex?)
 "hi statusline ctermfg=5 ctermbg=0
@@ -320,9 +413,69 @@ set laststatus=2
 set mouse=a
 
 
+" TODO shortcut to select current line + next line, and then zg? (i do it a lot)
+
 " Custom functions on the 'Leader' keyboard
 let mapleader = ","
+" TODO are these spaces after <leader>[some char] functional (seems equiv to l
+" interactively) or are the ignored here?
 nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>
+" TODO check i'm not shadowing any possibly-useful pre-existing commands after
+" leader (or is leader entirely for custom commands?)
+" TODO maybe modify the # to some kind of autodetected comment character,
+" dependent on filetype?
+nnoremap <leader>t o# TODO 
+nnoremap <leader>m o# TODO maybe 
+nnoremap <leader>c o#<Esc>
+nnoremap <leader>d o"""<cr>"""<Esc>kA
+nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
+
+" TODO TODO TODO get one of the things below working for print inserts
+" TODO maybe modify this to also select the current word, and copy that
+" inside single quotes, with a colon, like my frequent printing convention?
+" or a slightly different leader command for that?
+" TODO be on the lookup for cases where wb -> vawy -> b doesn't bring you
+" back to the same place wb did (or cases where wb doesn't get you at start of
+" current word like i might want)
+" (could read https://www.reddit.com/r/vim/comments/1xzfjy more thoroughly, re:
+" wb edge cases)
+" The wb part is to go to the beginning of the current word
+" TODO TODO why does x not seem to be behaving here? (seems to paste last thing
+" i yanked, if any)
+"nnoremap <leader>p vawxiprint(<Esc>pi)<Esc>
+"nnoremap <leader>p wbiprint()<Esc>hi
+"nnoremap <leader>P wbivawybiprint('<Esc>pi:')<Esc>hi
+" TODO cmds for inserting "if <ins>:" and "return <ins>" and maybe try: ...
+" except <ins>: (or ins in try block for that one? leaning towards latter)
+
+" TODO maybe also load the strings these enter into yank before,
+" for pasting closer like i often do when entering opener manually?
+" TODO maybe use alt or some other modifier (if avail) to switch between o and O
+" insert?
+nnoremap <leader>' o'''<Esc>
+nnoremap <leader>" o"""<Esc>
+nnoremap <leader>` o```<Esc>
+" TODO maybe 79? maybe get from that vim variable (textwidth)?
+" (80 might have been making last char wrap)
+" maybe also add more blank lines (on both sides?)?
+nnoremap <leader># o<Esc>79i#<Esc>
+" TODO TODO some leader cmds for inserting docstring lines (settling on a
+" convention i want to use first, from the ~2 big ones)
+
+" TODO maybe add a hotkey for "sourcing" vimrc if not already one
+
+" TODO TODO if i dont improve the zg behavior w/ the various syntaxes for python
+" multiline strings, maybe make leader cmd to fix behavior for some of the more
+" common syntaxes that currently have problems
+
+
+" TODO maybe add <leader> commands for inserting common (groups of?) import
+" statements (:source ~/.vimrc  OR  :source $MYVIMRC )
+" (but might need to modify the above so all commands are replaced, rather than
+" triggering warnings in vim)
+" TODO maybe simplest way would just be to try to get vim to save and reopen at
+" current position?
+
 
 noremap <F12> <Esc>:syntax sync fromstart<CR>
 inoremap <F12> <C-o>:syntax sync fromstart<CR>
@@ -354,4 +507,10 @@ function! XTermPasteBegin()
   set paste
   return ""
 endfunction
+
+" TODO any reason not to always have this set?
+" This is to more easily read through files with really long lines, like soem
+" python logging outputs. Otherwise, lines beneath current that would be wrapped
+" are not displayed at all, only displaying the @ character at the start...
+set display+=lastline
 
