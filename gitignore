@@ -71,3 +71,6 @@ build/
 
 .vagrant/
 
+.Rhistory
+
+*.deb
