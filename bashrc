@@ -124,13 +124,6 @@ if ! shopt -oq posix; then
   fi
 fi
 
-# Alias definitions.
-# Some depend on completion, so important this comes after bash_completion
-# /usr/share/doc/bash-doc/examples in the bash-doc package (example aliases).
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
 export EDITOR="/usr/bin/vi"
 
 # Really just wanted vi tab completion to go right to the <x>.py rather than
@@ -489,4 +482,11 @@ fi
 #export LS_COLORS=$(echo $LS_COLORS | sed 's/di=01;34/di=01;94/g')
 
 export PATH="$PATH:/usr/local/nrn/x86_64/bin"
+
+# Alias definitions.
+# Some depend on completion, so important this comes after bash_completion
+# /usr/share/doc/bash-doc/examples in the bash-doc package (example aliases).
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
 
