@@ -1,4 +1,6 @@
 
+# TODO TODO TODO make sure all reused names are at least given local scope
+
 # TODO TODO maybe modify how all aliases (+ maybe fns?) are defined in here, so
 # that warnings get printed (when ~/.bashrc (and thus this) is sourced) in cases
 # where one of my definitions shadows something, so that i can change the name
@@ -6,7 +8,13 @@
 # TODO maybe something to print a reminder for any aliased command?
 # like (per alias) once within a session maybe? or once per reboot?
 
-# TODO TODO TODO make sure all reused names are at least given local scope
+# TODO TODO some command to search the targets of all aliases (+ fns?) for some
+# pattern (like 'git'), to print the aliases (+ fns?) (i.e. that use that
+# command)
+# (delete other comment about this if i can find it / if it still exists
+# somewhere below)
+
+# TODO alias to open current git project in github
 
 # Takes one argument, a string to start the prompt with.
 # TODO option to require enter press?
@@ -28,10 +36,25 @@ function fp() {
     $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
 }
 
-# TODO some function / alias to remind me to use shortcuts for git commands
-# if i call the long forms. general approach, for any aliased commands?
-function g() {
-    git commit -am "$1"
+function git_commit_add() {
+    # TODO delete after debugging
+    echo "CHECK THAT LOGGED COMMIT MESSAGE IS ACTUALLY WHAT YOU WANT"
+    #
+
+    # TODO if possible, find some way to see if raw command that was entered to
+    # trigger this fn contains characters that bash would need escaped to have
+    # them preserved in the commit message (" and ' for instance, it seems),
+    # and warn / fail if we have them, or use the raw command to insert them
+    # escaped as appropriate
+    # TODO or maybe just assert that the # of args passed in is 1, forcing the
+    # message to be specified w/ some kind of quotes already around it?
+
+    # I wasn't able to find cases where any of these actually made a difference.
+    #local args="$(echo "$@" | sed -e 's/"/\"/g')"
+    #echo $@
+    #echo "\$@: $@"
+    #echo "args: $args"
+    git commit -am "$@"
 }
 
 # for aliases where the arguments should go in the middle
@@ -164,7 +187,7 @@ function activate() {
     fi
     )
     subshell_exit_code=$?
-    echo "subshell_exit_code=$subshell_exit_code"
+    #echo "subshell_exit_code=$subshell_exit_code"
     # This return code means we can expect the output to be a filename.
     if [ "$subshell_exit_code" -eq "0" ]; then
         echo "Sourcing activation script found at: ${out}"
@@ -288,6 +311,15 @@ export HUB_PROTOCOL="ssh"
 declare -a MY_GITHUB_ACCOUNTS=($GITHUB_USER "ejhonglab")
 export MY_GITHUB_ACCOUNTS
 
+# TODO TODO try to get tab completion (on top of any existing, if there, and if
+# modifying it like this is possible) for hub organization (from
+# MY_GITHUB_ACCOUNTS, if not directly from github.com) and for repos within them
+# TODO TODO or at least make an alias to make repos w/ current dir name w/
+# different github user / org (maybe just one alias to do this for ejhonglab)
+# TODO something like hub create ejhonglab/"$(basename `pwd`)"
+
+# TODO make fn gitproj/ghproj/gproj/gpr or something to do this, but without
+# expecting it to be a python project
 function pyp() {
     if _check_one_nonexistant_dir_arg "$@"; then
         # TODO if hub exists, maybe ensure no (non-empty) project of same name
@@ -493,12 +525,19 @@ function link_to_vagrant() {
     #fi
 }
 
+# TODO TODO modify activate fn / alias to also take optional single positional
+# argument (name of folder == name of env to activate)
 alias a='activate'
 alias ca='conda activate'
 
 alias d="diff_or_deactivate"
 
 alias pp="pyp"
+
+alias venv="python3 -m venv"
+alias ven="venv"
+alias ve="venv"
+# v is reserved for vim
 
 alias vu="vagrant up"
 alias vd="vagrant destroy -f"
@@ -521,16 +560,38 @@ alias al="alias"
 
 # TODO TODO alias mv to some function that first tries git mv, then mv if not
 # in a git repo
+alias g='git'
+# TODO git init before both of these adds? init idempotent, or need to check?
 alias ga='git add'
 alias gaa='git add --all'
-alias gca='git commit -am'
+
+#alias gca='git commit -am'
+#alias gac='git commit -am'
+alias gca='git_commit_add'
+alias gac='git_commit_add'
+
 alias gc='git commit -m'
 alias gp='git push --follow-tags'
 alias gpr='git pull --rebase'
+
+# TODO as long as `gs`=ghostscript isn't installed, alias to gs too?
+# i guess that could fuckup stuff that check for the name of the `gs`
+# executable? might be pretty unlikely though...
+# (seems like it is installed on blackbox now though, and might often be...)
+
 # git "[i]nfo"
 alias gi='git status'
+
+alias gig='vi .gitignore'
+alias gg='gig'
+
 alias gl='git log'
 alias gd='git diff'
+alias gdh='git diff HEAD'
+
+alias gls='git ls-files'
+
+alias grv='git remote -v'
 
 # TODO make alias to vagrant up + vagrant ssh (and just ssh if already up)
 # + one for tearing it down
@@ -682,6 +743,7 @@ function clone() {
         done
     fi
 }
+# TODO TODO maybe overload this to "clear" in no-arg case
 alias c="clone"
 
 function reload_bashrc() {
@@ -928,6 +990,53 @@ alias 2ps="cd ~/src/python_2p_analysis/scripts && ls"
 alias cu="cd ~/src/chemutils && ls"
 alias no="cd ~/src/natural_odors && ls"
 
+
+# I currently have this python script under GithubCloner in my ~/src/scripts
+# repo, and add it to PATH in the portion of ~/.bashrc that adds ~/src/scripts
+# submodules to PATH.
+alias githubcloner="githubcloner.py --prefix-mode directory --output-path ."
+
+# TODO TODO does the --include-org-members actually still work? how?
+# is output from it and --include-gists included in --echo-urls output?
+# (when testing w/ ejhonglab, it at least doesn't seem to be cloning MY
+# public stuff...)
+
+# TODO maybe test whether i am a member of this org? or whether i can
+# authenticate? and then pass --include-authenticated-repos?
+# or maybe just modify githubcloner.py (if this isn't already the default
+# behavior) so that it just doesn't include them if the flag is passed and
+# we can't authenticate for them?
+_pubmsg="Downloading all PUBLIC repos of specified "
+
+# TODO maybe add a flag to not clone forks? or skip if they have under some
+# threshold amount of commits on top of upstream?
+
+# TODO TODO adapt githubcloner / make my own tools to keep all of the things
+# up-to-date WITHOUT deleting anything (prevent git history from being rewritten
+# too / warn / copy if it would be)
+
+# TODO TODO if user following from orgs works, but relies on the "people"
+# section of the org page, maybe re-implement in a way that scrapes names and
+# emails from commit logs and then tries to find their githubs that way
+
+# TODO TODO TODO go back over what i have downloaded in
+# ~/src/github_organizations, and check for missing / incomplete repos
+# (even w/o errors printed, some runs definitely had missing stuff.
+# see bocklab, for one example.) is threading the issue? pass that CL arg
+# w/ value 1, to disable that?
+
+# Based on this answer that says gists can only really be under an organization
+# account if they were already under some personal account that got promoted to
+# an organization, the --include-gists option should never really matter for
+# organizations.
+# https://stackoverflow.com/questions/20647454
+alias cloneorg="echo \"${_pubmsg}org\"; githubcloner -org"
+
+# TODO maybe just test whether user is among MY_GITHUB_ACCOUNTS, if not
+# implementing more general support that would also apply to orgs, as in
+# todos above?
+alias cloneuser="echo \"${_pubmsg}user\"; githubcloner -u"
+
 # TODO maybe add an alias (or put in my scripts repo?) for what Victor Yarema
 # describes here: https://stackoverflow.com/questions/33024085 for displaying
 # which step along the rebasing progress you are
@@ -937,9 +1046,19 @@ alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url or
 alias githttps="git remote -v | change_git_auth.py h | xargs git remote set-url origin"
 alias gitssh="git remote -v | change_git_auth.py s | xargs git remote set-url origin"
 
+# TODO TODO either by default or w/ an alias that adds one letter, add that flag
+# to treat all binary files as not matching (to speed up matching in cases where
+# most of the data in a directory tree is in binary files...)
 # TODO should i just exclude all hidden folders? how?
-alias grep="grep --exclude-dir=.direnv --exclude-dir=site-packages --exclude-dir=.git"
+# TODO factor grep exclude dirs into bash array and expand here (or can i just
+# use an env var that grep would use directly? one exist?)
+
+# Need the --color=auto because I don't think aliases can be redefined to extend
+# what an alias of the same name defines (otherwise the definition in ~/.bashrc
+# that is there by default would add this argument)
+alias grep="grep --color=auto --exclude-dir=.direnv --exclude-dir=site-packages --exclude-dir=.git"
 alias gr="grep"
+
 # TODO add a version of this that only searches files tracked by git
 # (to automatically avoid any build artifacts, like python egg stuff, etc)
 # Main difference between -r and -R seems to be that -R follows symlinks.
@@ -955,8 +1074,12 @@ alias dlwebsite="dlwebsite.py"
 
 alias lr='ls -ltr'
 alias bashrc="vi ~/.bashrc"
+
 alias brc="vi ~/.bashrc"
+alias br="vi ~/.bashrc"
+
 alias vrc="vi ~/.vimrc"
+alias vr="vi ~/.vimrc"
 
 alias bashaliases="vi ~/.bash_aliases"
 alias ba="vi ~/.bash_aliases"
@@ -986,3 +1109,9 @@ alias plin="pstree -l -s -p"
 # https://www.cyberciti.biz/faq/how-to-find-my-public-ip-address-from-command-line-on-a-linux/
 alias pubip="dig +short myip.opendns.com @resolver1.opendns.com"
 
+# TODO maybe available_space command or something like that to parse
+# df -h output (since on stuff using snap, the df -h output is kinda polluted)
+# (or just pass diff args to only get parition containing root / home)
+
+# https://stackoverflow.com/questions/4996090
+alias R='R --no-save'
