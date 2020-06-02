@@ -14,7 +14,8 @@
 # (delete other comment about this if i can find it / if it still exists
 # somewhere below)
 
-# TODO alias to open current git project in github
+# TODO try to improve git diff autocomplete (so it only completes files
+# that are different. i.e. those that would show up in red in git status)
 
 # Takes one argument, a string to start the prompt with.
 # TODO option to require enter press?
@@ -570,7 +571,13 @@ alias gaa='git add --all'
 alias gca='git_commit_add'
 alias gac='git_commit_add'
 
+# TODO TODO alias to open current git project in github
+
 alias gc='git commit -m'
+# TODO TODO either here or somewhere else, which maybe gets called here,
+# have wrap git push, so that if it fails b/c there are remote changes,
+# prompt to automatically rebase and retry + prompt to open github
+# in web browser (+improve message on diffs? or is it already OK?)
 alias gp='git push --follow-tags'
 alias gpr='git pull --rebase'
 

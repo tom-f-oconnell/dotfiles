@@ -10,3 +10,6 @@ alias ppd pp dir(%1)
 
 alias t type(%1)
 
+# Mainly just cause i accidentally type `ls` a lot, out of habit.
+alias ls dir(%1)
+
