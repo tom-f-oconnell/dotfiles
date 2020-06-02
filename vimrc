@@ -79,7 +79,9 @@ Plugin 'henrik/vim-indexed-search'
 " https://www.reddit.com/r/vim/comments/c2f1bl top comment says he prefers
 " offline 'black' b/c ALE is annoying.
 
-" I think I used to use this to display this in the status bar. Try again?
+" Provides the cfi (current function info) function used below, in custom
+" statusline.
+" TODO (as per comments below) consider trying to replace w/ tagstack,etc
 Plugin 'tyru/current-func-info.vim'
 
 " TODO more modern version of this? some other site seemed to have something
@@ -88,11 +90,6 @@ Plugin 'Raimondi/delimitMate'
 
 Plugin 'plasticboy/vim-markdown'
 Plugin 'lervag/vimtex'
-
-" Provides the cfi (current function info) function used below, in custom
-" statusline.
-" TODO (as per comments below) consider trying to replace w/ tagstack,etc
-Plugin 'tyru/current-func-info.vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()
@@ -374,6 +371,12 @@ set statusline=%f\ %h%w%m%r\
 "
 " TODO shortcut to toggle old statusline?
 
+" TODO TODO see also Taglist extension and others bookmarked around the same
+" time. may ultimately provide a more reliable way to get function names.
+" (or is there something jedi based? does jedi have a notion of scope?)
+" TODO see also https://stackoverflow.com/questions/13634826
+" and https://stackoverflow.com/questions/33699049
+
 " TODO need to special case non python files here (to at least not append this
 " part?) certain file types (ones where cfi doesn't work)?
 " (does cfi actually *error* anywhere, or was it just that it wasn't installed?
@@ -390,10 +393,6 @@ set statusline=%f\ %h%w%m%r\
 " TODO only enable this custom statusline (any of the mods, not just the
 " function name line) if python?
 " `cfi` requires the addon https://github.com/tyru/current-func-info.vim
-" TODO TODO see also Taglist extension and others bookmarked around the same
-" time. may ultimately provide a more reliable way to get function names.
-" (or is there something jedi based? does jedi have a notion of scope?)
-"set statusline+=' %{cfi#format("%s", "")}'
 "set statusline+=' %{cfi#format("%s", "")}'
 
 set statusline+=%*
