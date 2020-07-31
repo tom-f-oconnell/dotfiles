@@ -11,3 +11,5 @@
 [branch "master"]
 	merge = refs/heads/master
 	remote = origin
+[push]
+	default = simple
