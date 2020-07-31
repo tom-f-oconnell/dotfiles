@@ -17,6 +17,9 @@
 # TODO try to improve git diff autocomplete (so it only completes files
 # that are different. i.e. those that would show up in red in git status)
 
+# TODO store state of the path of the cwd of the most recent active terminal,
+# so new terminals can cd right there with some shortcut
+
 # Takes one argument, a string to start the prompt with.
 # TODO option to require enter press?
 function confirm() {
@@ -166,11 +169,11 @@ function activate() {
         return 3
     fi
 
-    local out=$(
+    out=$(
     shopt -s dotglob
     shopt -s nullglob
     possible=(*/bin/activate */Scripts/activate)
-    if [ "${#possible[@]}" -eq "0" ]; then
+    if [ "${#possible[@]}" -eq 0 ]; then
         # This nowarn option is so far only set when `activate` is called from
         # my `pyp` function.
         if [ -z "$nowarn" ]; then
@@ -178,7 +181,7 @@ function activate() {
             echo "No virtual env activation scripts found."
         fi
         return 1
-    elif [ "${#possible[@]}" -eq "1" ]; then
+    elif [ "${#possible[@]}" -eq 1 ]; then
         echo "${possible[0]}"
         return 0
     else
@@ -190,7 +193,7 @@ function activate() {
     subshell_exit_code=$?
     #echo "subshell_exit_code=$subshell_exit_code"
     # This return code means we can expect the output to be a filename.
-    if [ "$subshell_exit_code" -eq "0" ]; then
+    if [ "$subshell_exit_code" -eq 0 ]; then
         echo "Sourcing activation script found at: ${out}"
         source "$out"
         return 0
@@ -201,7 +204,7 @@ function activate() {
 
         # TODO maybe pass extra args through to activate function, so they can
         # be passed to the venv creation in this case?
-        if [ "$subshell_exit_code" -eq "1" ]; then
+        if [ "$subshell_exit_code" -eq 1 ]; then
             # Because otherwise some kind of operations are still carried out,
             # but I'm not sure whether it will effectively clear an environment
             # that has already had stuff installed into it (or not).
@@ -218,9 +221,7 @@ function activate() {
             # TODO TODO TODO test this works in both cases!
             if confirm "Make venv with --system-site-packages?"; then
                 extra_venv_flags="--system-site-packages"
-                printf " $extra_venv_flags"
             fi
-            print "'\n"
 
             # TODO maybe refactor so same command used to print is eval-ed
             # to create the venv...
@@ -229,7 +230,7 @@ function activate() {
             # be what "python" refers to in some places.
             python3 -m venv $DEFAULT_VENV_NAME $extra_venv_flags
             venv_exit_code=$?
-            if ! [ "$venv_exit_code" -eq "0" ]; then
+            if ! [ "$venv_exit_code" -eq 0 ]; then
                 printf "Creating virtual env failed with exit code: "
                 printf "$venv_exit_code\n"
             else
@@ -540,10 +541,12 @@ alias ven="venv"
 alias ve="venv"
 # v is reserved for vim
 
-alias vu="vagrant up"
+alias vu="vagrant up && vagrant ssh"
+alias vr="vagrant reload && vagrant ssh"
 alias vd="vagrant destroy -f"
 alias vs="vagrant ssh"
 alias vb="vagrant box"
+alias vbu="vagrant box update"
 # [v]agrant [l]ink (not a real command)
 alias vl="link_to_vagrant"
 # [v]agrant [c]leanup (not a real command)
@@ -561,6 +564,7 @@ alias al="alias"
 
 # TODO TODO alias mv to some function that first tries git mv, then mv if not
 # in a git repo
+# TODO TODO modify this so if there are no arguments, it calls 'git status'
 alias g='git'
 # TODO git init before both of these adds? init idempotent, or need to check?
 alias ga='git add'
@@ -570,8 +574,6 @@ alias gaa='git add --all'
 #alias gac='git commit -am'
 alias gca='git_commit_add'
 alias gac='git_commit_add'
-
-# TODO TODO alias to open current git project in github
 
 alias gc='git commit -m'
 # TODO TODO either here or somewhere else, which maybe gets called here,
@@ -599,6 +601,18 @@ alias gdh='git diff HEAD'
 alias gls='git ls-files'
 
 alias grv='git remote -v'
+
+# TODO maybe just use hub here? it have something like this?
+# TODO how to deal w/ origin + upstream? just pick origin?
+# (probably prompt and have then enter a number selecting which / both)
+function open_repo_in_browser() {
+    # getting https link, no matter auth in 'git remote -v'
+    local url="$(git remote -v | grep origin | change_git_auth.py h)"
+    local browser="$(xdg-settings get default-web-browser)"
+    echo "opening $url in $browser"
+    xdg-open $url
+}
+alias gb='open_repo_in_browser'
 
 # TODO make alias to vagrant up + vagrant ssh (and just ssh if already up)
 # + one for tearing it down
@@ -712,6 +726,9 @@ function clone_with_auth_retry() {
     fi
 }
 
+# TODO TODO accept full url and handle that
+# (so i can just copy paste url from github w/o having to edit it, negating
+# convenience)
 function clone() {
     # $1 <account>/<repo> or <repo> if under MY_GITHUB_ACCOUNTS
     # $2 (optional) path to clone the repo
@@ -775,6 +792,10 @@ function reload_bashrc() {
 alias sb="reload_bashrc"
 alias r="sb"
 
+alias o="sudo"
+
+alias rb="sudo reboot"
+
 alias wow='wine /media/tb/Games/wow-4.3.4/wow_434.exe 1>/dev/null 2>/dev/null &'
 
 alias lmms='$HOME/src/lmms/build/lmms'
@@ -783,11 +804,21 @@ alias lac='LAC'
 #alias plots='scp tom@eftm.duckdns.org:~/lab/hong/src/*html .'
 alias fiji='$HOME/Fiji.app/ImageJ-linux64'
 
+alias f='cd ~/shared/FoundryVTT'
+
 # TODO get vim formatting (e.g. gq) to work with bash comments (recomment new
 # lines) + string handling + command breaking
 
 alias scpr='scp -r'
 alias sshx='ssh -X'
+
+# Just obfuscating a bit, in case somebody is scraping Github for SSH aliases...
+# There's probably a better way.
+duck_pfx="eftm."
+shsp1=12
+shsp2=48
+alias bb="ssh tom@${duck_pfx}duckdns.org -p ${shsp1}${shsp2}"
+
 # TODO what was this for again? forcing use of password? but why?
 alias snk='ssh -o PubkeyAuthentication=no'
 #alias atty='stty -F /dev/ttyACM0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost
@@ -831,6 +862,16 @@ alias p='python'
 alias p3='python3'
 alias wp='which python'
 alias wp3='which python3'
+
+alias pi='pip install'
+# Only this one seems to need confirmation (and thus -y), for some reason.
+alias pu='pip uninstall -y'
+
+# TODO make a function module_file that imports module and prints
+# <module>.__file__
+# TODO also alias mf3 to a version of that that forces python3
+# (maybe have former intead just always default to python3 if available though?)
+#alias mf="python -c 'import '"
 
 # TODO TODO maybe make something to count frequency of commands you use and make
 # like a huffman kind of tree from it (to assign shorter codes, maybe also
@@ -988,12 +1029,12 @@ alias dt="dot"
 alias m="cd ~/src/misc"
 
 alias s="cd ~/src/scripts && ls"
-alias 2p="cd ~/src/python_2p_analysis && ls"
-alias 2pp="cd ~/src/python_2p_analysis && vi populate_db.py"
-alias 2pg="cd ~/src/python_2p_analysis && vi gui.py"
-alias 2pu="cd ~/src/python_2p_analysis/hong2p && vi util.py"
-alias 2pk="cd ~/src/python_2p_analysis/hong2p && vi kc_mix_analysis.py"
-alias 2ps="cd ~/src/python_2p_analysis/scripts && ls"
+alias 2p="cd ~/src/hong2p && ls"
+alias 2pp="cd ~/src/hong2p && vi populate_db.py"
+alias 2pg="cd ~/src/hong2p && vi gui.py"
+alias 2pu="cd ~/src/hong2p/hong2p && vi util.py"
+alias 2pk="cd ~/src/hong2p/hong2p && vi kc_mix_analysis.py"
+alias 2ps="cd ~/src/hong2p/scripts && ls"
 alias cu="cd ~/src/chemutils && ls"
 alias no="cd ~/src/natural_odors && ls"
 
@@ -1048,6 +1089,8 @@ alias cloneuser="echo \"${_pubmsg}user\"; githubcloner -u"
 # describes here: https://stackoverflow.com/questions/33024085 for displaying
 # which step along the rebasing progress you are
 
+# TODO need to update these if i want something that works w/ multiple remotes
+# (like origin + upstream) (see open_repo_in_browser above too)
 # Uses a script in my scripts repo.
 alias gitgit="git remote -v | change_git_auth.py g | xargs git remote set-url origin"
 alias githttps="git remote -v | change_git_auth.py h | xargs git remote set-url origin"
@@ -1086,7 +1129,7 @@ alias brc="vi ~/.bashrc"
 alias br="vi ~/.bashrc"
 
 alias vrc="vi ~/.vimrc"
-alias vr="vi ~/.vimrc"
+# vr saved for vagrant reload
 
 alias bashaliases="vi ~/.bash_aliases"
 alias ba="vi ~/.bash_aliases"
@@ -1122,3 +1165,30 @@ alias pubip="dig +short myip.opendns.com @resolver1.opendns.com"
 
 # https://stackoverflow.com/questions/4996090
 alias R='R --no-save'
+
+# This is the drive I have mounted at /home/tom/shared
+export FOUNDRY_VTT_DATA="/home/tom/shared/FoundryVTT"
+export FOUNDRY_SOUNDS="$FOUNDRY_VTT_DATA/Data/sounds"
+
+alias fvd="cd $FOUNDRY_VTT_DATA/Data"
+
+# since generate normalize-audio didn't seem to work on .ogg despite saying it
+# should...
+alias normalize_foundry_oggs="find $FOUNDRY_SOUNDS -name '*.ogg' -type f -exec normalize-ogg {} \;"
+
+
+# TODO make an alias for this (count_files_in_subdirs or something)
+#du -a | cut -d/ -f2 | sort | uniq -c | sort -nr
+
+# TODO TODO maybe also have this detect if it is a tar.bz2 and unzip it if so
+# TODO TODO TODO test
+# TODO replace verbose output with tqdm-like progress bar? optionally? both,
+# ideally...
+function bzip2_directory() {
+    # TODO any other tar options i want? (to preserve permissions and times and
+    # stuff) (should do all that by default, but maybe check...)
+    # The f actually needs to come last or it won't work right.
+    tar -cjvf "$1.tar.bz2" "$1"
+}
+alias bzdir='bzip2_directory'
+

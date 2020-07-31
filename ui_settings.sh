@@ -92,3 +92,6 @@ gsettings set com.canonical.indicator.datetime show-date true
 gsettings set com.canonical.indicator.datetime time-format 'custom'
 gsettings set com.canonical.indicator.datetime custom-time-format '%b  %-m-%d  %a %l:%M %p'
 
+# https://askubuntu.com/questions/447673
+gsettings set org.compiz.core:/org/compiz/profiles/unity/plugins/core/ hsize 4
+

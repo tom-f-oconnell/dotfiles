@@ -13,3 +13,5 @@ alias t type(%1)
 # Mainly just cause i accidentally type `ls` a lot, out of habit.
 alias ls dir(%1)
 
+# TODO alias to toggle pd.set_option('display.max_rows', x)
+# between x=default value and x=-1 (no maximum)
