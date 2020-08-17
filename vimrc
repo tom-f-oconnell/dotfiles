@@ -419,6 +419,7 @@ let mapleader = ","
 " TODO are these spaces after <leader>[some char] functional (seems equiv to l
 " interactively) or are the ignored here?
 nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>
+nnoremap <leader>s oimport sys; sys.exit()<Esc>
 " TODO check i'm not shadowing any possibly-useful pre-existing commands after
 " leader (or is leader entirely for custom commands?)
 " TODO maybe modify the # to some kind of autodetected comment character,

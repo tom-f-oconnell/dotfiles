@@ -354,7 +354,7 @@ function diff_or_deactivate() {
     if [ "$#" -eq 0 ]; then
         my_deactivate
     else
-        diff $@
+        diff "$@"
     fi
 }
 
@@ -582,6 +582,12 @@ function link_to_vagrant() {
     #fi
 }
 
+# TODO maybe add these:
+# ti (test import) ~ python -c 'import $1'
+# ppv (pv is common i think) (python package version)
+#   ~ python -c 'import $1; print($1.__version__)'
+#     (check pip first though? or both?)
+
 alias pf="pip freeze"
 
 # TODO TODO modify activate fn / alias to also take optional single positional
@@ -653,10 +659,21 @@ alias al="alias"
 # some substring (e.g. "git"). maybe also want to expand aliases (if that
 # wouldn't be default behavior, so that "recursive" aliases still get listed)
 
+function git_fn() {
+    if [ "$#" -eq 0 ]; then
+        git status
+    else
+        git "$@"
+    fi
+}
+
 # TODO TODO alias mv to some function that first tries git mv, then mv if not
-# in a git repo
-# TODO TODO modify this so if there are no arguments, it calls 'git status'
-alias g='git'
+# in a git repo (same with rm?) (or prompt if it detects the argument(s) of
+# either are in git control?)
+
+alias g='git_fn'
+# TODO delete this if i get used to using just 'g=git_fn' for this
+alias gi='git status'
 # TODO git init before both of these adds? init idempotent, or need to check?
 alias ga='git add'
 alias gaa='git add --all'
@@ -679,10 +696,6 @@ alias gpr='git pull --rebase'
 # executable? might be pretty unlikely though...
 # (seems like it is installed on blackbox now though, and might often be...)
 
-# TODO TODO try just using 'g' for this? (it's not like i actually use 'g ...'
-# very much. i mostly just use a couple of the g<x> aliases)
-# git "[i]nfo"
-alias gi='git status'
 
 alias gig='vi .gitignore'
 alias gg='gig'
@@ -987,6 +1000,7 @@ alias wp='which python'
 alias wp3='which python3'
 
 alias pi='pip install'
+alias pir='pip install -r'
 # Only this one seems to need confirmation (and thus -y), for some reason.
 alias pu='pip uninstall -y'
 
