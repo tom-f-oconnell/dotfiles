@@ -24,7 +24,7 @@
 # TODO option to require enter press?
 function confirm() {
     # https://stackoverflow.com/questions/1885525
-    read -p "$1? (y/n)" -n 1 -r
+    read -p "$1? (y/n) " -n 1 -r
     echo # (optional) move to a new line
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         # 0 is True in BASH
@@ -33,6 +33,22 @@ function confirm() {
         return 1
     fi
 }
+
+# https://stackoverflow.com/questions/4023830
+function verlte() {
+    # I just split up his original command like this because it doesn't screw up
+    # my syntax highlighting in the rest of the file.
+    local rhs="`echo -e "$1\n$2" | sort -V | head -n1`"
+    [ "$1" = "$rhs" ]
+}
+function verlt() {
+    [ "$1" = "$2" ] && return 1 || verlte $1 $2
+}
+#verlte 2.5.7 2.5.6 && echo "yes" || echo "no" # no
+#verlt 2.4.10 2.4.9 && echo "yes" || echo "no" # no
+#verlt 2.4.8 2.4.10 && echo "yes" || echo "no" # yes
+#verlte 2.5.6 2.5.6 && echo "yes" || echo "no" # yes
+#verlt 2.5.6 2.5.6 && echo "yes" || echo "no" # no
 
 # opens a file in Fiji, and appends current directory before argument so Fiji 
 # doesn't freak out
@@ -215,11 +231,35 @@ function activate() {
             fi
             # TODO make allow an env var to force one way or the other, without
             # prompting
+            # TODO TODO just print after we decide on other args, and print full
+            # command then... (or just don't print?)
             printf "Making virtual env with 'python3 -m venv "
-            printf "$DEFAULT_VENV_NAME"
+            printf "$DEFAULT_VENV_NAME'\n"
+
+            # TODO maybe test for 18.04 or similarly broken systems, maybe some
+            # settings I broke myself through using my 18.04 setup?
+            # TODO maybe test if python3 -m pip works first or something,
+            # otherwise do bootstrapping?
+            # TODO or maybe check pip version in venv and upgrade if it's too
+            # low? (prompt to enable this behavior?)
+
+            # NOTE: I'm not sure if there are some cases where leads to an
+            # environment without a usable pip, BUT this was necessary to make a
+            # virtual environment in 18.04 that used my user python3 pip, which
+            # I had just upgraded via "pip install --upgrade pip" (outside of a
+            # venv). Otherwise, with or without --system-site-packages, the
+            # venv used the older pip that was installed before (9.0.1).
+            # TODO find solution for NOT --system-site-package case. turns out
+            # this only works there... (low priority cause just always upgrading
+            # pip now)
+            #local extra_venv_flags="--without-pip"
             local extra_venv_flags=""
-            # TODO TODO TODO test this works in both cases!
+
+            # TODO TODO accept (-n / -y) flags to answer this in advance?
+            # some env var? another alias? ([an / ay] or maybe sa for w/
+            # system [as is some system thing]?)?
             if confirm "Make venv with --system-site-packages?"; then
+                #extra_venv_flags="${extra_venv_flags} --system-site-packages"
                 extra_venv_flags="--system-site-packages"
             fi
 
@@ -244,7 +284,22 @@ function activate() {
                 # Assuming this will succeed (and will not recurse further)
                 # (it should succeed, given we just made it...)
                 activate
-                return
+
+                # TODO maybe just print last line of this output?
+                # Mostly for the case were we are using one of the Ubuntu system
+                # pythons, with their perpetually out of date pips.
+                pip install --upgrade pip
+
+                # TODO TODO maybe prompt to install ipdb? or just do it?
+
+                #local venv_pip_ver=`pip --version | awk '{print $2}'`
+                #echo $venv_pip_ver
+                ## Some what arbitrary cutoff between 9.0.1 (stock 18.04 system
+                ## python3 pip) and latest pypi version (as of 2020-08-13) of
+                ## 20.2.2
+                #if verlt $venv_pip_ver 18.0.0; then
+                #    pip install --upgrade pip
+                #fi
             fi
         fi
 
@@ -527,19 +582,17 @@ function link_to_vagrant() {
     #fi
 }
 
+alias pf="pip freeze"
+
 # TODO TODO modify activate fn / alias to also take optional single positional
 # argument (name of folder == name of env to activate)
 alias a='activate'
 alias ca='conda activate'
 
 alias d="diff_or_deactivate"
+alias rv="echo 'rm -rf venv' && rm -rf venv"
 
 alias pp="pyp"
-
-alias venv="python3 -m venv"
-alias ven="venv"
-alias ve="venv"
-# v is reserved for vim
 
 alias vu="vagrant up && vagrant ssh"
 alias vr="vagrant reload && vagrant ssh"
@@ -551,6 +604,44 @@ alias vbu="vagrant box update"
 alias vl="link_to_vagrant"
 # [v]agrant [c]leanup (not a real command)
 alias vc="just_cleanup=0 link_to_vagrant"
+
+# TODO TODO maybe just use "docker attach" anyway...
+# https://stackoverflow.com/questions/30960686
+#function docker_bash() {
+#    # TODO check $1 is valid (running?) image if need be
+#    sudo docker exec -it "$1" /bin/bash
+#}
+#alias dsh="docker_bash"
+
+# TODO TODO change this after figuring out which (if any) commands can be run
+# without sudo + after just reconfiguring things to not need to run anything
+# with sudo in most circumstance!
+alias docker="sudo docker"
+
+# TODO maybe [just] one alias that (re)builds AND then runs?
+function docker_build() {
+    docker build -t $(basename `pwd`) .
+}
+# TODO probably dont include "-it" and "bash" by default. two aliases?
+function docker_run_bash() {
+    # TODO does always specifying '--entrypoint bash' work (if my goal with this
+    # command is to always start bash)? (it is necessary if entrypoint is
+    # defined as something else in dockerfile, like in my olfactometer)
+    #docker run -it $(basename `pwd`) bash
+    docker run -it --entrypoint bash $(basename `pwd`)
+}
+# TODO maybe we actually want this as drmi though? (i.e. are we actually going
+# to rm containers more than images?)
+function docker_rmi() {
+    docker rmi $(basename `pwd`)
+}
+alias db="docker_build"
+alias dr="docker_run_bash"
+# TODO maybe change to dbt for [t]est?
+alias dbr="docker_build && docker_run"
+alias drm="docker_rmi"
+alias dp="docker system prune"
+alias dls="echo 'Images:'; docker image list; echo ''; echo 'Containers:'; docker container list"
 
 alias t="type"
 alias w="which"
@@ -588,6 +679,8 @@ alias gpr='git pull --rebase'
 # executable? might be pretty unlikely though...
 # (seems like it is installed on blackbox now though, and might often be...)
 
+# TODO TODO try just using 'g' for this? (it's not like i actually use 'g ...'
+# very much. i mostly just use a couple of the g<x> aliases)
 # git "[i]nfo"
 alias gi='git status'
 
@@ -809,6 +902,36 @@ alias f='cd ~/shared/FoundryVTT'
 # TODO get vim formatting (e.g. gq) to work with bash comments (recomment new
 # lines) + string handling + command breaking
 
+
+function wake_host() {
+    # NOTE: input not actually used now cause iface and mac are hardcoded for
+    # nas... (since i couldn't figure out how to look them up when the computer
+    # was off)
+    host_to_wake="$1"
+    if ! host "$host_to_wake" > /dev/null 2>&1; then
+        echo "host does not exist"
+        return 1
+    fi
+
+    # TODO shouldn't there be some way to query pfsense for the mac address
+    # (the DHCP server that has the static mapping...), rather than relying on
+    # the ARP cache?
+
+    # iface and host_mac can be retrieved by "arp -an <hostname / ip>"
+    # if this computer talked to that host recently
+    # This file should have these two fields on the same line, whitespace
+    # separated.
+    iface_and_hostmac=`cat ~/.nas_iface_and_hostmac`
+    iface=$(echo $iface_and_hostmac | awk '{print $1}')
+    hostmac=$(echo $iface_and_hostmac | awk '{print $2}')
+
+    #echo "iface: $iface"
+    #echo "hostmac: $hostmac"
+
+    sudo etherwake -i $iface $hostmac
+}
+alias wakenas='wake_host nas'
+
 alias scpr='scp -r'
 alias sshx='ssh -X'
 
@@ -956,7 +1079,10 @@ alias expdir='rosrun multi_tracker mk_date_dir.py'
 ## TODO make this
 ##alias c='roslaunch multi_tracker pointgrey_usb.launch'
 
-alias arduino='~/arduino-1.8.0/arduino'
+# TODO change this into a function so it can work for whichever arduino version
+# we actually have installed in my home directory
+# (and that doesn't risk opening multiple like it does with asterisk)
+alias arduino='~/arduino-*/arduino'
 
 # Library Update
 # TODO maybe find whichever arduino is actually installed?
@@ -1181,14 +1307,16 @@ alias normalize_foundry_oggs="find $FOUNDRY_SOUNDS -name '*.ogg' -type f -exec n
 #du -a | cut -d/ -f2 | sort | uniq -c | sort -nr
 
 # TODO TODO maybe also have this detect if it is a tar.bz2 and unzip it if so
-# TODO TODO TODO test
 # TODO replace verbose output with tqdm-like progress bar? optionally? both,
 # ideally...
-function bzip2_directory() {
-    # TODO any other tar options i want? (to preserve permissions and times and
-    # stuff) (should do all that by default, but maybe check...)
-    # The f actually needs to come last or it won't work right.
-    tar -cjvf "$1.tar.bz2" "$1"
-}
-alias bzdir='bzip2_directory'
+# TODO TODO TODO test
+# TODO TODO TODO fix! seems broken! might have deleted some of my rotation al
+# data...
+#function bzip2_directory() {
+#    # TODO any other tar options i want? (to preserve permissions and times and
+#    # stuff) (should do all that by default, but maybe check...)
+#    # The f actually needs to come last or it won't work right.
+#    tar -cjvf "$1.tar.bz2" "$1"
+#}
+#alias bzdir='bzip2_directory'
 
