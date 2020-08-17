@@ -15,9 +15,16 @@ HISTCONTROL=ignoreboth
 # append to the history file, don't overwrite it
 shopt -s histappend
 
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
+# All HISTFILE section from: https://stackoverflow.com/questions/9457233
+# Leaving these empty makes the history size unbounded.
+export HISTSIZE=
+export HISTFILESIZE=
+# Change the file location because certain bash sessions truncate .bash_history
+# file upon close. http://superuser.com/questions/575479
+export HISTFILE=~/.bash_eternal_history
+# Force prompt to write history after every command.
+# http://superuser.com/questions/20900/bash-history-loss
+PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -482,6 +489,9 @@ fi
 #export LS_COLORS=$(echo $LS_COLORS | sed 's/di=01;34/di=01;94/g')
 
 export PATH="$PATH:/usr/local/nrn/x86_64/bin"
+
+# Made this directory manually for arduino-cli
+export PATH="$PATH:$HOME/arduino-cli/bin"
 
 # Alias definitions.
 # Some depend on completion, so important this comes after bash_completion
