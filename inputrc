@@ -1,1 +1,31 @@
 set editing-mode vi
+
+# TODO TODO possible to fix how this seems to lose specifity after first up
+# arrow? (ex: "git submodule" -> <up arrow> (produces one relevant match) ->
+# <up arrow> x 2 -> now a match is just "git status"
+# (looks like it's reached the end of the matches? way to visually indicate that
+# or stop the search?)
+# (now using Pg[Up/Dn], after matches end i (at least in my testing so far) get
+# (arg: <n>) <last matching history command>
+# https://superuser.com/questions/282233
+# TODO anyway to prevent the above behavior?
+# (searched around a bit for all of the above, and no luck...)
+
+# This was to enable up/down arrow to search history for partially entered
+# commands (wanted to search commands where current partial command is a prefix
+# of the former)
+# https://askubuntu.com/questions/59846
+## arrow up
+#"\e[A":history-search-backward
+## arrow down
+#"\e[B":history-search-forward
+
+# PgUp
+"\e[5~": history-search-backward
+# PgDn
+"\e[6~": history-search-forward
+
+# So commands modified from a history search don't change the original history
+# entries, or something like that.
+set revert-all-at-newline on
+
