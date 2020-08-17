@@ -13,3 +13,5 @@
 	remote = origin
 [push]
 	default = simple
+[alias]
+	root = !pwd
