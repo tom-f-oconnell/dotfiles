@@ -1330,7 +1330,12 @@ alias normalize_foundry_oggs="find $FOUNDRY_SOUNDS -name '*.ogg' -type f -exec n
 #    # TODO any other tar options i want? (to preserve permissions and times and
 #    # stuff) (should do all that by default, but maybe check...)
 #    # The f actually needs to come last or it won't work right.
-#    tar -cjvf "$1.tar.bz2" "$1"
+#    bz2_output="$1.tar.bz2"
+#    if [ -f "$bz2_output" ]; then
+#        echo "$bz2_output already existed"
+#        return
+#    fi
+#    tar -cjvf "$bz2_output" "$1"
 #}
 #alias bzdir='bzip2_directory'
 
