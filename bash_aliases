@@ -174,8 +174,8 @@ export DEFAULT_VENV_NAME="venv"
 # shopt to only change opions for the subshell.
 # https://stackoverflow.com/questions/12179633
 # TODO may need to rename this if this ends up shadowing some executable i use
-# TODO TODO TODO TODO fix this. adding confirm for extra flags seems to have
-# broken things, or around same time
+# TODO TODO also take path as optional positional argument, for calling from
+# test directories outside of project source
 function activate() {
     # If a virtual env is already active, just notify and exit.
     # Originally I was thinking of not notifying, but I don't want this to
@@ -509,10 +509,7 @@ function link_to_vagrant() {
         #    return 1
         #fi
 
-        #printf "removed "
-        # Just deletes Vagrant file in current dir. -maxdepth 1 is correct.
-        #find -maxdepth 1 -type l -name Vagrantfile -print -delete
-        #if [ -f Vagrantfile ]; then
+        # Only removing Vagrantfile if it is a symbolic link.
         if [ -L Vagrantfile ]; then
             rm -fv Vagrantfile
         fi
@@ -523,8 +520,15 @@ function link_to_vagrant() {
         return
     fi
 
-    ln -sv $vagrant_dir/Vagrantfile .
-    #cp -v $vagrant_dir/Vagrantfile .
+    if confirm "copy Vagrantfile instead of linking?"; then
+        cp -v $vagrant_dir/Vagrantfile .
+    else
+        ln -sv $vagrant_dir/Vagrantfile .
+    fi
+
+    if confirm "check for box update?"; then
+        vagrant box update
+    fi
 
     if confirm "start vagrant and ssh in?"; then
         # This directory seems to contain only nested empty directories
@@ -532,7 +536,22 @@ function link_to_vagrant() {
         # -quit is to stop at first.
         # TODO is this test command outputting a 0/1? or is my confirm above?
         # i keep seeing it...
+        # TODO what is the point of this find command again?
+        # fix in copy case (or really, case where vagrant has not yet been run
+        # from $vagrant_dir, by using symlinked version, i think / has been
+        # destroyed and not run since). outputs this:
+        # find: ‘/home/tom/src/misc/18.04_vagrant/.vagrant/’: No such file or
+        # directory.
+        # 0
         if find ${vagrant_dir}/.vagrant/ -type f -print -quit | wc -l ; then
+            # TODO TODO possible to pause for `confirm` y/n prompt to ask
+            # whether to `vagrant box update` if the up command (that the one
+            # that prints it?) has that out of date warning? e.g.
+            # ==> default: A newer version of the box 'ubuntu/bionic64' for
+            # provider 'virtualbox' is
+            # ==> default: available! You currently have version '20200605.0.0'.
+            # The latest is version
+            # ==> default: '20200819.0.0'. Run `vagrant box update` to update.
             vagrant up
         fi
         vagrant ssh
@@ -606,8 +625,13 @@ alias vd="vagrant destroy -f"
 alias vs="vagrant ssh"
 alias vb="vagrant box"
 alias vbu="vagrant box update"
+
+# TODO maybe change to va and vd to be kinda consistent w/ how my python venv
+# aliases work? (from vl and vc) (would need to remove / change separate vd
+# destroy alias above)
+
 # [v]agrant [l]ink (not a real command)
-alias vl="link_to_vagrant"
+alias vl="echo 'Use alias vc to cleanup Vagrant when done'; link_to_vagrant"
 # [v]agrant [c]leanup (not a real command)
 alias vc="just_cleanup=0 link_to_vagrant"
 
@@ -691,11 +715,15 @@ alias gc='git commit -m'
 alias gp='git push --follow-tags'
 alias gpr='git pull --rebase'
 
+# "[g]it [s]tash" ([a]dd)
+alias gsa='git stash'
+alias gsl='git stash list'
+alias gsp='git stash pop'
+
 # TODO as long as `gs`=ghostscript isn't installed, alias to gs too?
 # i guess that could fuckup stuff that check for the name of the `gs`
 # executable? might be pretty unlikely though...
 # (seems like it is installed on blackbox now though, and might often be...)
-
 
 alias gig='vi .gitignore'
 alias gg='gig'
@@ -996,16 +1024,45 @@ alias py='python'
 alias py3='python3'
 alias p='python'
 alias p3='python3'
-alias wp='which python'
+alias wp='printf "\`which python\`="; which python'
 alias wp3='which python3'
+
+function which_module() {
+    # TODO tab completion w/ installed modules
+    # TODO NOOP/err if no non-empty arg passed (or >1)
+    # TODO check module is importable / suitable err if not
+    local pyfile=`python -c "import $1; print($1.__file__)"`
+    echo "__file__: $pyfile"
+    # TODO skip everything below if above failed
+
+    # TODO test behavior if there is a symlink somewhere in path +
+    # probably indicate if there is a symlink (also printing target)
+
+    # TODO TODO print whether managed by pip (conda too?) (and version)
+    # + install url? possible?
+    # (w/ ssh, pip freeze in conda seems to include hash... https in regular
+    # venv seems not to)
+
+    # TODO TODO instead some command that searches using full path, rather than
+    # module name?
+    echo "\`pip freeze\` entry: $(pip freeze | grep $1)"
+
+    # https://stackoverflow.com/questions/16391208
+    # TODO test w/ [editable/not] folders
+    echo "last modified: $(date -r $pyfile)"
+
+    # TODO TODO only do conda list after testing a (non-base?) conda env is
+    # active (expected list to be empty in regular venv, but it's not)
+
+    # TODO print hash? (maybe just if not implementing symlink checking)
+}
+alias wm='which_module'
 
 alias pi='pip install'
 alias pir='pip install -r'
 # Only this one seems to need confirmation (and thus -y), for some reason.
 alias pu='pip uninstall -y'
 
-# TODO make a function module_file that imports module and prints
-# <module>.__file__
 # TODO also alias mf3 to a version of that that forces python3
 # (maybe have former intead just always default to python3 if available though?)
 #alias mf="python -c 'import '"
@@ -1253,7 +1310,7 @@ alias gr="grep"
 # (to automatically avoid any build artifacts, like python egg stuff, etc)
 # Main difference between -r and -R seems to be that -R follows symlinks.
 # Using this syntax for multiple exclude-dir b/c it's friendly with grepym.
-alias grepy="grep -R --include=\*.py"
+alias grepy="grep -R --include=\*.py --exclude-dir=site-packages"
 # This will lookup and use the alias definition above at runtime.
 alias grepym="grep_py_in_my_repos.py"
 
