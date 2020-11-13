@@ -5,6 +5,7 @@
 [core]
     excludesfile = ~/.gitignore
 
+# This does seem to cause all sorts of problems though...
 # This works for both pull and push. No need to set upstream when first setting
 # up.
 # https://stackoverflow.com/questions/658885

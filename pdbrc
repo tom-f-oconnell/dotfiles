@@ -15,3 +15,6 @@ alias ls dir(%1)
 
 # TODO alias to toggle pd.set_option('display.max_rows', x)
 # between x=default value and x=-1 (no maximum)
+# TODO or new aliases for pd / change print aliases to detect whether input is a
+# series / dataframe and print(x.to_string()) then at least, maybe also toggling
+# the max_rows / column / print width options before and after

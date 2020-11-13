@@ -169,6 +169,8 @@ set textwidth=80
 " TODO make this relative to current textwidth (maybe one of two diff colors
 " if text is between current tw and 80, one color for either direction?)
 " TODO make exception for URLs if possible. i often don't want to break those.
+" TODO TODO TODO add hotkey to toggle this off. sometimes it's annoying.
+" (like when reading log files, or other program output)
 au BufWinEnter * let w:m2=matchadd('ErrorMsg', '\%>80v.\+', -1)
 
 " TODO maybe if i would get "No identifier under cursor" error (trying to enter
