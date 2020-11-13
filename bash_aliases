@@ -1045,7 +1045,7 @@ function which_module() {
 
     # TODO TODO instead some command that searches using full path, rather than
     # module name?
-    echo "\`pip freeze\` entry: $(pip freeze | grep $1)"
+    echo "\`pip freeze\` entry: $(pip freeze | grep -i $1)"
 
     # https://stackoverflow.com/questions/16391208
     # TODO test w/ [editable/not] folders
