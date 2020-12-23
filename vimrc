@@ -161,18 +161,6 @@ command W w
 " does this / PEP8 count newline?
 set textwidth=80
 
-" So that *I* can manually keep lines to 80 characters
-" Highlights extra characters (beyong 80) in red.
-" I might prefer this approach over the ever-shown column, commented below
-" Relative to textwidth (tw) because it should autowrap (hard, w/ newline)
-" there.
-" TODO make this relative to current textwidth (maybe one of two diff colors
-" if text is between current tw and 80, one color for either direction?)
-" TODO make exception for URLs if possible. i often don't want to break those.
-" TODO TODO TODO add hotkey to toggle this off. sometimes it's annoying.
-" (like when reading log files, or other program output)
-au BufWinEnter * let w:m2=matchadd('ErrorMsg', '\%>80v.\+', -1)
-
 " TODO maybe if i would get "No identifier under cursor" error (trying to enter
 " insert mode when caps lock is on), switch caps lock off and enter insert mode?
 " TODO or always display some indicator that caps lock is on (if possible)?
@@ -431,6 +419,31 @@ nnoremap <leader>m o# TODO maybe
 nnoremap <leader>c o#<Esc>
 nnoremap <leader>d o"""<cr>"""<Esc>kA
 nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
+
+" So the below method of highlighting the ends of long lines does so with the
+" colors I want, rather than the default ~yellow.
+" TODO try to find some way of only applying this colorscheme change during this
+" command (in case i end up using this highlighting feature in some other
+" cases...)
+hi Search ctermbg=Red
+
+" TODO make this relative to current textwidth (maybe one of two diff colors
+" if text is between current tw and 80, one color for either direction?)
+" TODO make exception for URLs if possible. i often don't want to break those.
+" To highlight columns >80 in long lines. Toggle-able.
+" https://stackoverflow.com/questions/19594119
+let s:activatedh = 1
+function! ToggleH()
+    if s:activatedh == 0
+        let s:activatedh = 1
+        match Search '\%>80v.\+'
+    else
+        let s:activatedh = 0
+        match none
+    endif
+endfunction
+nnoremap <leader>h :call ToggleH()<CR>
+match Search '\%>80v.\+'
 
 " TODO TODO TODO get one of the things below working for print inserts
 " TODO maybe modify this to also select the current word, and copy that
