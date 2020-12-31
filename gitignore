@@ -76,3 +76,6 @@ build/
 *.deb
 
 *.bak
+
+# These are FreeCAD created backups of the main .FCStd files
+*.FCStd1
