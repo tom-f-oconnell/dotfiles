@@ -1,0 +1,96 @@
+# Loosely based on https://wiki.freecadweb.org/Macro_Toggle_Visibility2_1-2
+
+import FreeCAD
+
+__title__ = 'toggle_selection_viz'
+# TODO update all this metadata. does author need to be a freecad website
+# username or something (or does that help w/ wiki or something?)
+__author__ = "Tom O'Connell"
+__url__     = 'http://www.freecadweb.org'
+__version__ = '0.0.1'
+# TODO proper date format?
+__date__    = '31/12/2020'
+
+DEBUG = True
+if DEBUG:
+    print('#' * 30)
+    print(__title__)
+    print('#' * 30)
+
+# TODO will this macro cause object to be treated as modified?
+# (including when nothing selected and when undone?)
+# if so, is there some undo stack i can take advantage of so (when undone)
+# it's not considered modified?
+
+state_var = 'previously_visible'
+if hasattr(FreeCAD, state_var):
+    if DEBUG:
+        print('unhiding stuff')
+
+    for obj in getattr(FreeCAD, state_var):
+        obj.Visibility = True
+    delattr(FreeCAD, state_var)
+else:
+    # So we can get selections only in the current document.
+    curr_doc_name = App.ActiveDocument.Name
+    # The API says if a Document name is not passed, the selection could
+    # potentially include stuff from other documents. Don't think we want that.
+    selection = Gui.Selection.getSelection(curr_doc_name)
+
+    # TODO is there are better test of actual parents (/ children below)?
+    # for example getPaths() seemed attractive because it specifically mentioned
+    # paths *to root*, whereas i'm not sure if these links 
+    # could maybe just split <obj>.FullName into parts and use that for parent
+    # names if nothing else works well.
+    selection_parents = []
+    for obj in selection:
+        # There could be some duplication in this list, but that's fine.
+        selection_parents.extend(obj.InListRecursive)
+
+    selection_children = []
+    for obj in selection:
+        selection_children.extend(obj.OutListRecursive)
+
+    if DEBUG:
+        if len(selection) > 0:
+            print('selection:')
+            print(selection)
+            print([x.Name for x in selection])
+
+        if len(selection_parents) > 0:
+            print('selection parents:')
+            for n in {x.Name for x in selection_parents}:
+                print(n)
+            print()
+
+        if len(selection_children) > 0:
+            print('selection children:')
+            for n in {x.Name for x in selection_children}:
+                print(n)
+            print()
+
+    # TODO is this check sufficient or will there still be some cases where we
+    # can't switch some of these things to not-visible?
+    # TODO can visibility be locked, and do we need to deal with that, or does
+    # it just apply to GUI?
+    if not any([x.Visibility for x in selection]):
+        if DEBUG:
+            print('nothing visible in selection')
+    else:
+        if DEBUG:
+            print('had visible stuff!')
+
+        dont_hide = selection + selection_parents + selection_children
+
+        previously_visible = []
+        setattr(FreeCAD, state_var, previously_visible)
+        for obj in FreeCAD.ActiveDocument.Objects:
+            if obj.Visibility and obj not in dont_hide:
+                if DEBUG:
+                    print(f'hiding {obj} {obj.Name}')
+
+                previously_visible.append(obj)
+                obj.Visibility = False
+            elif DEBUG:
+                print(f'NOT hiding {obj} {obj.Name} in selection')
+
