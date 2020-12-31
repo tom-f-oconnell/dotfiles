@@ -1024,6 +1024,8 @@ alias py='python'
 alias py3='python3'
 alias p='python'
 alias p3='python3'
+# TODO also print full python version number
+# TODO also print real path if any symlinks
 alias wp='printf "\`which python\`="; which python'
 alias wp3='which python3'
 
@@ -1031,6 +1033,9 @@ function which_module() {
     # TODO tab completion w/ installed modules
     # TODO NOOP/err if no non-empty arg passed (or >1)
     # TODO check module is importable / suitable err if not
+    # TODO TODO deal w/ cases like:
+    # AttributeError: module 'hong2p' has no attribute '__file__'
+    # (caused by editable? encountered calling from natural_odors venv)
     local pyfile=`python -c "import $1; print($1.__file__)"`
     echo "__file__: $pyfile"
     # TODO skip everything below if above failed
@@ -1047,14 +1052,20 @@ function which_module() {
     # module name?
     echo "\`pip freeze\` entry: $(pip freeze | grep -i $1)"
 
+    # TODO TODO only do conda list after testing a (non-base?) conda env is
+    # active (expected list to be empty in regular venv, but it's not)
+
     # https://stackoverflow.com/questions/16391208
     # TODO test w/ [editable/not] folders
     echo "last modified: $(date -r $pyfile)"
 
-    # TODO TODO only do conda list after testing a (non-base?) conda env is
-    # active (expected list to be empty in regular venv, but it's not)
-
-    # TODO print hash? (maybe just if not implementing symlink checking)
+    # maybe just if not implementing symlink checking...
+    # https://stackoverflow.com/questions/545387
+    # TODO suppress final '  -'
+    #echo "$(find $pyfile -type f -print0)"
+    # TODO TODO test in case where pyfile is a file, rather than a directory.
+    # (e.g. w/ `which_module chemutils` from natural_odors venv)
+    echo "hash: $(find $pyfile -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum)"
 }
 alias wm='which_module'
 
@@ -1093,7 +1104,9 @@ alias cm='cd ~/catkin && catkin_make'
 #alias trajecgui='trajectory_viewer_gui_v2.py'
 
 # if this ever causes problems with logs, can also include ROS_LOG_DIR=/home/user/.ros/log
-alias roslaunch='ROS_HOME=`pwd` roslaunch'
+# TODO move this alias to hong-lab-system dependent deployment file,
+# likely as w/ some env vars
+#alias roslaunch='ROS_HOME=`pwd` roslaunch'
 # TODO why does tab completion not seem to work with this one? can i make it?
 alias rl='ROS_HOME=`pwd` roslaunch'
 
