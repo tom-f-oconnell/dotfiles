@@ -140,6 +140,7 @@ export EDITOR="/usr/bin/vi"
 # https://stackoverflow.com/questions/32189015
 export FIGNORE=".egg-info"
 
+
 # At one point, I decided I needed to either comment anaconda init or ROS init,
 # lest some conflict emerge (which was what again?).
 # See these two posts for discussion of problem + possible
@@ -159,11 +160,31 @@ export FIGNORE=".egg-info"
 #if [ -f /opt/ros/kinetic/setup.bash ]; then
 #  source /opt/ros/kinetic/setup.bash
 #fi
-#if [ -f $HOME/catkin/devel/setup.bash ]; then
-#  source $HOME/catkin/devel/setup.bash
-#fi
+if [ -f /opt/ros/melodic/setup.bash ]; then
+  source /opt/ros/melodic/setup.bash
+fi
+if [ -f /opt/ros/noetic/setup.bash ]; then
+  source /opt/ros/noetic/setup.bash
+fi
+if [ -f $HOME/catkin/devel/setup.bash ]; then
+  source $HOME/catkin/devel/setup.bash
+fi
 ## I think this can conflict with the devel environment.
 ##source $HOME/catkin/install/setup.bash
+
+# TODO if can't figure out how to make ROS and conda workable concurrently (w/o
+# editing this file), make make one flag env var to control toggle.
+
+# Options for ROS logging output, for debugging.
+# http://wiki.ros.org/rosconsole#Console_Output_Formatting
+# default is equivalent to '[${severity}] [${time}]: ${message}'
+export ROSCONSOLE_FORMAT='[${severity}] [${time}] ${node}: ${message}'
+#export ROSCONSOLE_FORMAT='[${severity}] [${time}] (${file}:${line}): ${message}'
+
+# For playing around with ROS turtlebot simulations.
+# https://automaticaddison.com/how-to-launch-the-turtlebot3-simulation-with-ros
+export TURTLEBOT3_MODEL=burger
+
 
 # TODO better way to manage python path to include my modules nested within src?
 
@@ -305,6 +326,14 @@ fi
 # put this in bashrc, but i want to manage bashrc in source control, in a
 # deployment independent manner...
 
+# TODO see if https://github.com/rickstaa/.ros_conda_wrapper has anything of
+# value (though unclear whether i'm supposed to still include conda and / or ROS
+# lines of my own in bashrc, and if so, how to order everything)
+
+# TODO TODO at least test both versions of this block on my main analysis
+# machines w/ my main conda envs, and pick one that works and delete the other.
+# or otherwise try to pick the more recent version.
+
 # TODO deal w/ anaconda sections in a deployment-conda-version-specific manner
 # if necessary (try to avoid though) (may also want to delete any commented
 # blocks, in case conda still detects and tries to manage it)
@@ -327,17 +356,17 @@ fi
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/tom/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
+#__conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+#if [ $? -eq 0 ]; then
+#    eval "$__conda_setup"
+#else
+#    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
+#        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
+#    else
+#        export PATH="/home/tom/anaconda3/bin:$PATH"
+#    fi
+#fi
+#unset __conda_setup
 # <<< conda initialize <<<
 
 # Moved this stuff after conda setup, so that (in a fresh shell) conda isn't
@@ -493,10 +522,16 @@ export PATH="$PATH:/usr/local/nrn/x86_64/bin"
 # Made this directory manually for arduino-cli
 export PATH="$PATH:$HOME/arduino-cli/bin"
 
+# To explicitly specify which FreeCAD to use for my freecad_finder Python
+# library, which helps you add FreeCAD libraries to Python sys.path for use in
+# standalone scripts. Not used by FreeCAD itself.
+export FREECAD_EXECUTABLE=$HOME/src/FreeCAD/build/bin/FreeCAD
+
 # Alias definitions.
 # Some depend on completion, so important this comes after bash_completion
 # /usr/share/doc/bash-doc/examples in the bash-doc package (example aliases).
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
+
 
