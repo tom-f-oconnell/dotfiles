@@ -123,12 +123,102 @@ if IsWSL()
     colo pablo
 endif
 
+" TODO maybe modify to check if current file is empty (want to be able to quit
+" accidentally created files quickly, for example from tab completing towards a
+" file that shares a prefix with another), rather than checking for
+" modification, if that ends up being too disruptive to macro recording (if i
+" ever use...)
+" Below I remap (normal mode) q to this, and Q to q as in:
+" https://stackoverflow.com/questions/10956261
+" Q does already enter 'Ex' mode, but I'm pretty sure I didn't want that anyway.
+function! QuitIfNotModifiedOrStartRecording()
+    " https://stackoverflow.com/questions/13107453
+    if ! &mod
+        quit
+    else
+        " https://vi.stackexchange.com/questions/7844
+        " https://stackoverflow.com/questions/43654089
+        let c = nr2char(getchar())
+        execute 'normal! q'.c
+    endif
+endfunction
+
+" To settle the confusion I've had as to how to tell whether lines will
+" hard-wrap (with appropriate EOL characters inserted).
+" Also seems that testing this will require testing more than just one thing,
+" hence the function.
+" Some references on hard wrapping behavior:
+" https://stackoverflow.com/questions/1290285
+" http://vimdoc.sourceforge.net/htmldoc/change.html#fo-table
+" https://vim.fandom.com/wiki/Automatic_word_wrapping
+function! WillBreakLines()
+    " This '&l:' prefix specifically gets the local option, as setlocal (though
+    " I think also works for local variables that are not internal VIM options).
+    " The 'l' is not interchangeable with other characters. See :help let for
+    " some information.
+    " Right hand side is checks if the option string contains the 't' character.
+    if &l:tw > 0 && &l:formatoptions =~ 't'
+        " Otherwise 0 returned implicitly
+        return 1
+    endif
+endfunction
+
+" So the below method of highlighting the ends of long lines does so with the
+" colors I want, rather than the default ~yellow.
+" TODO try to find some way of only applying this colorscheme change during this
+" command (in case i end up using this highlighting feature in some other
+" cases...)
+" TODO is 'Search' some kind of builtin [match?] group, of just defined de novo
+" here? ':help match' didn't really clarify...
+hi Search ctermbg=Red
+
+" TODO make autosplitting of long lines toggle alone with this (via
+" formatoptions 't')? (couldn't just WillBreakLines in each call then, before
+" deciding to do this at all, as then we couldn't switch it both ways i think)
+" or could just leave it s.t. it never does this for if WillBreakLines is true
+" for the filetype on load.
+" TODO make exception for URLs if possible. i often don't want to break those.
+" To toggle highlighting of columns >80 in long lines.
+" https://stackoverflow.com/questions/19594119
+" TODO possible to make this faster? or force display to update more immediately
+" after?
+" Starting at 0 so that first call (at end of this file) activates it
+" (if appropriate given wrap options)
+" Map <leader>h to this below.
+let s:activatedh = 0
+function! ToggleH()
+    if !WillBreakLines()
+        return
+    endif
+    if s:activatedh == 0
+        let s:activatedh = 1
+        " https://vi.stackexchange.com/questions/15955
+        execute 'match Search "\%>' . &l:tw . 'v.\+"'
+    else
+        let s:activatedh = 0
+        match none
+    endif
+endfunction
+
 syntax on
 filetype plugin indent on
 
-" Prevents vim from breaking in the middle of words, the default.
 " May prefer to break at space + punctuation? See breakat option.
 " TODO is this even worth it, if hard-breaking at 80 (w/ tw)?
+" TODO TODO figure out how formatoptions 't' works (one letter in option string,
+" set/unsettable with 'set formatoptions+=t' / 'set formatoptions-=t') and how
+" it interacts with this, wrap/nowrap, and textwidth.
+" try to set things up such that only one flag is actually controlling wrap,
+" whether that is the 't' formatoption or wrap (so that flag can be used in
+" ToggleH, and so default behaviors can be set for different filetypes)
+" TODO also figure out where default format options are coming from for
+" different filetypes. for example, opening a ft=cpp file i get 'croql',
+" but opening ft=launch, i get 'tcq'.
+" NOTE: see the discussion on the same wrapping topic above ToggleH Some people
+" are also saying wrap / linebreak (at least by default?) don't actually make
+" new lines (inserting appropriate characters), so maybe this never did what I
+" wanted.
+" Prevents vim from breaking in the middle of words, the default.
 set linebreak
 
 " TODO maybe remap gj and gk to j / k (works within single lines, I think?)
@@ -183,6 +273,10 @@ set expandtab
 "set cinkeys=0{,0},0),:,!^F,o,O,e
 set cinkeys-=0#
 set cinoptions+=#1s
+
+" Since FreeCAD macros are written in Python.
+" This is the extension that FreeCAD gives them (at least by default).
+au! BufNewFile,BufRead *.FCMacro setlocal ft=python
 
 " TODO how to define these kind of options together, for reuse with diff
 " filetypes?
@@ -279,6 +373,7 @@ au Filetype arduino_keywords_txt setlocal shiftwidth=8 noexpandtab softtabstop=0
 
 au! BufNewFile,BufRead *.launch setlocal ft=launch
 au Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
+"textwidth=0
 
 set spellfile=$HOME/src/dotfiles/vim/spell/spellfile.utf-8.add
 au! BufNewFile,BufRead *.md setlocal ft=markdown
@@ -309,6 +404,8 @@ au BufNewFile,BufRead,BufFilePost *.cir setlocal filetype=spice
 " cover this file (which will be linked to by ~/.vimrc), as well as any other
 " vimscript.
 autocmd FileType vim setlocal formatoptions-=c formatoptions-=r formatoptions-=o
+
+au Filetype xml setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 
 set backspace=indent,eol,start
 set autoindent
@@ -401,6 +498,7 @@ set laststatus=2
 " enables mouse (just scrolling? selection, etc?) in [a]ll modes
 set mouse=a
 
+nnoremap q :call QuitIfNotModifiedOrStartRecording()<CR>
 
 " TODO shortcut to select current line + next line, and then zg? (i do it a lot)
 
@@ -419,31 +517,6 @@ nnoremap <leader>m o# TODO maybe
 nnoremap <leader>c o#<Esc>
 nnoremap <leader>d o"""<cr>"""<Esc>kA
 nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
-
-" So the below method of highlighting the ends of long lines does so with the
-" colors I want, rather than the default ~yellow.
-" TODO try to find some way of only applying this colorscheme change during this
-" command (in case i end up using this highlighting feature in some other
-" cases...)
-hi Search ctermbg=Red
-
-" TODO make this relative to current textwidth (maybe one of two diff colors
-" if text is between current tw and 80, one color for either direction?)
-" TODO make exception for URLs if possible. i often don't want to break those.
-" To highlight columns >80 in long lines. Toggle-able.
-" https://stackoverflow.com/questions/19594119
-let s:activatedh = 1
-function! ToggleH()
-    if s:activatedh == 0
-        let s:activatedh = 1
-        match Search '\%>80v.\+'
-    else
-        let s:activatedh = 0
-        match none
-    endif
-endfunction
-nnoremap <leader>h :call ToggleH()<CR>
-match Search '\%>80v.\+'
 
 " TODO TODO TODO get one of the things below working for print inserts
 " TODO maybe modify this to also select the current word, and copy that
@@ -477,12 +550,13 @@ nnoremap <leader># o<Esc>79i#<Esc>
 " TODO TODO some leader cmds for inserting docstring lines (settling on a
 " convention i want to use first, from the ~2 big ones)
 
+nnoremap <leader>h :call ToggleH()<CR>
+
 " TODO maybe add a hotkey for "sourcing" vimrc if not already one
 
 " TODO TODO if i dont improve the zg behavior w/ the various syntaxes for python
 " multiline strings, maybe make leader cmd to fix behavior for some of the more
 " common syntaxes that currently have problems
-
 
 " TODO maybe add <leader> commands for inserting common (groups of?) import
 " statements (:source ~/.vimrc  OR  :source $MYVIMRC )
@@ -528,4 +602,7 @@ endfunction
 " python logging outputs. Otherwise, lines beneath current that would be wrapped
 " are not displayed at all, only displaying the @ character at the start...
 set display+=lastline
+
+" At end to ensure it happens after any filetypes are redefined at load.
+call ToggleH()
 
