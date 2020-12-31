@@ -1,0 +1,67 @@
+
+import os
+import subprocess
+
+import FreeCAD
+import Mesh
+
+
+# TODO try env vars, if those even works in here
+SLICER_EXE = ('/home/tom/apps/prusa3d_2_2_9_1/'
+    'PrusaSlicer-2.2.0+linux-x64-202003211856.AppImage'
+)
+
+# TODO some setting to allow prompting each time (w/ gui? prompting at terminal
+# possible?)
+# TODO option for rel / abs dir?
+# Relative to directory with current .FCStd file
+REL_STL_DIR = 'stl'
+
+doc = App.ActiveDocument
+fcstd_dir = os.path.split(doc.FileName)[0]
+stl_dir = os.path.join(fcstd_dir, REL_STL_DIR)
+os.makedirs(stl_dir, exist_ok=True)
+
+# TODO prompt for name for stl if multiple things selected
+# (or join the names?) (for now, just doing nothing in that case)
+selection = Gui.Selection.getSelection(doc.Name)
+# TODO first filter selection to printable (mesh exportable) stuff? how?
+
+# TODO (gui?) prompt for overwrite on stl export if exists
+# (for now, just doing nothing in that case)
+
+# TODO maybe try rotating so that bounding box fits in print bed
+# (need to specify print bed size in here...)
+# TODO maybe try flipping so largest flat face is down
+# (or would something else make more sense?)
+
+stl_fname = None
+if len(selection) == 0:
+    # TODO maybe export whole FCStd / all visible stuff is there is no
+    # selection?  (and rename to slice.FCMacro is supporting that too)
+    print("nothing selected.")
+
+elif len(selection) == 1:
+    obj = selection[0]
+    # Just hoping the label doesn't have any invalid characters for files on
+    # this system.
+    stl_fname = os.path.join(stl_dir, obj.Label + '.stl')
+    if os.path.exists(stl_fname):
+        print(f'{stl_fname} already exists!')
+        # would rather raise an error here but just not sure it's fine to do
+        # that in macros. probably is...
+        stl_fname = None
+    else:
+        print(f'writing {stl_fname}')
+        # TODO does arg need to be a list?
+        # TODO check return of this / catch some type of exception in case
+        # selection not supported -> good error message (if not handling earlier
+        # by filtering selection or something...)
+        Mesh.export([obj], stl_fname)
+else:
+    print("multiple items in selection. not supported.")
+
+if stl_fname is not None:
+    # Returns ~immediately. Does not wait for slicer to close.
+    subprocess.Popen([SLICER_EXE, stl_fname])
+
