@@ -66,6 +66,8 @@ Plugin 'VundleVim/Vundle.vim'
 " if it can't, may want to handle this one manually.
 Plugin 'Valloric/YouCompleteMe'
 
+Plugin 'dense-analysis/ale'
+
 " For "aligning text" figure out how to use.
 Plugin 'godlygeek/tabular'
 
@@ -73,11 +75,8 @@ Plugin 'godlygeek/tabular'
 " TODO delete if i don't like it. haven't used much.
 Plugin 'airblade/vim-gitgutter'
 
+" TODO what does this do again?
 Plugin 'henrik/vim-indexed-search'
-
-" TODO try dense-analysis/ale for linting, but drop if annoying.
-" https://www.reddit.com/r/vim/comments/c2f1bl top comment says he prefers
-" offline 'black' b/c ALE is annoying.
 
 " Provides the cfi (current function info) function used below, in custom
 " statusline.
@@ -139,7 +138,11 @@ function! QuitIfNotModifiedOrStartRecording()
         " https://vi.stackexchange.com/questions/7844
         " https://stackoverflow.com/questions/43654089
         let c = nr2char(getchar())
-        execute 'normal! q'.c
+        " (i don't think i actually want to leave the macro recording option
+        " here, as usually it just ends up being frustrating when i'm trying to
+        " quit. may want to rebind either the quit shortcut / macro recording,
+        " if i end up wanting the option to record macros.)
+        "execute 'normal! q'.c
     endif
 endfunction
 
@@ -326,6 +329,10 @@ let g:pyindent_continue = '&shiftwidth'
 " TODO maybe use shebang when possible, since that could specify python
 " version (now i'm exclusively using shebang, and incidentally also probably
 " relying on file being executable
+" TODO might want to just use 'map' instead, as there seem to be some modes not
+" covered bewteen nmap/imap that i might still want... not 100% sure 'map' is
+" what i want either though...
+" https://vi.stackexchange.com/questions/2089
 au BufRead *.py nmap <F5> :w<cr>:!./%<cr>
 au BufRead *.py imap <F5> <Esc>:w<cr>!./%<cr>
 "au BufRead *.py nmap <F5> :w<cr>:!python %<cr>
@@ -418,6 +425,68 @@ endif
 " To turn off the preview window in YouCompleteMe (or other completions)
 set completeopt-=preview
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Configuration for the ale plugin. Can use command :ALEInfo to troubleshoot.
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Need to install the following separately:
+" flake8:
+"  - `sudo apt install flake8` (works on 18.04)
+" black:
+" - `python3 -m pip install black` (works on 18.04)
+"   - still seems to be accessible inside virtual environments when installed
+"     this way, though only tested w/ the same python3...
+"
+"   - didn't want to use the snap installation option as i thought it might be
+"     slower
+
+" TODO want to address cursor-disappearing-near-warnings/errs issue, like:
+" https://github.com/dense-analysis/ale/issues/1470
+" before trying to enable linters again
+" TODO also try pydocstyle, mypy, and maybe pylint (not sure about overlap w/
+" flake8 on the last one)
+" By default, it seems ['flake8', 'mypy', 'pylint', 'pyright'] linters would
+" otherwise be enabled.
+let g:ale_linters = {'python': []}
+"let g:ale_linters = {'python': ['flake8']}
+" See "How can I run linters only when I save files?" section in README
+" https://github.com/dense-analysis/ale if I find the linters annoying while
+" typing (the below is probably the option I want, but there were more).
+"let g:ale_lint_on_text_changed = 'never'
+
+" :ALEInfo doesn't seem to include supported fixers, but :ALEFixSuggest
+" (found via ':h ale') has some, though not sure how complete.
+" After manually invoking :ALEFix, :ALEInfo should include the corresponding
+" command and exit code in the 'Command History:' section at the bottom. 127
+" probably means the fixer was not found.
+" TODO configure vim python line length settings to blacks default of 88 or
+" change blacks to lower (leaning towards former...)
+" TODO also try isort (+ compare w/ autoimport / reorder-python-imports)
+" For flake8 and black to play nicer together, might need something like:
+" https://black.readthedocs.io/en/stable/compatible_configs.html#flake8
+let g:ale_fixers = {'python': ['black']}
+" Because I prefer single quotes for strings by default.
+let g:ale_python_black_options = '--skip-string-normalization'
+
+" Black does seem to find pyproject.toml files in parent directories to the
+" edited file.
+let g:ale_fix_on_save = 0
+" This :bar thing may not work on Windows
+" https://vi.stackexchange.com/questions/3885
+" TODO ideally, find some way to have the redraw happen right after ALEFix
+" finishes, as it might take a variable amount of time depending on the fixers
+" and the input...
+" This sleeps for 200ms then forces redraw. Otherwise, takes a few seconds to
+" update display unless you move the cursor or something.
+nmap <F2> :ALEFix<cr> \| :sleep 200m<cr> \| :redraw!<cr>
+"nmap <F2> :ALEFix<cr>
+
+"let g:ale_warn_about_trailing_whitespace = 0
+
+" TODO possible to configure black to ignore my "import ipdb; ipdb.set_trace()"
+" lines? NO. would have to try post processing or something.
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 " For easier configuring on a file by file basis with the # vim: options line
 " set modeline
 
@@ -425,9 +494,8 @@ set completeopt-=preview
 " Too busy. Want a way to spellcheck quickly though, and then turn it off.
 " set spell spelllang=en_us
 
-" Commented since I don't use these anymore, and might be better use out of
-" these F keys
-" For Overtone / Clojure interfacing
+" Might try to find better uses for F2/3 keys, etc. Plugin for these commands is
+" no longer something I use.
 "map <F2> :Eval<ENTER>
 "map <F3> :Connect<ENTER>1<ENTER><ENTER>
 
@@ -572,10 +640,6 @@ inoremap <F12> <C-o>:syntax sync fromstart<CR>
 " TODO are my .sh tab settings correct?
 " (apparently, some spec says to use tabs?)
 
-
-set pastetoggle=<F2>
-
-
 " The link says this should enable/disable paste mode automatically, for
 " certain types of pasting.
 " https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
@@ -603,6 +667,9 @@ endfunction
 " are not displayed at all, only displaying the @ character at the start...
 set display+=lastline
 
+" TODO fix default state of this when opening files where there are long lines
+" but there is not the 't' formatoption (currently shows red for me in a cpp
+" file, but i can't switch off w/o enabling that formatoption b/c my check)
 " At end to ensure it happens after any filetypes are redefined at load.
 call ToggleH()
 
