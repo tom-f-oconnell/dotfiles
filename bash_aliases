@@ -174,8 +174,6 @@ export DEFAULT_VENV_NAME="venv"
 # shopt to only change opions for the subshell.
 # https://stackoverflow.com/questions/12179633
 # TODO may need to rename this if this ends up shadowing some executable i use
-# TODO TODO also take path as optional positional argument, for calling from
-# test directories outside of project source
 function activate() {
     # If a virtual env is already active, just notify and exit.
     # Originally I was thinking of not notifying, but I don't want this to
@@ -188,7 +186,14 @@ function activate() {
     out=$(
     shopt -s dotglob
     shopt -s nullglob
-    possible=(*/bin/activate */Scripts/activate)
+
+    if [ -z "$1" ]; then
+        possible=(*/bin/activate */Scripts/activate)
+    else
+        # TODO fail w/ error message if $1 is not directory
+        possible=($1/*/bin/activate $1/*/Scripts/activate)
+    fi
+
     if [ "${#possible[@]}" -eq 0 ]; then
         # This nowarn option is so far only set when `activate` is called from
         # my `pyp` function.
@@ -601,6 +606,8 @@ function link_to_vagrant() {
     #fi
 }
 
+alias c='cd'
+
 # TODO maybe add these:
 # ti (test import) ~ python -c 'import $1'
 # ppv (pv is common i think) (python package version)
@@ -618,6 +625,9 @@ alias d="diff_or_deactivate"
 alias rv="echo 'rm -rf venv' && rm -rf venv"
 
 alias pp="pyp"
+
+# TODO maybe add (aliases->) fn to make a venv w/ arbitrary python version in
+# tmp dir?
 
 alias vu="vagrant up && vagrant ssh"
 alias vr="vagrant reload && vagrant ssh"
@@ -694,6 +704,8 @@ function git_fn() {
 # TODO TODO alias mv to some function that first tries git mv, then mv if not
 # in a git repo (same with rm?) (or prompt if it detects the argument(s) of
 # either are in git control?)
+alias gmv='git mv'
+alias grm='git rm'
 
 alias g='git_fn'
 # TODO delete this if i get used to using just 'g=git_fn' for this
@@ -712,7 +724,9 @@ alias gc='git commit -m'
 # have wrap git push, so that if it fails b/c there are remote changes,
 # prompt to automatically rebase and retry + prompt to open github
 # in web browser (+improve message on diffs? or is it already OK?)
-alias gp='git push --follow-tags'
+# (not really intending to actually do both, but rather just want the
+# convenience of using gp for both pushing and pulling)
+alias gp='git pull && git push --follow-tags'
 alias gpr='git pull --rebase'
 
 # "[g]it [s]tash" ([a]dd)
@@ -902,7 +916,7 @@ function clone() {
     fi
 }
 # TODO TODO maybe overload this to "clear" in no-arg case
-alias c="clone"
+alias cl="clone"
 
 function reload_bashrc() {
     # Might still want to do this, in cause sourcing screws with other
@@ -1024,6 +1038,7 @@ alias py='python'
 alias py3='python3'
 alias p='python'
 alias p3='python3'
+alias p3m='python3 -m'
 # TODO also print full python version number
 # TODO also print real path if any symlinks
 alias wp='printf "\`which python\`="; which python'
@@ -1071,6 +1086,13 @@ alias wm='which_module'
 
 alias pi='pip install'
 alias pir='pip install -r'
+# TODO TODO change this to a function that uninstalls python package(s) defined
+# in setup.py in current directory if no argument is specified.
+# (and maybe make another alias that combines this with subsequently
+# reinstalling, via 'pip install .'?). could probably shortcut to just
+# uninstalling the name of the current directory / directory name of git repo
+# root. (pr is a builtin tool related to printing text files, but probably still
+# fine to use that for this alias...)
 # Only this one seems to need confirmation (and thus -y), for some reason.
 alias pu='pip uninstall -y'
 
@@ -1196,6 +1218,8 @@ if ! [ -x "$(command -v vi)" ]; then
     alias vi='vim'
 fi
 alias v='vi'
+
+alias black='black --skip-string-normalization'
 
 # It seems if it was saved w/ a diff version of python or something, nothing is
 # printed? kind of odd, considering it worked with 3 and I thought i would have
@@ -1324,6 +1348,7 @@ alias gr="grep"
 # Main difference between -r and -R seems to be that -R follows symlinks.
 # Using this syntax for multiple exclude-dir b/c it's friendly with grepym.
 alias grepy="grep -R --include=\*.py --exclude-dir=site-packages"
+alias gpy="grepy"
 # This will lookup and use the alias definition above at runtime.
 alias grepym="grep_py_in_my_repos.py"
 
@@ -1386,6 +1411,9 @@ alias fvd="cd $FOUNDRY_VTT_DATA/Data"
 # should...
 alias normalize_foundry_oggs="find $FOUNDRY_SOUNDS -name '*.ogg' -type f -exec normalize-ogg {} \;"
 
+# Just to quickly check if internet is working by pinging one of the Google DNS
+# servers.
+alias p8="ping -c 2 8.8.8.8"
 
 # TODO make an alias for this (count_files_in_subdirs or something)
 #du -a | cut -d/ -f2 | sort | uniq -c | sort -nr
