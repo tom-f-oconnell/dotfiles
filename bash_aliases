@@ -720,17 +720,27 @@ alias gca='git_commit_add'
 alias gac='git_commit_add'
 
 alias gc='git commit -m'
+
 # TODO TODO either here or somewhere else, which maybe gets called here,
 # have wrap git push, so that if it fails b/c there are remote changes,
 # prompt to automatically rebase and retry + prompt to open github
 # in web browser (+improve message on diffs? or is it already OK?)
+# TODO what was --follow-tags for again?
 # (not really intending to actually do both, but rather just want the
 # convenience of using gp for both pushing and pulling)
 alias gp='git pull && git push --follow-tags'
+
 alias gpr='git pull --rebase'
+# git [u]pdate (not a real command, just mnemonic)
+# (and gp is already taken, and u is second letter of p[u]ll)
+alias gu='git pull'
+alias gur='git pull --rebase'
 
 # "[g]it [s]tash" ([a]dd)
 alias gsa='git stash'
+# "[g]it [s]tash" (p[u]sh)
+alias gsu='git stash'
+
 alias gsl='git stash list'
 alias gsp='git stash pop'
 
@@ -1095,6 +1105,10 @@ alias pir='pip install -r'
 # fine to use that for this alias...)
 # Only this one seems to need confirmation (and thus -y), for some reason.
 alias pu='pip uninstall -y'
+alias pup='pip install --upgrade pip'
+
+# "sphinx test" (sb "build" was taken by source bash)
+alias st='make html && xdg-open build/html/index.html'
 
 # TODO also alias mf3 to a version of that that forces python3
 # (maybe have former intead just always default to python3 if available though?)
@@ -1436,4 +1450,6 @@ alias p8="ping -c 2 8.8.8.8"
 #    tar -cjvf "$bz2_output" "$1"
 #}
 #alias bzdir='bzip2_directory'
+
+alias sts='showsync'
 

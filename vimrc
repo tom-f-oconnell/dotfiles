@@ -42,6 +42,12 @@ set rtp+=~/.vim/bundle/Vundle.vim
 " TODO test that the below still removes audible bell on windows
 set belloff=all
 
+" TODO TODO vundle hasn't been updated in several years... maybe i should use
+" some other VIM package manager
+
+" TODO TODO TODO why was this not changing which python is actually used?
+"let g:ycm_server_python_interpreter = '/usr/bin/python3.6'
+
 " TODO TODO configure s.t. vundle doesn't add stuff to my dotfiles repo
 " in a way that would either be confusing or interfere with anything.
 " this probably means either telling git to ignore some dir or have vundle
@@ -64,7 +70,36 @@ Plugin 'VundleVim/Vundle.vim'
 
 " TODO test vundle can always compile this (ideally on WSL too)
 " if it can't, may want to handle this one manually.
-Plugin 'Valloric/YouCompleteMe'
+"Plugin 'Valloric/YouCompleteMe'
+
+" Trying to see if feature added in
+" https://github.com/VundleVim/Vundle.vim/pull/604 supports installing an older
+" version of YCM (referenced by commit, for now), as I currently need to get it
+" to work with VIM <8.2 (7.4 [maybe patched to ~8?] vim-gtk).
+" TODO might need to update vundle for this to work?
+" TODO could also just try forking and keeping my HEAD at this commit if i can't
+" get this to work
+" at this this syntax didn't work
+"Plugin 'Valloric/YouCompleteMed@d98f896'
+
+" My fork at d98f896.
+" TODO TODO TODO still getting the same error as in ppa case!!! fix!
+" YouCompleteMe unavailable: invalid syntax (vimsupport.py, line 184)
+" TODO maybe i just need to build YouCompleteMe myself again, or at lesat check
+" that i still have any requried dependencies (before installing maybe?)
+" TODO might try finding last commit still w/ 3.5 support and then just using
+" sysem python3. i tried using a 3.6 venv but that didn't work
+" python3 install.py. also tried `python3.6 install.py --clang-completer`.
+" https://github.com/ycm-core/YouCompleteMe/issues/3711 seems to indicate it
+" should work, but maybe that support was added after the commit i reverted to?
+" ok so https://github.com/ycm-core/YouCompleteMe/issues/3732
+" `:py3 print( __import__( 'sys' ).version )` -> 3.5, despite 3.6 being used for
+" build. why?
+" I also tried setting the path to the inteprete to match build python (see
+" above), but it didn't seem to change anything:
+" https://github.com/ycm-core/YouCompleteMe/issues/2917
+" https://github.com/ycm-core/YouCompleteMe/issues/2136
+Plugin 'tom-f-oconnell/YouCompleteMe'
 
 Plugin 'dense-analysis/ale'
 
@@ -181,7 +216,7 @@ hi Search ctermbg=Red
 " or could just leave it s.t. it never does this for if WillBreakLines is true
 " for the filetype on load.
 " TODO make exception for URLs if possible. i often don't want to break those.
-" To toggle highlighting of columns >80 in long lines.
+" To toggle highlighting of columns >88 in long lines.
 " https://stackoverflow.com/questions/19594119
 " TODO possible to make this faster? or force display to update more immediately
 " after?
@@ -207,7 +242,7 @@ syntax on
 filetype plugin indent on
 
 " May prefer to break at space + punctuation? See breakat option.
-" TODO is this even worth it, if hard-breaking at 80 (w/ tw)?
+" TODO is this even worth it, if hard-breaking at 88 (w/ tw)?
 " TODO TODO figure out how formatoptions 't' works (one letter in option string,
 " set/unsettable with 'set formatoptions+=t' / 'set formatoptions-=t') and how
 " it interacts with this, wrap/nowrap, and textwidth.
@@ -252,18 +287,20 @@ command W w
 " Cutoff, beyond which, vim will wrap, breaking with a new-line
 " TODO should this actually be 79 to follow PEP8? maybe set in python files?
 " does this / PEP8 count newline?
-set textwidth=80
+" Changed to 88 for default black line length to work.
+" TODO test whether it is off-by-one wrt black though!
+set textwidth=88
 
 " TODO maybe if i would get "No identifier under cursor" error (trying to enter
 " insert mode when caps lock is on), switch caps lock off and enter insert mode?
 " TODO or always display some indicator that caps lock is on (if possible)?
 
-" set colorcolumn=80
+" set colorcolumn=88
 " To change the color of the colorcolumn use :highlight ColorColumn, e.g.
 " highlight ColorColumn ctermbg=lightgrey guibg=lightgrey
 
 " TODO do i want these defaults or not?
-" Linux kernel uses 8, but I like sticking to <=80 chars per line, and
+" Linux kernel uses 8, but I like sticking to <=88 chars per line, and
 " (even small) multiples of 8 cut into that pretty quick.
 set tabstop=4
 set softtabstop=4
@@ -611,10 +648,10 @@ nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
 nnoremap <leader>' o'''<Esc>
 nnoremap <leader>" o"""<Esc>
 nnoremap <leader>` o```<Esc>
-" TODO maybe 79? maybe get from that vim variable (textwidth)?
-" (80 might have been making last char wrap)
+" TODO maybe 87/89? maybe get from that vim variable (textwidth)?
+" (88 might have been making last char wrap)
 " maybe also add more blank lines (on both sides?)?
-nnoremap <leader># o<Esc>79i#<Esc>
+nnoremap <leader># o<Esc>87i#<Esc>
 " TODO TODO some leader cmds for inserting docstring lines (settling on a
 " convention i want to use first, from the ~2 big ones)
 

@@ -19,4 +19,5 @@ export DATA_DIR="/mnt/nas/Kristina/direct2nas_experiments"
 export IMAGING_EXP_DIR="$HOME/data/flies"
 
 export OLFACTOMETER_HARDWARE_DIR="$HOME/src/tom_olfactometer_configs/hardware"
-export OLFACTOMETER_DEFAULT_HARDWARE="dual_manifold1"
+export OLFACTOMETER_DEFAULT_HARDWARE="dual_manifold2"
+

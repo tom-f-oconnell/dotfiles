@@ -157,20 +157,21 @@ export FIGNORE=".egg-info"
 # source control)?
 # For now, I'm just going to opt to not have the conda environment loaded by
 # default, as: https://stackoverflow.com/questions/54429210
-#if [ -f /opt/ros/kinetic/setup.bash ]; then
-#  source /opt/ros/kinetic/setup.bash
-#fi
+if [ -f /opt/ros/kinetic/setup.bash ]; then
+  source /opt/ros/kinetic/setup.bash
+fi
 if [ -f /opt/ros/melodic/setup.bash ]; then
   source /opt/ros/melodic/setup.bash
 fi
 if [ -f /opt/ros/noetic/setup.bash ]; then
   source /opt/ros/noetic/setup.bash
 fi
+
 if [ -f $HOME/catkin/devel/setup.bash ]; then
   source $HOME/catkin/devel/setup.bash
 fi
 ## I think this can conflict with the devel environment.
-##source $HOME/catkin/install/setup.bash
+#source $HOME/catkin/install/setup.bash
 
 # TODO if can't figure out how to make ROS and conda workable concurrently (w/o
 # editing this file), make make one flag env var to control toggle.
@@ -354,6 +355,7 @@ fi
 #unset __conda_setup
 ## <<< conda init <<<
 
+# TODO TODO TODO TODO uncomment!
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 #__conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
