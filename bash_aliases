@@ -138,6 +138,17 @@ function _check_one_nonexistant_dir_arg() {
 # This is intended to return 0 (for True, because BASH) if the function is
 # called from within EITHER a normal virtual environment OR a conda environment.
 function in_virtual_env() {
+    # From combining two parts of Victoria Stuart's answer here:
+    # https://stackoverflow.com/questions/1871549
+    # to also support conda environments (which might all be included in first case)
+    # TODO see same link for how to generalize the below line to not err in some earlier
+    # versions of python
+    if [ -n "$CONDA_DEFAULT_ENV" ]; then
+        return 0
+    elif [ -n "$VIRTUAL_ENV" ]; then
+        return 0
+    fi
+
     # Contains both commented attempt and solution I ended up using:
     # https://stackoverflow.com/questions/15454174
 
@@ -150,7 +161,7 @@ function in_virtual_env() {
     # May have some edge cases, as the comment didn't get much scrutiny...
     # This at least seems to work correctly (w/ error check after) for the
     # python3.6 venv and conda base env on blackbox (May 2020).
-    INVENV=$( python -c 'import sys ; print( 0 if sys.prefix == sys.base_prefix else 1 )' 2>/dev/null )
+    IN_VENV=$( python -c 'import sys ; print( 0 if sys.prefix != sys.base_prefix else 1 )' 2>/dev/null )
     if ! [ "$?" -eq 0 ]; then
         # Presumably the python check erring means we are NOT in a venv...
         # 1 for False here (b/c BASH)
