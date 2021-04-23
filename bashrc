@@ -322,53 +322,36 @@ if [ -x "$(command -v direnv)" ]; then
     eval "$(direnv hook bash)"
 fi
 
-# TODO TODO TODO possible to make a conda init block that will work across all
-# my conda installations? otherwise how to deal w/ the fact that conda wants to
-# put this in bashrc, but i want to manage bashrc in source control, in a
-# deployment independent manner...
+# TODO possible to make a conda init block that will work across all my conda
+# installations? otherwise how to deal w/ the fact that conda wants to put this in
+# bashrc, but i want to manage bashrc in source control, in a deployment independent
+# manner...
 
 # TODO see if https://github.com/rickstaa/.ros_conda_wrapper has anything of
 # value (though unclear whether i'm supposed to still include conda and / or ROS
 # lines of my own in bashrc, and if so, how to order everything)
 
-# TODO TODO at least test both versions of this block on my main analysis
-# machines w/ my main conda envs, and pick one that works and delete the other.
-# or otherwise try to pick the more recent version.
-
 # TODO deal w/ anaconda sections in a deployment-conda-version-specific manner
 # if necessary (try to avoid though) (may also want to delete any commented
 # blocks, in case conda still detects and tries to manage it)
-# added by Anaconda3 2018.12 installer
-## >>> conda init >>>
-## !! Contents within this block are managed by 'conda init' !!
-#__conda_setup="$(CONDA_REPORT_ERRORS=false '/home/tom/anaconda3/bin/conda' shell.bash hook 2> /dev/null)"
-#if [ $? -eq 0 ]; then
-#    \eval "$__conda_setup"
-#else
-#    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
-#        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
-#        CONDA_CHANGEPS1=false conda activate base
-#    else
-#        \export PATH="/home/tom/anaconda3/bin:$PATH"
-#    fi
-#fi
-#unset __conda_setup
-## <<< conda init <<<
 
-# TODO TODO TODO TODO uncomment!
+# TODO at least test this on a machine without conda, and maybe refactor so this block
+# only gets called if the $HOME/anaconda3[/bin/conda] dir[/executable] exist?
+
+# Added by the 2020.11 Anaconda installer BASH script.
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-#__conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-#if [ $? -eq 0 ]; then
-#    eval "$__conda_setup"
-#else
-#    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
-#        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
-#    else
-#        export PATH="/home/tom/anaconda3/bin:$PATH"
-#    fi
-#fi
-#unset __conda_setup
+__conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/tom/anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
 # <<< conda initialize <<<
 
 # Moved this stuff after conda setup, so that (in a fresh shell) conda isn't
