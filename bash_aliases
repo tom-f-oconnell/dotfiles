@@ -1464,3 +1464,10 @@ alias p8="ping -c 2 8.8.8.8"
 
 alias sts='showsync'
 
+# Not that this is exactly same output format as `ifconfig` had, but apparently
+# `ifconfig` has long been deprecated in favor of `ip`, so doing this rather than
+# installing `net-tools` to delay the inevitable.
+# https://askubuntu.com/questions/1031640
+# TODO include message warning + saying what we are actually calling?
+alias ifconfig='ip -c a'
+
