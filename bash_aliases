@@ -1440,6 +1440,11 @@ alias normalize_foundry_oggs="find $FOUNDRY_SOUNDS -name '*.ogg' -type f -exec n
 # servers.
 alias p8="ping -c 2 8.8.8.8"
 
+# `grep http` is just to cut # of lines in two
+alias ppa_list='apt policy | grep ppa | grep http'
+alias ppalist='ppa_list'
+alias ppals='ppa_list'
+
 # TODO make an alias for this (count_files_in_subdirs or something)
 #du -a | cut -d/ -f2 | sort | uniq -c | sort -nr
 
