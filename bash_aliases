@@ -619,9 +619,6 @@ function link_to_vagrant() {
 
 alias c='cd'
 
-alias s='ssh'
-alias sx='ssh -X'
-
 # TODO maybe add these:
 # ti (test import) ~ python -c 'import $1'
 # ppv (pv is common i think) (python package version)
@@ -1011,8 +1008,14 @@ function wake_host() {
 }
 alias wakenas='wake_host nas'
 
-alias scpr='scp -r'
+alias s='ssh'
+alias sx='ssh -X'
 alias sshx='ssh -X'
+
+alias sa='ssh atlas'
+alias sax='ssh -X atlas'
+
+alias scpr='scp -r'
 
 # Just obfuscating a bit, in case somebody is scraping Github for SSH aliases...
 # There's probably a better way.
