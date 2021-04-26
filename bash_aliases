@@ -619,6 +619,9 @@ function link_to_vagrant() {
 
 alias c='cd'
 
+alias s='ssh'
+alias sx='ssh -X'
+
 # TODO maybe add these:
 # ti (test import) ~ python -c 'import $1'
 # ppv (pv is common i think) (python package version)
@@ -1017,6 +1020,7 @@ duck_pfx="eftm."
 shsp1=12
 shsp2=48
 alias bb="ssh tom@${duck_pfx}duckdns.org -p ${shsp1}${shsp2}"
+alias bbx="ssh tom@${duck_pfx}duckdns.org -p ${shsp1}${shsp2} -X"
 
 # TODO what was this for again? forcing use of password? but why?
 alias snk='ssh -o PubkeyAuthentication=no'
@@ -1287,7 +1291,6 @@ alias dt="dot"
 
 alias m="cd ~/src/misc"
 
-alias s="cd ~/src/scripts && ls"
 alias 2p="cd ~/src/hong2p && ls"
 alias 2pp="cd ~/src/hong2p && vi populate_db.py"
 alias 2pg="cd ~/src/hong2p && vi gui.py"
