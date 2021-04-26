@@ -124,6 +124,38 @@ function gtest() {
 #    return $eval_exit_code
 #}
 
+
+# Use like:
+# ```
+# if _check_one_nonexistant_arg "$@"; then
+#     <what to do if validation was successful>
+# fi
+# ```
+#
+# ...or:
+# ```
+# if ! _check_one_nonexistant_arg "$@"; then
+#     return 1
+# fi
+# ```
+#
+# Above syntax options work at least in the called-from-within-a-function case.
+function _check_one_nonexistant_arg() {
+    if [ "$#" -ne 1 ]; then
+        # TODO TODO TODO fix so it actually reports function name if possible
+        # currently it reports 'bash' (as $0). probably same below.
+        #echo "Usage: $0 FILE_TO_MAKE" >&2
+        echo "must pass single non-existant filename"
+        return 1
+    elif [ -e "$1" ]; then
+        echo "'$1' already exists"
+        return 1
+    fi
+    return 0
+}
+
+# See comments above previous function `_check_one_nonexistant_arg` for appropriate
+# syntax when using this.
 function _check_one_nonexistant_dir_arg() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: $0 DIRECTORY_TO_MAKE" >&2
@@ -185,6 +217,10 @@ export DEFAULT_VENV_NAME="venv"
 # shopt to only change opions for the subshell.
 # https://stackoverflow.com/questions/12179633
 # TODO may need to rename this if this ends up shadowing some executable i use
+# (maybe better to just do that now, if i'm only going to use through alias anyway...)
+# TODO what was the case i found regarding conda where this was not idempotent
+# (it didn't seem to refuse activating when some [conda?] thing was already active, i
+# think. maybe it was on atlas 18.04 reinstall where i encountered it.)
 function activate() {
     # If a virtual env is already active, just notify and exit.
     # Originally I was thinking of not notifying, but I don't want this to
@@ -193,6 +229,11 @@ function activate() {
         echo "Some virtual environment already active"
         return 3
     fi
+
+    # TODO TODO also support conda envs in single-positional-argument-passed case
+    # (maybe following any existant directories of same name [but warning about
+    # collision] if both are found)
+    # (though we do have the alias 'ca' too currently...)
 
     out=$(
     shopt -s dotglob
@@ -627,8 +668,15 @@ alias c='cd'
 
 alias pf="pip freeze"
 
-# TODO TODO modify activate fn / alias to also take optional single positional
-# argument (name of folder == name of env to activate)
+# TODO TODO add some kind of requirements.txt file to my dotfiles with packages to
+# always install fresh in all venvs created through this function. include things like:
+# - ipdb
+# - darglint / black / etc (unless there is some other way to make the system versions
+#   available despite not created an env with --system-site-packages. i forget, did pip
+#   installing black for system python3 in 18.04 really make it work in some/all other
+#   python3 venvs? or was it another black being used?)
+# TODO TODO + add option (probably would want an alias with one additional letter, like
+# 'ab' ([b]are) to map to it, to not always require another prompt at startup.)
 alias a='activate'
 alias ca='conda activate'
 
@@ -719,8 +767,6 @@ alias gmv='git mv'
 alias grm='git rm'
 
 alias g='git_fn'
-# TODO delete this if i get used to using just 'g=git_fn' for this
-alias gi='git status'
 # TODO git init before both of these adds? init idempotent, or need to check?
 alias ga='git add'
 alias gaa='git add --all'
@@ -747,21 +793,32 @@ alias gpr='git pull --rebase'
 alias gu='git pull'
 alias gur='git pull --rebase'
 
+
+# NOTE: not using 'gs' because the ghostscript package provides gs under the same name.
+# Doesn't seem to be installed by default on 18.04.5 (from *.manifest file), but:
+# tom@blackbox:~$ aptitude why ghostscript
+# i   ghostscript-x Depends ghostscript (= 9.26~dfsg+0-0ubuntu0.18.04.14)
+# tom@blackbox:~$ aptitude why ghostscript-x
+# i   ubuntu-unity-desktop Depends ghostscript-x
+
 # "[g]it [s]tash" ([a]dd)
 alias gsa='git stash'
 # "[g]it [s]tash" (p[u]sh)
 alias gsu='git stash'
+# "[g]it [st]ash"
+alias gst='git stash'
+
+# TODO as long as `gs`=ghostscript isn't installed, alias to gs too?
+# TODO or just do it? is shadowing builtin stuff generally safe (i.e. are changes only
+# in "interactive" terminals or something)?
+
 
 alias gsl='git stash list'
 alias gsp='git stash pop'
 
-# TODO as long as `gs`=ghostscript isn't installed, alias to gs too?
-# i guess that could fuckup stuff that check for the name of the `gs`
-# executable? might be pretty unlikely though...
-# (seems like it is installed on blackbox now though, and might often be...)
-
-alias gig='vi .gitignore'
-alias gg='gig'
+# TODO maybe use whatever shell pointer to a text editor there is, rather than
+# hardcoding 'vi'?
+alias gi='vi .gitignore'
 
 alias gl='git log'
 alias gd='git diff'
@@ -1250,6 +1307,7 @@ if ! [ -x "$(command -v vi)" ]; then
     alias vi='vim'
 fi
 alias v='vi'
+alias sv='sudo vi'
 
 alias black='black --skip-string-normalization'
 
@@ -1291,6 +1349,9 @@ alias cs="cd ~/src"
 alias dot="cd ~/src/dotfiles && ls"
 # Not using `do` because that is some other keyword.
 alias dt="dot"
+
+alias scripts="cd ~/src/scripts && ls"
+alias scr="scripts"
 
 alias m="cd ~/src/misc"
 
@@ -1389,7 +1450,11 @@ alias grepym="grep_py_in_my_repos.py"
 alias dlwebsite="dlwebsite.py"
 
 alias lr='ls -ltr'
-alias bashrc="vi ~/.bashrc"
+
+# Since I already have muscle memory for typing 'df -h'
+# The goal is just to include the lines for real storage devices (the things I generally
+# care about).
+alias dfh="df -h | grep -v '/dev/loop' | grep -v 'tmpfs' | grep -v 'udev'"
 
 alias brc="vi ~/.bashrc"
 alias br="vi ~/.bashrc"
@@ -1397,9 +1462,9 @@ alias br="vi ~/.bashrc"
 alias vrc="vi ~/.vimrc"
 # vr saved for vagrant reload
 
-alias bashaliases="vi ~/.bash_aliases"
 alias ba="vi ~/.bash_aliases"
-alias ba="vi ~/.bash_aliases"
+
+alias mi="vi ~/src/scripts/movein.sh"
 
 # [d]isable [c]ustom [e]xcepthook
 alias dce="PYMISTAKE_DISABLE=1"
@@ -1446,10 +1511,37 @@ alias normalize_foundry_oggs="find $FOUNDRY_SOUNDS -name '*.ogg' -type f -exec n
 # servers.
 alias p8="ping -c 2 8.8.8.8"
 
+
 # `grep http` is just to cut # of lines in two
-alias ppa_list='apt policy | grep ppa | grep http'
-alias ppalist='ppa_list'
-alias ppals='ppa_list'
+# Just redirecting stderr to /dev/null to silence the warning about apt not having a
+# stable CLI. Could in theory cause problems.
+# TODO it's not because i misconfigured my system that i have duplicate ppa entries (on
+# blackbox) without the `... | sort -u` part, right (2 consecutive of each)?
+# (could also *maybe* replace `apt` w/ `apt-cache` if i want to not silence stderr?)
+alias ppalist="apt policy 2>/dev/null | grep ppa | grep http | cut -d' ' -f3 | cut -d'/' -f4,5 | sort -u"
+alias ppals='ppalist'
+
+# TODO try to include the answer from here: https://askubuntu.com/questions/447129
+# ...in a function or something. it lists all packages installed from all PPAs, though
+# maybe with *some* cases not handled correctly. or just escape the quotes correctly and
+# leave it as an alias. could maybe grep its output to determine what is installed for
+# one particular ppa (unless there is a better way?)
+
+# TODO add alias 'manifest' to generate URL that should exist for *.manifest file of
+# current ubuntu version (maybe always using the latest Z version, for version X.Y.Z?),
+# and open it in a web browser (/ print it to terminal for grepping)?
+
+# NOTE: sometimes it seems this will seem to say something is installed from a
+# dependency even if it was (I'm pretty sure) manually installed. Ex: git from the ppa
+# on blackbox. It says 'tldr' depends on it (maybe it was installed after?)
+alias aw='aptitude why'
+
+# TODO maybe parse output and only print url/line (from the "Version table:") matching
+# the "Installed: " version?
+# 'apt policy <x>' is useful for finding out which repository package <x> came from.
+# https://askubuntu.com/questions/8560
+alias ap='apt policy'
+
 
 # TODO make an alias for this (count_files_in_subdirs or something)
 #du -a | cut -d/ -f2 | sort | uniq -c | sort -nr
@@ -1481,4 +1573,65 @@ alias sts='showsync'
 # https://askubuntu.com/questions/1031640
 # TODO include message warning + saying what we are actually calling?
 alias ifconfig='ip -c a'
+
+
+# For quickly generating prefixes for filenames, e.g.:
+# $ echo `ds`out.txt
+# 2021-04-25_out.txt
+# $ echo `ts`out.txt
+# 2021-04-25_200431_out.txt
+
+# The sed command here is just to add a trailing underscore.
+# [d]ate [s]tring
+alias ds="date --iso-8601 | sed -e 's/$/_&/'"
+# Assumes we can rely on the first 19 characters always having what we want, and 'T'
+# always being the placeholder between day and hour parts.
+# TODO lookup whether there are exceptions to these assumptions.
+# Based partially on https://unix.stackexchange.com/questions/120484
+# [t]ime [s]tring (/ [s]tamp)
+alias ts="date --iso-8601=seconds | cut -c1-19 | sed -e 's/T/_/' -e 's/://g' -e 's/$/_&/'"
+
+# Same as above, but puts output in clipboard.
+alias cds='ds | xclip -sel clip && echo "Date prefix in clipboard"'
+alias cts='ts | xclip -sel clip && echo "Timestamp prefix in clipboard"'
+
+
+alias lns="ln -s"
+
+# [c]lip [i]n
+alias ci='xclip -sel clip'
+
+# TODO should i also use '-sel clip' here or is that only relevant on input? not clear
+# if it ever really matters for me...
+# [c]lip [o]ut
+alias co='echo "writing clipboard contents"; xclip -o >'
+
+
+# TODO TODO integrate setup of gnome-terminal Ctrl+a select all shortcut to my other
+# shortcut/ui setup scripts. currently i set it manually via: Edit -> Preferences ->
+# (on left pane) Shortcuts -> (double?) left click space under "Shortcut Key" column for
+# "Edit -> Select All" row
+function copy_terminal_contents() {
+    # NOTE: requires this shortcut to be set up (currently done manually; see comment
+    # above) in gnome-terminal.
+    xdotool key Ctrl+a
+    xdotool key Ctrl+Shift+c
+}
+alias csb='echo "copied terminal scrollback to clipboard"; copy_terminal_contents'
+
+# TODO TODO python scripts to parse output to get:
+# - the last python traceback (-> also parse file+linenos -> integrate w/ vim somehow?)
+# - the last command (command + all output. ignore any empty following prompts.)
+# (-> aliases)
+function write_terminal_contents() {
+    if ! _check_one_nonexistant_arg "$@"; then
+        echo "exiting"
+        return 1;
+    fi
+    copy_terminal_contents
+
+    echo "writing terminal scrollback to $1"
+    xclip -o > "$1"
+}
+alias wsb='write_terminal_contents'
 
