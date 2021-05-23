@@ -17,6 +17,11 @@ SLICER_EXE = ('/home/tom/apps/prusa3d_2_2_9_1/'
 # Relative to directory with current .FCStd file
 REL_STL_DIR = 'stl'
 
+# TODO turn into a gui prompt or something?
+# (that shows up if exists, then get rid of this flag)
+# (maybe include option to open old version in slicer in same dialog?)
+overwrite = True
+
 doc = App.ActiveDocument
 fcstd_dir = os.path.split(doc.FileName)[0]
 stl_dir = os.path.join(fcstd_dir, REL_STL_DIR)
@@ -46,12 +51,18 @@ elif len(selection) == 1:
     # Just hoping the label doesn't have any invalid characters for files on
     # this system.
     stl_fname = os.path.join(stl_dir, obj.Label + '.stl')
+    # TODO test Mesh.export actually will overwrite if it does already exist
     if os.path.exists(stl_fname):
-        print(f'{stl_fname} already exists!')
+        print(f'{stl_fname} already exists!', end='')
         # would rather raise an error here but just not sure it's fine to do
         # that in macros. probably is...
-        stl_fname = None
-    else:
+        if not overwrite:
+            stl_fname = None
+            print()
+        else:
+            print(' overwriting it!')
+
+    if stl_fname is not None:
         print(f'writing {stl_fname}')
         # TODO does arg need to be a list?
         # TODO check return of this / catch some type of exception in case
