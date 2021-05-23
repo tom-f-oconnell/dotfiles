@@ -125,6 +125,15 @@ Plugin 'Raimondi/delimitMate'
 Plugin 'plasticboy/vim-markdown'
 Plugin 'lervag/vimtex'
 
+" Trying mainly for `[f` / `]f` to switch between files, though might want to try
+" EditSimilar plugin mentioned in same answer:
+" https://stackoverflow.com/questions/25637516
+" TODO try to get [f / ]f or similarly short commands to switch between files either of
+" same extention or not ignored by git (but include stuff not committed). also default
+" to current [f / ]f behavior (adding ignoring of non-[text/code]-like files if
+" necessary)
+Plugin 'tpope/vim-unimpaired'
+
 " All of your Plugins must be added before the following line
 call vundle#end()
 " To ignore plugin indent changes, instead use:
@@ -165,20 +174,22 @@ endif
 " Below I remap (normal mode) q to this, and Q to q as in:
 " https://stackoverflow.com/questions/10956261
 " Q does already enter 'Ex' mode, but I'm pretty sure I didn't want that anyway.
-function! QuitIfNotModifiedOrStartRecording()
+function!  SaveAndQuit()
+    " NOTE: the checking of whether the file is modified is because :wq will change
+    " modification time whether or not the file actually changed.
+    " Also, I had previously had this fall back to the macro-recording-initiation
+    " behavior VIM has by default when 'q' is pressed (if the file wasn't modified),
+    " but I found myself just always wanting 'q' to quit, and I still hadn't actually
+    " gotten used to using macros for anything.
+
     " https://stackoverflow.com/questions/13107453
-    if ! &mod
-        quit
+    if &mod
+        " https://vi.stackexchange.com/questions/2408
+        write
     else
-        " https://vi.stackexchange.com/questions/7844
-        " https://stackoverflow.com/questions/43654089
-        let c = nr2char(getchar())
-        " (i don't think i actually want to leave the macro recording option
-        " here, as usually it just ends up being frustrating when i'm trying to
-        " quit. may want to rebind either the quit shortcut / macro recording,
-        " if i end up wanting the option to record macros.)
-        "execute 'normal! q'.c
-    endif
+
+    quit
+
 endfunction
 
 " To settle the confusion I've had as to how to tell whether lines will
@@ -603,7 +614,7 @@ set laststatus=2
 " enables mouse (just scrolling? selection, etc?) in [a]ll modes
 set mouse=a
 
-nnoremap q :call QuitIfNotModifiedOrStartRecording()<CR>
+nnoremap q :call SaveAndQuit()<CR>
 
 " TODO shortcut to select current line + next line, and then zg? (i do it a lot)
 
