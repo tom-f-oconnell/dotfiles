@@ -114,7 +114,8 @@ fi
 # some more ls aliases
 alias ll='ls -alF'
 alias la='ls -A'
-alias l='ls -CF'
+#alias l='ls -CF'
+alias l='ls'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
@@ -157,35 +158,36 @@ export FIGNORE=".egg-info"
 # source control)?
 # For now, I'm just going to opt to not have the conda environment loaded by
 # default, as: https://stackoverflow.com/questions/54429210
-if [ -f /opt/ros/kinetic/setup.bash ]; then
-  source /opt/ros/kinetic/setup.bash
+# TODO maybe rename to indicate usage for toggling between conda / ros. and delete if i
+# can find a way to get them to play nicely w/o this manual switching.
+ENABLE_ROS=false
+if [ "${ENABLE_ROS}" = true ]; then
+    if [ -f /opt/ros/kinetic/setup.bash ]; then
+      source /opt/ros/kinetic/setup.bash
+    fi
+    if [ -f /opt/ros/melodic/setup.bash ]; then
+      source /opt/ros/melodic/setup.bash
+    fi
+    if [ -f /opt/ros/noetic/setup.bash ]; then
+      source /opt/ros/noetic/setup.bash
+    fi
+
+    if [ -f $HOME/catkin/devel/setup.bash ]; then
+      source $HOME/catkin/devel/setup.bash
+    fi
+    ## I think this can conflict with the devel environment.
+    #source $HOME/catkin/install/setup.bash
+
+    # Options for ROS logging output, for debugging.
+    # http://wiki.ros.org/rosconsole#Console_Output_Formatting
+    # default is equivalent to '[${severity}] [${time}]: ${message}'
+    export ROSCONSOLE_FORMAT='[${severity}] [${time}] ${node}: ${message}'
+    #export ROSCONSOLE_FORMAT='[${severity}] [${time}] (${file}:${line}): ${message}'
+
+    # For playing around with ROS turtlebot simulations.
+    # https://automaticaddison.com/how-to-launch-the-turtlebot3-simulation-with-ros
+    export TURTLEBOT3_MODEL=burger
 fi
-if [ -f /opt/ros/melodic/setup.bash ]; then
-  source /opt/ros/melodic/setup.bash
-fi
-if [ -f /opt/ros/noetic/setup.bash ]; then
-  source /opt/ros/noetic/setup.bash
-fi
-
-if [ -f $HOME/catkin/devel/setup.bash ]; then
-  source $HOME/catkin/devel/setup.bash
-fi
-## I think this can conflict with the devel environment.
-#source $HOME/catkin/install/setup.bash
-
-# TODO if can't figure out how to make ROS and conda workable concurrently (w/o
-# editing this file), make make one flag env var to control toggle.
-
-# Options for ROS logging output, for debugging.
-# http://wiki.ros.org/rosconsole#Console_Output_Formatting
-# default is equivalent to '[${severity}] [${time}]: ${message}'
-export ROSCONSOLE_FORMAT='[${severity}] [${time}] ${node}: ${message}'
-#export ROSCONSOLE_FORMAT='[${severity}] [${time}] (${file}:${line}): ${message}'
-
-# For playing around with ROS turtlebot simulations.
-# https://automaticaddison.com/how-to-launch-the-turtlebot3-simulation-with-ros
-export TURTLEBOT3_MODEL=burger
-
 
 # TODO better way to manage python path to include my modules nested within src?
 
