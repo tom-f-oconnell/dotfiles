@@ -37,6 +37,5 @@ cd vim/bundle/YouCompleteMe
 # explicitly mentioned in --help output, and some can cause compilation to fail,
 # like C#. Python support still works for me in WSL w/ these options.
 # Maybe just call with no options?
-# TODO should this really be after the `vim +PlugInstall +qall` invocation?
 ./install.py --clang-completer --quiet
 
