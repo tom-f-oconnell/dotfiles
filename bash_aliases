@@ -1350,10 +1350,11 @@ alias dot="cd ~/src/dotfiles && ls"
 # Not using `do` because that is some other keyword.
 alias dt="dot"
 
-alias scripts="cd ~/src/scripts && ls"
+# Too easy to tab complete too `script`, which is annoying.
+#alias scripts="cd ~/src/scripts && ls"
 alias scr="scripts"
 
-alias m="cd ~/src/misc"
+alias m='man'
 
 alias 2p="cd ~/src/hong2p && ls"
 alias 2pp="cd ~/src/hong2p && vi populate_db.py"
@@ -1634,4 +1635,7 @@ function write_terminal_contents() {
     xclip -o > "$1"
 }
 alias wsb='write_terminal_contents'
+
+alias makej='make -j$(nproc --ignore=2)'
+alias mj='makej'
 
