@@ -32,7 +32,7 @@ filetype off
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
 
-" TODO maybe detect location of dotfiles dir on install and then replace 
+" TODO maybe detect location of dotfiles dir on install and then replace
 " both this + an absolute path in vundle#begin call with that?
 " Windows only
 " (test visualbell OK on Linux or special case in VIM / deployment)
@@ -99,7 +99,11 @@ Plugin 'VundleVim/Vundle.vim'
 " above), but it didn't seem to change anything:
 " https://github.com/ycm-core/YouCompleteMe/issues/2917
 " https://github.com/ycm-core/YouCompleteMe/issues/2136
-Plugin 'tom-f-oconnell/YouCompleteMe'
+" NOTE: this is the version i was using most recently (not stock/stock@d9..), but
+" commented now cause was intermittently (only in some shells and editing some files;
+" both ~/.vimrc and some .py files at least) got "Vim: Caught deadling signal ABRT",
+" and disabling this seemed to fix it
+"Plugin 'tom-f-oconnell/YouCompleteMe'
 
 Plugin 'dense-analysis/ale'
 
@@ -134,6 +138,8 @@ Plugin 'lervag/vimtex'
 " necessary)
 Plugin 'tpope/vim-unimpaired'
 
+Plugin 'ntpeters/vim-better-whitespace'
+
 " All of your Plugins must be added before the following line
 call vundle#end()
 " To ignore plugin indent changes, instead use:
@@ -141,7 +147,7 @@ call vundle#end()
 
 " Brief help
 " :PluginList       - lists configured plugins
-" :PluginInstall    - installs plugins; append `!` to update or just 
+" :PluginInstall    - installs plugins; append `!` to update or just
 "                     :PluginUpdate
 " :PluginSearch foo - searches for foo; append `!` to refresh local cache
 " :PluginClean      - confirms removal of unused plugins; append `!` to
@@ -388,21 +394,21 @@ au BufRead *.py imap <F5> <Esc>:w<cr>!./%<cr>
 
 " sets new python files to executable by default
 " TODO tabs to spaces in vimrc
-au BufWritePre *.py if !filereadable(expand('%')) | 
+au BufWritePre *.py if !filereadable(expand('%')) |
 	\let b:is_new = 1 | endif
 " The '| e' adds an :e (edit=reload) command after the chmod, so that VIM
 " doesn't warn that the file mode has changed and ask whether you want to
 " load it (happens on first save if vim created the file that session)
-au BufWritePost *.py if get(b:, 'is_new', 0) | 
+au BufWritePost *.py if get(b:, 'is_new', 0) |
 	\silent execute '!chmod +x %' | e | endif
 
 au Filetype html setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 
 au Filetype sh setlocal expandtab tabstop=4 shiftwidth=4
-au BufWritePre *.sh if !filereadable(expand('%')) | 
+au BufWritePre *.sh if !filereadable(expand('%')) |
 	\let b:is_new = 1 | endif
 " TODO why can't i just do this directly in above?
-au BufWritePost *.sh if get(b:, 'is_new', 0) | 
+au BufWritePost *.sh if get(b:, 'is_new', 0) |
 	\silent execute '!chmod +x %' | e | endif
 au BufRead *.sh nmap <F5> :w<cr>:!bash %<cr>
 au BufRead *.sh imap <F5> <Esc>:w<cr>!bash %<cr>
@@ -566,7 +572,7 @@ set statusline=%f\ %h%w%m%r\
 " definitely don't need this line, but this might be a good addon
 "set statusline+=%{SyntasticStatuslineFlag()}
 
-" TODO TODO TODO hack saving last edited file + function name (using same thing 
+" TODO TODO TODO hack saving last edited file + function name (using same thing
 " to get function name below) to some repo level or global file, so that pytest
 " alias can run JUST this test, to skip potentially time intensive tests that
 " i'm not working on (and also just to prevent other tests from confusing me

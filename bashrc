@@ -521,4 +521,17 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
+# At least this first line seems necessary to use
+# `xdg-mime default <x>.desktop <mimetype>` for desktop files under
+# ~/.local/share/applications
+# Adapted from https://unix.stackexchange.com/questions/637685 and
+# https://askubuntu.com/questions/538526
+# TODO though check again whether it was actually necessary to set this before that
+# xdg-mime default ... command above worked
+# TODO also look into setting this variables in perhaps a more appropriate place, as
+# mentioned in the other answer in the second link above and in this post it references:
+# https://superuser.com/questions/365847
+export XDG_DATA_HOME=${XDG_DATA_HOME:="$HOME/.local/share"}
+export XDG_CONFIG_HOME=${XDG_CONFIG_HOME:="$HOME/.config"}
+export XDG_CACHE_HOME=${XDG_CACHE_HOME:="$HOME/.cache"}
 

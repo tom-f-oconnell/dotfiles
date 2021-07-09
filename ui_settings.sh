@@ -27,8 +27,9 @@ echo Hidden=true >> ~/.local/share/applications/ubuntu-amazon-default.desktop
 # turn off screen / lock after 30 minutes
 gsettings set org.gnome.desktop.session idle-delay 1800
 
-# default 2x2 workspaces
-gsettings set org.compiz.core:/org/compiz/profiles/unity/plugins/core/ hsize 2
+# default when enabling through GUI is 2x2 workspaces (and equiv. to 2 & 2 here)
+# https://askubuntu.com/questions/447673
+gsettings set org.compiz.core:/org/compiz/profiles/unity/plugins/core/ hsize 4
 gsettings set org.compiz.core:/org/compiz/profiles/unity/plugins/core/ vsize 2
 
 gsettings set com.canonical.Unity.Launcher favorites "['application://org.gnome.Nautilus.desktop', 'application://firefox.desktop', 'application://rhythmbox.desktop', 'application://libreoffice-calc.desktop', 'application://libreoffice-writer.desktop', 'unity://running-apps', 'application://gnome-terminal.desktop', 'unity://expo-icon', 'unity://devices']"
@@ -66,6 +67,7 @@ gsettings set org.gnome.desktop.peripherals.keyboard delay 280
 # https://askubuntu.com/questions/290159
 # still not sure what (if any) general procedure exists for finding paths to
 # relocatable schemas...
+# TODO i think this is supposed to be `.../ overcome-pressure 1`, but check
 gsettings set org.compiz.unityshell:/org/compiz/profiles/unity/plugins/unityshell/overcome-pressure 1
 # there is also: org.gnome.metacity edge-tiling, but this doesn't seem like it
 # is that likely to influence unity settings and it is also not changed after
@@ -92,6 +94,4 @@ gsettings set com.canonical.indicator.datetime show-date true
 gsettings set com.canonical.indicator.datetime time-format 'custom'
 gsettings set com.canonical.indicator.datetime custom-time-format '%b  %-m-%d  %a %l:%M %p'
 
-# https://askubuntu.com/questions/447673
-gsettings set org.compiz.core:/org/compiz/profiles/unity/plugins/core/ hsize 4
 

@@ -13,6 +13,12 @@ export MT_PLAYBACK_DIR=$MT_DIR/examples/sample_data
 # used by some of my data acquisition / analysis tools
 export HONG_NAS="/mnt/nas"
 
+# Checked before path derived from above when determining where a fly directory is.
+# All data in fly directory must be copied here because there is currently no more
+# granularity.
+#export HONG2P_FAST_DATA_DIR="$HOME/2p_data"
+export HONG2P_FAST_DATA_DIR="/mnt/d1/2p_data"
+
 export EXP_DIR="$HOME/data"
 export DATA_DIR="/mnt/nas/Kristina/direct2nas_experiments"
 

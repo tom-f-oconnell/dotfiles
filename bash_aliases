@@ -660,6 +660,10 @@ function link_to_vagrant() {
 
 alias c='cd'
 
+alias c1='cd ..'
+alias c2='cd ../..'
+alias c3='cd ../../..'
+
 # TODO maybe add these:
 # ti (test import) ~ python -c 'import $1'
 # ppv (pv is common i think) (python package version)
@@ -667,6 +671,7 @@ alias c='cd'
 #     (check pip first though? or both?)
 
 alias pf="pip freeze"
+alias pfg="pip freeze | grep"
 
 # TODO TODO add some kind of requirements.txt file to my dotfiles with packages to
 # always install fresh in all venvs created through this function. include things like:
@@ -834,6 +839,10 @@ alias grv='git remote -v'
 function open_repo_in_browser() {
     # getting https link, no matter auth in 'git remote -v'
     local url="$(git remote -v | grep origin | change_git_auth.py h)"
+    # TODO break out above so `git remote -v` is separate or otherwise figure out how
+    # to make this fail gracefully w/ reminder about what it does if used not in a git
+    # repo (as part of pipe, ext code seems to be 0 regardless of failure in first
+    # step? though there is still stderr output)
     local browser="$(xdg-settings get default-web-browser)"
     echo "opening $url in $browser"
     xdg-open $url
@@ -1170,6 +1179,7 @@ function which_module() {
 alias wm='which_module'
 
 alias pi='pip install'
+alias pie='pip install -e'
 alias pir='pip install -r'
 # TODO TODO change this to a function that uninstalls python package(s) defined
 # in setup.py in current directory if no argument is specified.
@@ -1435,11 +1445,22 @@ alias gitssh="git remote -v | change_git_auth.py s | xargs git remote set-url or
 # that is there by default would add this argument)
 alias grep="grep --color=auto --exclude-dir=.direnv --exclude-dir=site-packages --exclude-dir=.git"
 alias gr="grep"
+# Like -r but also follows symbolic links
+alias grr="grep -R"
+
+# TODO TODO TODO write last pattern grepped to a file and then made vim shortcut to read
+# that file and go search for that pattern (maybe <leader>n?) (might need to convert the
+# search pattern format?)
 
 # TODO add a version of this that only searches files tracked by git
 # (to automatically avoid any build artifacts, like python egg stuff, etc)
 # Main difference between -r and -R seems to be that -R follows symlinks.
 # Using this syntax for multiple exclude-dir b/c it's friendly with grepym.
+# TODO kinda want --color=always, but for some reason it seemed to break the actual
+# matching in a pipe to a subsequent grep, which is more important than the
+# colors...
+# e.g. `grepy --color=always lam | grep -v lambda | wc -l` had the same number of lines
+# as without the `| grep -v lambda` part...
 alias grepy="grep -R --include=\*.py --exclude-dir=site-packages"
 alias gpy="grepy"
 # This will lookup and use the alias definition above at runtime.
@@ -1512,7 +1533,7 @@ alias normalize_foundry_oggs="find $FOUNDRY_SOUNDS -name '*.ogg' -type f -exec n
 # servers.
 alias p8="ping -c 2 8.8.8.8"
 
-
+# not sure which of these i want to keep... probably not ALL of them
 # `grep http` is just to cut # of lines in two
 # Just redirecting stderr to /dev/null to silence the warning about apt not having a
 # stable CLI. Could in theory cause problems.
@@ -1521,6 +1542,8 @@ alias p8="ping -c 2 8.8.8.8"
 # (could also *maybe* replace `apt` w/ `apt-cache` if i want to not silence stderr?)
 alias ppalist="apt policy 2>/dev/null | grep ppa | grep http | cut -d' ' -f3 | cut -d'/' -f4,5 | sort -u"
 alias ppals='ppalist'
+alias ppa='ppa_list'
+alias ppas='ppa_list'
 
 # TODO try to include the answer from here: https://askubuntu.com/questions/447129
 # ...in a function or something. it lists all packages installed from all PPAs, though
@@ -1542,7 +1565,6 @@ alias aw='aptitude why'
 # 'apt policy <x>' is useful for finding out which repository package <x> came from.
 # https://askubuntu.com/questions/8560
 alias ap='apt policy'
-
 
 # TODO make an alias for this (count_files_in_subdirs or something)
 #du -a | cut -d/ -f2 | sort | uniq -c | sort -nr
@@ -1638,4 +1660,10 @@ alias wsb='write_terminal_contents'
 
 alias makej='make -j$(nproc --ignore=2)'
 alias mj='makej'
+
+alias md5='md5sum'
+alias sha256='sha256sum'
+
+# --statfile only available in my fork
+alias ss='suite2p --statfile suite2p/combined/stat.npy'
 
