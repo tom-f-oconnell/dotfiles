@@ -904,7 +904,7 @@ alias gau='git remote add upstream'
 # (probably prompt and have then enter a number selecting which / both)
 function open_repo_in_browser() {
     # getting https link, no matter auth in 'git remote -v'
-    local url="$(git remote -v | grep origin | change_git_auth.py h)"
+    local url="$(git remote -v | grep origin | change_git_auth.py h)#readme"
     # TODO break out above so `git remote -v` is separate or otherwise figure out how
     # to make this fail gracefully w/ reminder about what it does if used not in a git
     # repo (as part of pipe, ext code seems to be 0 regardless of failure in first
@@ -1078,6 +1078,8 @@ function clone() {
 # TODO TODO maybe overload this to "clear" in no-arg case
 alias cl="clone"
 
+# TODO add another alias that runs this, but only on repos modified within some
+# reasonable time window (maybe ~1week / ~1mo)
 # Need to follow the install instructions for this in my dotfiles README
 alias mg='mgitstatus -w --no-push --no-pull --no-upstream --no-uncommitted --no-untracked --no-stashes -e -d 1; mgitstatus -e'
 # Also do a fetch on each repo (can be slower)
