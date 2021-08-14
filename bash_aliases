@@ -841,8 +841,6 @@ alias gur='git pull --rebase'
 
 # "[g]it [s]tash" ([a]dd)
 alias gsa='git stash'
-# "[g]it [s]tash" (p[u]sh)
-alias gsu='git stash'
 # "[g]it [st]ash"
 alias gst='git stash'
 
@@ -856,7 +854,7 @@ alias gsl='git stash list --date=short'
 # TODO may want to also echo a warning to drop after resolving conflict, assuming exit
 # code reflects whether there was one. exit code was 1 in one test where there were
 # conflicts, so this might work
-alias gsp='git stash pop'
+alias gsp="git stash pop || printf \"\e[1;33m\nYou must manually 'git stash drop' after resolving conflict\n\e[0m\""
 
 # TODO maybe use whatever shell pointer to a text editor there is, rather than
 # hardcoding 'vi'?
