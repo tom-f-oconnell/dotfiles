@@ -1,5 +1,9 @@
 
-import IPython 
+import IPython
+
+
+# TODO possible to include something in here to avoid nasty BdbQuit traceback when
+# exiting a `ipdb.set_trace()` breakpoint via Ctrl+D ?
 
 # Interactive shell
 # TODO maybe change to alias interactii import IPython; IPython.embed()
@@ -10,11 +14,18 @@ alias ppd pp dir(%1)
 
 alias t type(%1)
 
-# Mainly just cause i accidentally type `ls` a lot, out of habit.
-alias ls dir(%1)
-
 # TODO alias to toggle pd.set_option('display.max_rows', x)
 # between x=default value and x=-1 (no maximum)
 # TODO or new aliases for pd / change print aliases to detect whether input is a
 # series / dataframe and print(x.to_string()) then at least, maybe also toggling
 # the max_rows / column / print width options before and after
+
+alias k %1.keys()
+alias v %1.values()
+alias kh !next(iter(%1.keys()))
+alias vh !next(iter(%1.values() if type(%1) is dict else %1))
+
+alias ls import subprocess; subprocess.run(['ls',  '--color'])
+alias lr import subprocess; subprocess.run(['ls', '--color', '-ltr'])
+
+# TODO cat alias
