@@ -28,6 +28,34 @@
 
 fix youcompleteme install. subtree?
 
+
+- vim utils to:
+  - [(after confirmation prompt) pkill process w/ .swp file open if exists
+    (assuming that vim process will keep the .swp file open, which from my limited
+    observations so far seems to be the case)]
+
+    - ALSO want to probably be able to start on the next step, as sometime the .swp
+      files are there because of a system crash or something, not cause a process
+      currently has it open / is using it
+
+  - [perhaps backup original file here]
+
+  - attempt recovery using .swp file
+
+  - AT LEAST in the case where output of that process would include the line:
+    "Recovery completed. Buffer contents equals file contents.", assuming (AND CHECK!)
+    that this means the .swp file indicated no changes (rather than just saying it has
+    now written the output of the recovery or something)
+
+    ...delete the swap file
+
+  - [restore backup if there is some indication the recovery was not sucessful?]
+
+  - open the file that was originally requested to be opened in vim
+
+- alias rm with something that will prompt y/n rather than fail if it's a directory
+
+
 setup encryption for just the sensitive lines in things like irssi config, pypi
 config
 
