@@ -509,6 +509,11 @@ export PATH="$PATH:/usr/local/nrn/x86_64/bin"
 # Made this directory manually for arduino-cli
 export PATH="$PATH:$HOME/arduino-cli/bin"
 
+# For https://github.com/hoijui/ReZipDoc
+if [ -d "$HOME/src/ReZipDoc/scripts" ] ; then
+    export PATH="$HOME/src/ReZipDoc/scripts:$PATH"
+fi
+
 # To explicitly specify which FreeCAD to use for my freecad_finder Python
 # library, which helps you add FreeCAD libraries to Python sys.path for use in
 # standalone scripts. Not used by FreeCAD itself.
