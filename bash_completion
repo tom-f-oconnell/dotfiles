@@ -1,0 +1,5 @@
+# https://github.com/cykerway/complete-alias
+complete_alias_path=~/src/dotfiles/complete-alias/complete_alias
+if [ -f "$complete_alias_path" ]; then
+    . "$complete_alias_path"
+fi

@@ -658,7 +658,13 @@ function link_to_vagrant() {
     #fi
 }
 
+alias cr='cp -r'
+alias cpr='cp -r'
+
+# TODO maybe 'git status' if it's a git repo (factor to fn)?
 alias c='cd'
+# Uses https://github.com/cykerway/complete-alias installed via my dotfiles setup
+complete -F _complete_alias c
 
 # TODO TODO accept arguments as well and cd relative to where they'd cd without the
 # arguments (+ tab complete)
@@ -688,6 +694,10 @@ alias a='activate'
 alias d="diff_or_deactivate"
 
 alias ca='conda activate'
+# 'conda activate' itself actually doesn't autocomplete...
+# Perhaps see: https://github.com/tartansandal/conda-bash-completion
+#complete -F _complete_alias ca
+
 # [c]onda d[e]activate
 alias ce='conda deactivate'
 # [c]onda [de]activate
@@ -784,11 +794,17 @@ function git_fn() {
 # in a git repo (same with rm?) (or prompt if it detects the argument(s) of
 # either are in git control?)
 alias gmv='git mv'
+complete -F _complete_alias gmv
+
 alias grm='git rm'
+complete -F _complete_alias grm
 
 alias g='git_fn'
+
 # TODO git init before both of these adds? init idempotent, or need to check?
 alias ga='git add'
+complete -F _complete_alias ga
+
 alias gaa='git add --all'
 
 #alias gca='git commit -am'
@@ -816,7 +832,6 @@ alias gpr='git pull --rebase'
 alias gu='git pull'
 alias gur='git pull --rebase'
 
-
 # NOTE: not using 'gs' because the ghostscript package provides gs under the same name.
 # Doesn't seem to be installed by default on 18.04.5 (from *.manifest file), but:
 # tom@blackbox:~$ aptitude why ghostscript
@@ -835,8 +850,8 @@ alias gst='git stash'
 # TODO or just do it? is shadowing builtin stuff generally safe (i.e. are changes only
 # in "interactive" terminals or something)?
 
-
-alias gsl='git stash list --date=local'
+# --date=short seems to just be the YYYY-MM-DD iso w/o time info, which is what I want.
+alias gsl='git stash list --date=short'
 # NOTE: this will not drop if the stash has a conflict.
 # TODO may want to also echo a warning to drop after resolving conflict, assuming exit
 # code reflects whether there was one. exit code was 1 in one test where there were
@@ -848,6 +863,11 @@ alias gsp='git stash pop'
 alias gi='vi .gitignore'
 
 alias gl='git log'
+# [g]it [l]og [h]ead (just show the first entry)
+alias glh='git log -1'
+
+# TODO have this output git diff HEAD if argument is already added (though maybe with a
+# message also printed to notify that this is happening)
 alias gd='git diff'
 alias gdh='git diff HEAD'
 
@@ -878,6 +898,13 @@ function open_repo_in_browser() {
     xdg-open $url
 }
 alias gb='open_repo_in_browser'
+
+# TODO add 'rg' alias to remove git repo if:
+# - no uncommitted changes / untracked files
+# - git push is already dne / repo is behind (perhaps also try it?)
+# - there are no files in the repo that are not in the repo (e.g. ignored files that
+#   don't show up as untracked in status output). maybe just prompt to delete them (one
+#   prompt to delete all)?
 
 # TODO make alias to vagrant up + vagrant ssh (and just ssh if already up)
 # + one for tearing it down
@@ -1273,13 +1300,6 @@ alias prof='kernprof -l -v'
 
 alias cm='cd ~/catkin && catkin_make'
 
-#alias cs='cd $MT_SRC_DIR'
-#alias ca='cd $MT_ANALYSIS_DIR'
-#alias co='cd $MT_OUTPUT_DIR'
-#alias ci='cd $MT_INPUT_DIR'
-#alias cr='cd $MT_PLAYBACK_DIR'
-#alias trajecgui='trajectory_viewer_gui_v2.py'
-
 # if this ever causes problems with logs, can also include ROS_LOG_DIR=/home/user/.ros/log
 # TODO move this alias to hong-lab-system dependent deployment file,
 # likely as w/ some env vars
@@ -1317,28 +1337,6 @@ alias fd='roscd'
 #    # got from `complete -p roscd`
 #    complete -o nospace -F _roscomplete_sub_dir fd
 #fi
-
-alias mtdir='rosrun multi_tracker mk_date_dir.py'
-# TODO maybe have expdir make a directory for whicever acquisition pipeline i'm using at the moment?
-alias expdir='rosrun multi_tracker mk_date_dir.py'
-
-## could quote roslaunch in those for which i dont want to use above roslaunch alias
-## or use other methods of escaping like 1 (2?) backslashes preceding
-## p for Play
-#alias p='roslaunch multi_tracker play_delta_video.launch'
-## t for Tracking
-#alias t='roslaunch multi_tracker tracking.launch'
-## f for roi_Finder.py
-#alias f='roslaunch multi_tracker detect_roi_tracking.launch'
-## u for Usb_cam
-#alias u='roslaunch multi_tracker rectified_usb_cam.launch'
-## d for Directory
-## TODO how to cd to it? have it return directory name?
-#alias d='expdir'
-## c for Camera
-## should i use any unrectified cameras?
-## TODO make this
-##alias c='roslaunch multi_tracker pointgrey_usb.launch'
 
 # TODO change this into a function so it can work for whichever arduino version
 # we actually have installed in my home directory

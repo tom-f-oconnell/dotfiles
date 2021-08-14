@@ -7,3 +7,6 @@
 [submodule "util/GithubCloner"]
 	path = util/GithubCloner
 	url = git@github.com:mazen160/GithubCloner
+[submodule "complete-alias"]
+	path = complete-alias
+	url = https://github.com/cykerway/complete-alias

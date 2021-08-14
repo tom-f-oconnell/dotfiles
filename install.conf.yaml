@@ -28,7 +28,12 @@
 - link: 
     ~/.bashrc:
     ~/.bash_aliases:
+    ~/.bash_completion:
+
+    # TODO probably copy this one instead (+ prompt to fill in values)
+    # or split into a site specific and general file, and do this for the former
     ~/.variables:
+
     ~/.profile:
     ~/.inputrc:
     ~/.vimrc:
