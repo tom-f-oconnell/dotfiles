@@ -16,3 +16,5 @@
 	default = simple
 [alias]
 	root = !pwd
+[diff]
+	wsErrorHighlight = all
