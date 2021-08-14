@@ -1,0 +1,16 @@
+
+- something to check if two objects are the ~same thing, just translated /
+  rotated
+
+- something to print the maximum bounding box of all
+  (visibile-with-nonvisible-children? / particular types? / just visible?)
+  objects, to see what size bed (+ working height) is needed to print stuff?
+  - maybe (just/also) print sorted by longest dimension too?
+
+- make this it's own repo -> submodule it in dotfiles?
+
+- script to add lines as in thefourtheye's answer here:
+  https://askubuntu.com/questions/289337
+  to config that enables opening step mimetype/extension in FreeCAD
+  by default gui click?
+

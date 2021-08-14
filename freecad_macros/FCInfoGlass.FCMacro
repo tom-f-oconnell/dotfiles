@@ -1,0 +1,1215 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+"""
+***************************************************************************
+*   Copyright (c) 2015 2016 <mario52>                                     *
+*                                                                         *
+*   This file is a supplement to the FreeCAD CAx development system.      *
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU Lesser General Public License (LGPL)    *
+*   as published by the Free Software Foundation; either version 2 of     *
+*   the License, or (at your option) any later version.                   *
+*   for detail see the LICENCE text file.                                 *
+*                                                                         *
+*   This software is distributed in the hope that it will be useful,      *
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+*   GNU Library General Public License for more details.                  *
+*                                                                         *
+*   You should have received a copy of the GNU Library General Public     *
+*   License along with this macro; if not, write to the Free Software     *
+*   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
+*   USA                                                                   *
+***************************************************************************
+*           WARNING! All changes in this file will be lost and            *  
+*                  may cause malfunction of the program                   *
+***************************************************************************
+"""
+#30/07/2015 04/08/2015 31/08/2015 25/11/2015 28/08/2016
+#
+#OS: Windows 8
+#Word size of OS: 64-bit
+#Word size of FreeCAD: 64-bit
+#Version: 0.15.4671 (Git)
+#Branch: releases/FreeCAD-0-15
+#Hash: 244b3aef360841646cbfe80a1b225c8b39c8380c
+#Python version: 2.7.8
+#Qt version: 4.8.6
+#Coin version: 4.0.0a
+#OCC version: 6.8.0.oce-0.17
+#
+__title__         = "FCInfoGlass"
+__author__        = "Mario52"
+__url__           = "http://www.freecadweb.org/index-fr.html"
+__version__       = "00.05"
+__date__          = "28/08/2016" 
+
+__Comment__       = "displays various informations on the 3DView"
+__Web__           = ""
+__Wiki__          = "http://www.freecadweb.org/wiki/index.php?title=Macro_FCInfoGlass"
+__Icon__          = "/usr/lib/freecad/Mod/plugins/icons/.png"
+__IconW__         = "C:/Users/xxxxx/AppData/Roaming/FreeCAD/"    # with : path = FreeCAD.ConfigGet("UserAppData")
+__Help__          = ""
+__Status__        = "finished"
+__Requires__      = "FreeCAD 0.14.3706"
+__Communication__ = "http://www.freecadweb.org/wiki/index.php?title=User:Mario52"
+ 
+try:
+    import PyQt4
+    from PyQt4 import QtGui ,QtCore
+    from PyQt4.QtGui import *
+    from PyQt4.QtCore import *
+except Exception:
+    import PySide
+    from PySide import QtGui ,QtCore
+    from PySide.QtGui import *
+    from PySide.QtCore import *
+ 
+import Draft, Part, FreeCAD, math, PartGui, FreeCADGui, FreeCAD
+from math import degrees, radians, atan2, sqrt, pi, sin, cos, asin, acos, atan
+from FreeCAD import Base
+import time
+ 
+global path
+#path = "YourPath"
+#path = FreeCAD.ConfigGet("AppHomePath")
+path = FreeCAD.ConfigGet("UserAppData")
+
+#######################################################################
+global visualiserWindow      ; visualiserWindow                = 0    # si visualiserWindow = 1 la fenetre est visible (pour test)  "defaut  = 0"
+                                                                      # if visualiserWindow = 1 the windows is visible (for test)   "default = 0"
+###Section Configuration ##############################################
+# Placement window hidden                                             #
+global posiX                 ; posiX                           = 900  # position window coordinate X                   "defaut  = 900"
+global posiY                 ; posiY                           = 190  # position window coordinate Y                   "defaut  = 190"
+#######################################################################
+global SizeX                 ; SizeX                           = 600  # size window length  (do not modify)            "defaut  = 600"
+global SizeY                 ; SizeY                           = 600  # size window heigth  (do not modify)            "defaut  = 600"
+
+#######################################################################
+# Section color                                                       #
+global colorize              ; colorize                      ="black" # colorize the text choice                       "defaut  = "black"
+                                                                      # "black" "white" "red" "green" "blue" "yellow" "magenta" "cyan"
+
+#######################################################################
+# Section inter                                                       #
+global mode                  ; mode                            = 1    # mode 1=degrees mode 0=radians                  "defaut  = 1"
+global arondi                ; arondi                          = 4    # many numbers after the decimal point           "defaut  = 4" 
+global chaineRemplacement    ; chaineRemplacement              = "_"  # replacement string (1 character)               "defaut  = "_"
+
+#######################################################################
+# section switch 
+# if switch = 1 then actif (True Displayed) else inactif (False not Displayed)
+global PrintReportView       ;PrintReportView                  = 1    # Affichage dans la vue rapport                  #0  Displayed ReportView
+## 
+global DocumentName          ;DocumentName                     = 1    # Nom du document                                #1  Document Name
+global InternalName          ;InternalName                     = 1    # Nom interne de l'objet                         #2  Internal Name
+global LabelObject           ;LabelObject                      = 1    # Label                                          #3  Label Object
+global ElementName           ;ElementName                      = 1    # Nom de l'element                               #4  Element Name
+global ObjectType            ;ObjectType                       = 1    # Type d'objet                                   #5  Object Type
+global LineSeparateTitle     ;LineSeparateTitle                = 1    # ligne de separation des titres ____________    #6  Line Separate of Title
+
+## Object subObject 
+global ObjectLength          ;ObjectLength                     = 1    # longueur Objet ou perimetre si c est une face  #7  Object Length or perimetre if are a face
+global ObjectCurveRadius     ;ObjectCurveRadius                = 1    # rayon du subObject si arc ou cerle             #8  radius subObject if arc or cirle
+global ObjectCurveCenter     ;ObjectCurveCenter                = 1    # coordonnees centrale subObject si arc ou cerle #9  coordinates center subObject if arc or cirle
+
+## Draft
+global LineDimension         ;LineDimension                    = 1    # Dimensions Line                                #10  Line Dimension
+global DWireDimension        ;DWireDimension                   = 1    # Dimensions DWire                               #11  DWire Dimension
+global CircleDimension       ;CircleDimension                  = 1    # Dimensions Circle                              #12 Circle Dimension
+global CirclePartDimension   ;CirclePartDimension              = 1    # Dimensions Circle Part                         #13 Circle Part Dimension
+
+global ArcDimension          ;ArcDimension                     = 1    # Dimensions Arc                                 #14 Arc Dimension
+global EllipseDimension      ;EllipseDimension                 = 1    # Dimensions Ellipse                             #15 Ellipse Dimension
+global EllipsePartDimension  ;EllipsePartDimension             = 1    # Dimensions Ellipse Part                        #16 Ellipse Part Dimension
+global PolygonDimension      ;PolygonDimension                 = 1    # Dimensions Polygon                             #17 Polygon Dimension
+global RectangleDimension    ;RectangleDimension               = 1    # Dimensions Rectangle                           #18 Rectangle Dimension
+global BSplineDimension      ;BSplineDimension                 = 1    # Dimensions BSpline                             #19 BSpline Dimension
+global PointDimension        ;PointDimension                   = 1    # Dimensions Point                               #20 Point Dimension
+global BezCurveDimension     ;BezCurveDimension                = 1    # Dimensions BezCurve                            #21 BezCurve Dimension
+
+## Solid
+global CylinderDimension     ;CylinderDimension                = 1    # Dimensions du Cylindre Rayon Hauteur Angle     #22 Cylinder Dimension
+global BoxDimension          ;BoxDimension                     = 1    # Dimensions du Box Length Width Height          #23 Box Dimension
+global SphereDimension       ;SphereDimension                  = 1    # Dimensions de la Sphere                        #24 Sphere Dimension
+global EllipsoidDimension    ;EllipsoidDimension               = 1    # Dimensions Ellipsoid                           #25 Ellipsoid Dimension
+global ConeDimension         ;ConeDimension                    = 1    # Dimensions du Cone                             #26 Cone Dimension
+global TorusDimension        ;TorusDimension                   = 1    # Dimensions du Tore                             #27 Torus Dimension
+
+## Part
+global PlanePartDimension    ;PlanePartDimension               = 1    # Dimensions Plan Part                           #28 Plane Part Dimension
+global PrismPartDimension    ;PrismPartDimension               = 1    # Dimensions Prisme Part                         #29 Prism Part Dimension   
+global WedgePartDimension    ;WedgePartDimension               = 1    # Dimensions Wedge Part                          #30 Wedge Part Dimension
+global HelixPartDimension    ;HelixPartDimension               = 1    # Dimensions Helix Part                          #31 Helix Part Dimension
+global SpiralPartDimension   ;SpiralPartDimension              = 1    # Dimensions Spirale Part                        #32 Spiral Part Dimension
+global VertexPartDimensio    ;VertexPartDimension              = 1    # Dimensions Vertex Part                         #33 Vertex Part Dimension
+global LinePartDimension     ;LinePartDimension                = 1    # Dimensions Line Part                           #34 Line Part Dimension
+global RegularPolygonPartDimension;RegularPolygonPartDimension = 1    # Dimensions RegularPolygon Part                 #35 Regular Polygon Part Dimension
+
+## Face
+global FaceSurface           ;FaceSurface                      = 1    # Surface de la face                             #36 Face Surface
+global NormalAt              ;NormalAt                         = 1    # Donne la normale (inclinaison)                 #37 normalAt(0,0) Face and edges normalAt(0)
+global FaceCenter            ;FaceCenter                       = 1    # Center Face (mass)                             #38 Face Center
+global BoundBoxFaceVol       ;BoundBoxFaceVol                  = 1    # BoundBoxFace Volume                            #39 BoundBox Face Volume
+global BoundBoxFaceCent      ;BoundBoxFaceCent                 = 1    # BoundBoxFaceCenter                             #40 BoundBox Face Center
+global BoundBoxFaceCoor      ;BoundBoxFaceCoor                 = 1    # BoundBoxFace coordinates                       #41 BoundBox Face Coordinates
+
+## Volume
+global BounBoxVolumeVol      ;BounBoxVolumeVol                 = 1    # rectangle du BoundBox                          #42 BounBox Volume Volume
+global BounBoxVolumeCent     ;BounBoxVolumeCent                = 1    # centre de la forme                             #43 BounBox Volume Center
+global BounBoxVolumeCoor     ;BounBoxVolumeCoor                = 1    # boundinbox (dimensions hors tout)              #44 BounBox Volume Coordinates
+global VolumeObject          ;VolumeObject                     = 1    # volume                                         #45 Volume Object
+global CenterMass            ;CenterMass                       = 1    # centre de la masse                             #46 Center Mass object
+global PlacementForme        ;PlacementForme                   = 1    # placement de la forme                          #47 Placement Forme
+global LineInclination       ;LineInclination                  = 1    # search inclination XY YZ ZX uniquement lignes  #48 Line Inclination
+global VertexesObject        ;VertexesObject                   = 1    # Vertexes de l'objet selectionne                #49 Vertexes Object
+global VertexesForme         ;VertexesForme                    = 0    # Vertexes complet de la forme                   #50 Vertexes Forme
+                                                                      # peut prendre du temps, depasser la fenetre et donner des donnees incompletes
+                                                                      # can take time and exceed the window and give data's incompletes
+### End Section Switch #######################################################################################################################
+
+# do not modify
+global compteur              ; compteur                        = 0    # compteur objets
+global texteInfo             ; texteInfo                       = ""   # texte
+global dummy3                ; dummy3                          = ""   #
+
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _fromUtf8(s):
+        return s
+ 
+try:
+    _encoding = QtGui.QApplication.UnicodeUTF8
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig, _encoding)
+except AttributeError:
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig)
+
+##########
+
+def Around(a) :
+    global arondi
+    return round(a,arondi)
+
+def decodeSplit(code,titre):
+    global dummy3
+    a = str(code)
+    dummy = a.split(titre)[1]
+    dummy2 = dummy.split(")")
+    dummy3 = dummy2[0].split(",")
+
+def angle2(vecteur_x1,vecteur_y1,vecteur_x2,vecteur_y2,mode):
+# calcul de l'inclinaison d'une ligne a partir de deux Vecteurs
+# si "mode" = 1 alors affichage en degres sinon en radian
+    try:
+        deltaX = vecteur_x2 - vecteur_x1
+        deltaY = vecteur_y2 - vecteur_y1
+        if mode ==1:
+            angle = degrees(atan2(float(deltaY),float(deltaX)))         # degrees
+        else:
+            angle = atan2(float(deltaY),float(deltaX))                  # radian
+#        return round(angle,6)
+        return angle
+    except Exception:
+        return 0
+
+def longChaine(ligne):                                                  # longueur de la chaine convertie en points
+    global chaineRemplacement
+    # pas au point     Not finished
+#### new formule ##########################################
+#    font = QFont("", 0)                                                 # a regler chercher les valeurs "times" et "10"
+#    fm = QFontMetrics(font)
+#    car = chaineRemplacement[0]                                         # caractere de remplissage
+#    car *= 200                                                          # nombre de caracteres a ajouter
+#    ligne += car
+#    longChaine = fm.elidedText(ligne,Qt.ElideRight,200) + " : "         # ElideRight ElideLeft ElideMiddle (coupe a x points et met "...")
+#
+#### new formule ##########################################
+#    font = QFont("times", 10)                                            # a regler chercher les valeurs "times" et "10"
+    font = QFont("", 0)                                                  # a regler chercher les valeurs "times" et "10"
+
+    fm = QFontMetrics(font)
+    newLine = fm.width(ligne)                                            # largeur nouvelle ligne a traiter
+    
+    car = chaineRemplacement[0]                                          # caractere de remplissage
+    esp = car                                                            # un caractere pour tester nombre de pixels
+    car *= 50
+
+    basepixel = fm.width(esp)                                            # largeur de un espace
+    gabariL = " : RegularPolygon Circumradius"                           # texte a respecter (longueur de la chaine la plus longue)
+    gabariLine = fm.width(gabariL)                                       # largeur gabari de la chaine
+
+    space = int((gabariLine - newLine) / basepixel)
+    longChaine = ligne + car[:space] + " : "
+
+#    ligne += "______________________________"
+#    longChaine = ligne[:24] + " : "
+
+    return longChaine
+
+def afficherVR(titre,texte):                                                 # affiche le texte dans la Vue rapport
+    titre += (" "*30)                                                        # " " = chaine a inclure
+    App.Console.PrintMessage(titre[:25] + " : "+unicode(texte) + "\n")                # 25 = longueur de la chaine
+
+class Ui_MainWindow(object):
+ 
+    global path
+    global texteInfo
+    def setupUi(self, MainWindow):
+        self.window = MainWindow
+        global path
+        global texteInfo
+        global SizeX
+        global SizeY
+        global posiX
+        global posiY
+        global red
+        global green
+        global blue
+        global visualiserWindow
+
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.setWindowTitle("FCInfoGlass ")
+        MainWindow.resize(SizeX, SizeY)                                       # dimensions exterieures de la fenetre
+        MainWindow.setMinimumSize(QtCore.QSize(SizeX, SizeY))                 # 
+        MainWindow.setMaximumSize(QtCore.QSize(SizeX, SizeY))                 # 
+
+        MainWindow.setGeometry(posiX, posiY, SizeX, SizeY)                    # coin superieur X,Y coin inferieur X,Y positionne la fenetre dans l'ecran
+                                                                              # modify this line for posionned the window
+        ##### if visualiserWindow = 1 then tranparent window
+        if visualiserWindow == 0:
+            MainWindow.setWindowOpacity(1)                                    # rend la fenetre +/- opaque 
+            MainWindow.setWindowFlags(QtCore.Qt.FramelessWindowHint)          # rend la fenêtre transparente et cache le cadre
+            MainWindow.setAttribute(QtCore.Qt.WA_TranslucentBackground, True) # ne pas bouger ,True
+            MainWindow.setStyleSheet("background:transparent;")               # rend le fond transparent
+            self.istransparent = True
+        #####
+#############################################
+#
+#        ################ test bouton
+#        self.frame = QtGui.QFrame(MainWindow)
+#        self.frame.setGeometry(QtCore.QRect(10, 370, 381, 24))
+#        self.frame.setFrameShape(QtGui.QFrame.StyledPanel)
+#        self.frame.setFrameShadow(QtGui.QFrame.Raised)
+#        self.frame.setObjectName(_fromUtf8("frame"))
+#        self.PBQuit = QtGui.QPushButton(self.frame)
+#        self.PBQuit.setGeometry(QtCore.QRect(10, 10, 101, 23))
+#        self.PBQuit.setObjectName(_fromUtf8("PBQuit"))
+#        self.PBQuit.clicked.connect(self.on_PBQuit) ###
+#        ###################
+#
+#        self.frame.setWindowOpacity(1)                                       # rend la fenetre +/- opaque 
+#        self.frame.setWindowFlags(QtCore.Qt.FramelessWindowHint)             # rend la fenêtre transparente et cache le cadre
+#        self.frame.setAttribute(QtCore.Qt.WA_TranslucentBackground, True)    # ne pas bouger ,True
+#        self.frame.setStyleSheet("background:transparent;")                  # rend le fond transparent
+#        self.istransparent = True
+# 
+##########################################
+#        #cree un cadre aux dimensions   MainWindow.resize(400, 400) mais cache la fenetre textEdit  OK
+#        self.centralWidget = QtGui.QWidget(MainWindow)
+#        self.centralWidget.setObjectName(_fromUtf8("centralWidget"))
+#        self.tableWidget = QtGui.QTableWidget(self.centralWidget)
+#        self.tableWidget.setGeometry(QtCore.QRect(0, 0, 400, 400))
+##########################################
+ 
+        MainWindow.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint) # met la fenetre en avant
+ 
+        self.centralWidget = QtGui.QWidget(MainWindow)
+        self.centralWidget.setObjectName(_fromUtf8("centralWidget"))
+        self.label = QtGui.QLabel(self.centralWidget)
+        self.label.setGeometry(QtCore.QRect(10, 20, SizeX, SizeY))           # positionne le label (texte) et donne son occupation (surface cadre)abscisse, ordonnee, largeur, hauteur
+        self.label.setObjectName(_fromUtf8("label"))
+
+        MainWindow.setCentralWidget(self.centralWidget)
+        self.retranslateUi(MainWindow)
+#        self.PBQuit.setText("Quit")
+ 
+    def retranslateUi(self, MainWindow):
+        MainWindow.setWindowTitle("Dialog")
+#        self.PBQuit.setText("Quit")
+        self.label.setText("")
+ 
+    def on_pushButton_Raf_clicked(self):                                     # affiche le texte concatene dans la fenetre
+        global texteInfo
+        global colorize
+        self.label.setStyleSheet("color:"+colorize)
+        self.label.setText(unicode(texteInfo) + "\n")
+        
+    def on_PBQuit(self):
+        App.Console.PrintMessage(str("Fin FCInfoGlass ")+"\n")
+        FreeCADGui.Selection.removeObserver(s)                              # désinstalle la fonction résidente
+        self.window.hide()
+ 
+class SelObserver:
+    afficherVR("","")
+    def addSelection(self,document, object, element, position):              # Selection
+            global texteInfo
+            global compteur
+            global dummy3
+
+            global PrintReportView
+            global DocumentName    
+            global InternalName    
+            global LabelObject     
+            global ElementName     
+            global ObjectType      
+            global LineSeparateTitle
+
+            global ObjectLength    
+            global ObjectCurveRadius
+            global ObjectCurveCenter
+
+            global LineDimension
+            global DWireDimension
+            global CircleDimension
+            global CirclePartDimension
+            global ArcDimension
+            global EllipseDimension
+            global EllipsePartDimension
+            global PolygonDimension
+            global RectangleDimension
+            global BSplineDimension
+            global PointDimension
+            global BezCurveDimension
+
+            global CylinderDimension
+            global BoxDimension
+            global SphereDimension
+            global EllipsoidDimension
+            global ConeDimension
+            global TorusDimension
+
+            global PlanePartDimension
+            global PrismPartDimension
+            global WedgePartDimension
+            global HelixPartDimension
+            global SpiralPartDimension
+            global VertexPartDimension
+            global LinePartDimension
+            global RegularPolygonPartDimension
+
+            global FaceSurface     
+            global NormalAt
+            global FaceCenter     
+            global BoundBoxFaceVol
+            global BoundBoxFaceCent
+            global BoundBoxFaceCoor 
+            global BounBoxVolumeVol
+            global BounBoxVolumeCent   
+            global BounBoxVolumeCoor    
+            global VolumeObject    
+            global CenterMass   
+            global PlacementForme   
+            global LineInclination 
+            global VertexesObject  
+            global VertexesForme   
+
+            texteInfo = ""
+            compteur  = 0
+
+            sel = FreeCADGui.Selection.getSelection()   
+ 
+            try:
+                Object = Gui.Selection.getSelectionEx()[0].SubObjects[0]
+            except Exception:
+                None
+ 
+                # Nom du document                                                          #1
+            if DocumentName == 1:
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Document name" , str(FreeCAD.activeDocument().Name))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Document name")+str(FreeCAD.activeDocument().Name)+"\n"
+                except Exception:
+                    None
+     
+                # Nom interne de l'objet                                                   #2
+            if InternalName == 1:
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Object name" , str(sel[0].Name))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Object name")+str(sel[0].Name)+"\n"
+                except Exception:
+                    None
+     
+                # Label                                                                    #3
+            if LabelObject == 1:
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Label name" , str(unicode(sel[0].Label)))
+#                    texteInfo += longChaine(str(compteur)+" : Label name")+str(sel[0].Label)+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Label name")+str(unicode(sel[0].Label))+"\n"
+                    compteur += 1
+                except Exception:
+                    None
+     
+                # Nom de l'element                                                         #4
+            if ElementName == 1:
+                try:
+                    SubElement = FreeCADGui.Selection.getSelectionEx()   
+                    element_ = SubElement[0].SubElementNames[0]
+                    if PrintReportView == 1:
+                        afficherVR("Element name" , str(element_))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Element name")+str(element_)+"\n"
+                except Exception:
+                    None
+     
+                # Type d'objet                                                             #5
+            if ObjectType == 1:
+                try:
+                    typeObject = sel[0].Shape.ShapeType
+                    if PrintReportView == 1:
+                        afficherVR("Object type" , typeObject)
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Object type")+typeObject+"\n"
+                except Exception:
+                    None
+
+                # ligne de separation                                                      #6
+            if LineSeparateTitle == 1:
+                    if PrintReportView == 1:
+                        afficherVR("________________________","")
+                    texteInfo += "________________________"+"\n"
+     
+##### Object or SubObject
+                # longueur Objet ou perimetre                                              #7
+            if ObjectLength == 1:
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Object lenght (or per.)" , str(Gui.Selection.getSelectionEx()[0].SubObjects[0].Length))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Object lenght (or per.)")+str(Around(Gui.Selection.getSelectionEx()[0].SubObjects[0].Length))+"\n"
+                except Exception:
+                    #App.Console.PrintError("ObjectLength"+"\n")
+                    None
+
+                # Radius subOject curve                                                    #8
+            if ObjectCurveRadius == 1:
+                try:
+                    r = Gui.Selection.getSelectionEx()[0].SubObjects[0].Curve
+                    if PrintReportView == 1:
+                        afficherVR("Object radius" , str(r.Radius))
+                    texteInfo +=  longChaine(str(compteur)+" : Object radius")+str(Around(r.Radius))+"\n"
+                except Exception:
+                    #App.Console.PrintError("r.Radius"+"\n")
+                    None
+                # Center subOject curve                                                    #9
+            if ObjectCurveCenter == 1:
+                try:
+                    r = Gui.Selection.getSelectionEx()[0].SubObjects[0].Curve
+                    if PrintReportView == 1:
+                        afficherVR("Object center" , str(r.Center))
+                    texteInfo +=  longChaine(str(compteur)+" : Object center")+"X: "+str(Around(r.Center.x))+" Y: "+str(Around(r.Center.y))+" Z: "+str(Around(r.Center.z))+"\n"
+                except Exception:
+                    #App.Console.PrintError("r.Center"+"\n")
+                    None
+
+                # ligne de separation                                                      #6
+            if LineSeparateTitle == 1:
+                    if PrintReportView == 1:
+                        afficherVR("________________________","")
+                    texteInfo += "________________________"+"\n"
+
+##### Dimensions Draft
+                # Line Draft                                                               #10
+            if (LineDimension == 1) and (str(sel[0].Name[:4]) == "Line"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Line Start" , str(sel[0].Start))                       # Line Start
+                        afficherVR("Line End" , str(sel[0].End))                           # Line End
+                        afficherVR("Line Length" , str(sel[0].Length))                     # Line Length
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Line Start")+ "X1: "+ str(Around(sel[0].Start[0]))+ " Y1: "+ str(Around(sel[0].Start[1]))+ " Z1: "+ str(Around(sel[0].Start[2]))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Line End") + "X2: " + str(Around(sel[0].End[0])) + " Y2: "+ str(Around(sel[0].End[1])) + " Z2: "+ str(Around(sel[0].End[2]))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Line Length")+str(Around(sel[0].Length))+"\n"
+                except Exception:
+                    #App.Console.PrintError("LineDimension"+"\n")
+                        # Line Part                                                        #11
+                    if (LinePartDimension == 1) and (str(sel[0].Name[:4]) == "Line"):
+                        try:
+                            if PrintReportView == 1:
+                                afficherVR("Line" , "X1: "+str(sel[0].X1)+" Y1: "+str(sel[0].Y1)+" Z1: "+str(sel[0].Z1))  # X1 Y1 Z1
+                                afficherVR("Line" , "X2: "+str(sel[0].X2)+" Y2: "+str(sel[0].Y2)+" Z2: "+str(sel[0].Z2))  # X2 Y2 Z2
+                            compteur += 1
+                            texteInfo += longChaine(str(compteur)+" : Line")+"X1: "+str(Around(sel[0].X1))+" Y1: "+str(Around(sel[0].Y1))+" Z1: "+str(Around(sel[0].Z1))+"\n"
+                            texteInfo += longChaine(str(compteur)+" : Line")+ "X2: "+str(Around(sel[0].X2))+" Y2: "+str(Around(sel[0].Y2))+" Z2: "+str(Around(sel[0].Z2))+"\n"
+                        except Exception:
+                            #App.Console.PrintError("LinePartDimension"+"\n")
+                            None
+
+                # DWire                                                                    #12
+            elif (DWireDimension == 1) and (str(sel[0].Name[:5]) == "DWire"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("DWire Start" , str(sel[0].Start))                      # Line Start
+                        afficherVR("DWire End" , str(sel[0].End))                          # Line End
+                        afficherVR("DWire Length" , str(sel[0].Length))                    # Line Length
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : DWire Start")+ "X1: "+ str(Around(sel[0].Start[0]))+ " Y1: "+ str(Around(sel[0].Start[1]))+ " Z1: "+ str(Around(sel[0].Start[2]))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : DWire End")+ "X2: "  + str(Around(sel[0].End[0]))+ " Y2: "+  str(Around(sel[0].End[1]))+ " Z2: "+  str(Around(sel[0].End[2]))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : DWire Length")+str(Around(sel[0].Length))+"\n"
+                except Exception:
+                    #App.Console.PrintError("DWireDimension"+"\n")
+                    None
+
+                # Circle Draft                                                             #13
+            elif (CircleDimension == 1) and (str(sel[0].Name[:6]) == "Circle"):
+                try:
+                    test = sel[0].FirstAngle    # test error
+                    if PrintReportView == 1:
+                        afficherVR("Circle Radius" ,     str(sel[0].Radius))               # Circle Radius
+                        afficherVR("Circle FirstAngle" , str(sel[0].FirstAngle))           # Circle FirstAngle
+                        afficherVR("Circle LastAngle" ,  str(sel[0].LastAngle))            # Circle LastAngle
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Circle Radius") +   str(Around(sel[0].Radius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Circle FirstAngle")+str(Around(sel[0].FirstAngle))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Circle LastAngle")+ str(Around(sel[0].LastAngle))+"\n"
+                except Exception:
+                    #App.Console.PrintError("CircleDimension"+"\n")
+                        # Circle Part                                                      #14
+                    if (CirclePartDimension == 1) and (str(sel[0].Name[:6]) == "Circle"):
+                        try:
+                            if PrintReportView == 1:
+                                afficherVR("Circle Radius" , str(sel[0].Radius))           # Radius
+                                afficherVR("Circle Angle0" , str(sel[0].Angle0))           # Angle0
+                                afficherVR("Circle Angle1" , str(sel[0].Angle1))           # Angle1
+                            compteur += 1
+                            texteInfo += longChaine(str(compteur)+" : Circle Radius")+str(Around(sel[0].Radius))+"\n"
+                            texteInfo += longChaine(str(compteur)+" : Circle Angle0")+str(Around(sel[0].Angle0))+"\n"
+                            texteInfo += longChaine(str(compteur)+" : Circle Angle1")+str(Around(sel[0].Angle1))+"\n"
+                        except Exception:
+                            #App.Console.PrintError("CirclePartDimension"+"\n")
+                            None
+    
+                # Arc                                                                      #15
+            elif (ArcDimension == 1) and (str(sel[0].Name[:3]) == "Arc"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Arc Radius" ,     str(sel[0].Radius))                  # Arc Radius
+                        afficherVR("Arc FirstAngle" , str(sel[0].FirstAngle))              # Arc FirstAngle
+                        afficherVR("Arc LastAngle" ,  str(sel[0].LastAngle))               # Arc LastAngle
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Arc Radius") +   str(Around(sel[0].Radius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Arc FirstAngle")+str(Around(sel[0].FirstAngle))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Arc LastAngle")+ str(Around(sel[0].LastAngle))+"\n"
+                except Exception:
+                    #App.Console.PrintError("ArcDimension"+"\n")
+                    None
+
+                # Ellipse Draft                                                            #16
+            elif (EllipseDimension == 1) and (str(sel[0].Name[:7]) == "Ellipse"):
+                try:
+                    test = sel[0].FirstAngle    # test error
+                    if PrintReportView == 1:
+                        afficherVR("Ellipse MajorRadius" , str(sel[0].MajorRadius))        # Ellipse MajorRadius
+                        afficherVR("Ellipse MinorRadius" , str(sel[0].MinorRadius))        # Ellipse MinorRadius
+                        afficherVR("Ellipse FirstAngle" , str(sel[0].FirstAngle))          # Ellipse FirstAngle
+                        afficherVR("Ellipse LastAngle" , str(sel[0].LastAngle))            # Ellipse LastAngle
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Ellipse MajorRadius")+str(Around(sel[0].MajorRadius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Ellipse MinorRadius")+str(Around(sel[0].MinorRadius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Ellipse FirstAngle") +str(Around(sel[0].FirstAngle))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Ellipse LastAngle") + str(Around(sel[0].LastAngle))+"\n"
+                except Exception:
+                    #App.Console.PrintError("EllipseDimension 1"+"\n")
+                        # Ellipse Part                                                     #17
+                    if (EllipsePartDimension == 1) and (str(sel[0].Name[:7]) == "Ellipse"):
+                        try:
+                            if PrintReportView == 1:
+                                afficherVR("Ellipse MajorRadius" , str(sel[0].MajorRadius))# MajorRadius
+                                afficherVR("Ellipse MinorRadius" , str(sel[0].MinorRadius))# MinorRadius
+                                afficherVR("Ellipse Angle0" , str(sel[0].Angle0))          # Angle0
+                                afficherVR("Ellipse Angle1" , str(sel[0].Angle1))          # Angle1
+                            compteur += 1
+                            texteInfo += longChaine(str(compteur)+" : Ellipse MajorRadius")+str(Around(sel[0].MajorRadius))+"\n"
+                            texteInfo += longChaine(str(compteur)+" : Ellipse MinorRadius")+str(Around(sel[0].MinorRadius))+"\n"
+                            texteInfo += longChaine(str(compteur)+" : Ellipse Angle0") +    str(Around(sel[0].Angle0))+"\n"
+                            texteInfo += longChaine(str(compteur)+" : Ellipse Angle1") +    str(Around(sel[0].Angle1))+"\n"
+                        except Exception:
+                            #App.Console.PrintError("EllipsePartDimension 2"+"\n")
+                            None
+
+                # Polygon                                                                  #18
+            elif (PolygonDimension == 1) and (str(sel[0].Name[:7]) == "Polygon"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Polygon Radius" , str(sel[0].Radius))                  # Polygon Radius
+                        afficherVR("Polygon FacesNumber" , str(sel[0].FacesNumber))        # Polygon FacesNumber
+                        afficherVR("Polygon FilletRadius" , str(sel[0].FilletRadius))      # Polygon FilletRadius
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Polygon Radius")     + str(Around(sel[0].Radius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Polygon FacesNumber")+ str(Around(sel[0].FacesNumber))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Polygon FilletRadius")+str(Around(sel[0].FilletRadius))+"\n"
+                except Exception:
+                    #App.Console.PrintError("PolygonDimension"+"\n")
+                    None
+
+                # Rectangle                                                                #19
+            elif (RectangleDimension == 1) and (str(sel[0].Name[:9]) == "Rectangle"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Rectangle Length" , str(sel[0].Length))                # Rectangle Length
+                        afficherVR("Rectangle Height" , str(sel[0].Height))                # Rectangle Height
+                        afficherVR("Rectangle ChamferSize" , str(sel[0].ChamferSize))      # Rectangle ChamferSize
+                        afficherVR("Rectangle FilletRadius" , str(sel[0].FilletRadius))    # Rectangle FilletRadius
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Rectangle Length") +     str(Around(sel[0].Length))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Rectangle Height") +     str(Around(sel[0].Height))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Rectangle ChamferSize")+ str(Around(sel[0].ChamferSize))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Rectangle FilletRadius")+str(Around(sel[0].FilletRadius))+"\n"
+                except Exception:
+                    #App.Console.PrintError("RectangleDimension"+"\n")
+                    None
+                
+                # BSpline                                                                  #20
+            elif (BSplineDimension == 1) and (str(sel[0].Name[:7]) == "BSpline"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("BSpline MakeFace" , str(sel[0].MakeFace))              # BSpline Length
+                        afficherVR("BSpline Closed" , str(sel[0].Closed))                  # BSpline Height
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : BSpline MakeFace")+str((sel[0].MakeFace))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : BSpline Closed") + str((sel[0].Closed))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BSplineDimension"+"\n")
+                    None
+
+                # Point                                                                    #21
+            elif (PointDimension == 1) and (str(sel[0].Name[:5]) == "Point"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Point" , "X: "+str(sel[0].X)+" Y: " + str(sel[0].Y) +" Z: "+str(sel[0].Z)) # Point X Y Z
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Point")+"X: "+str(Around(sel[0].X))+" Y: "+str(Around(sel[0].Y))+" Z: "+str(Around(sel[0].Z))+"\n"
+                except Exception:
+                    #App.Console.PrintError("PointDimension"+"\n")
+                    None
+
+                # BezCurve                                                                 #22
+            elif (BezCurveDimension == 1) and (str(sel[0].Name[:8]) == "BezCurve"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("BezCurve Degree" , str(sel[0].Degree))                 # BezCurve Degree
+                        afficherVR("BezCurve Continuity" , str(sel[0].Continuity))         # BezCurve Continuity
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : BezCurve Degree") +   str(Around(sel[0].Degree))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : BezCurve Continuity")+str(Around(sel[0].Continuity))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BezCurveDimension"+"\n")
+                    None
+
+##### Dimensions Volumes
+                # Cylinder                                                                 #23
+            elif (CylinderDimension == 1) and (str(sel[0].Name[:8]) == "Cylinder"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Cylinder Radius" , str(sel[0].Radius))                 # Cylinder Radius
+                        afficherVR("Cylinder Height" , str(sel[0].Height))                 # Cylinder Height
+                        afficherVR("Cylinder Angle" , str(sel[0].Angle))                   # Cylinder Angle
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Cylinder Radius")+str(Around(sel[0].Radius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Cylinder Height")+str(Around(sel[0].Height))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Cylinder Angle")+ str(Around(sel[0].Angle))+"\n"
+                except Exception:
+                    #App.Console.PrintError("CylinderDimension"+"\n")
+                    None
+
+                # Box                                                                      #24
+            elif (BoxDimension == 1) and (str(sel[0].Name[:3]) == "Box"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Box Length" , str(sel[0].Length))                      # Length
+                        afficherVR("Box Width" , str(sel[0].Width))                        # Width
+                        afficherVR("Box Height" , str(sel[0].Height))                      # Height
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Box Length")+str(Around(sel[0].Length))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Box Width") +str(Around(sel[0].Width))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Box Height")+str(Around(sel[0].Height))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BoxDimension"+"\n")
+                    None
+
+                # Sphere                                                                   #25
+            elif (SphereDimension == 1) and (str(sel[0].Name[:6]) == "Sphere"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Sphere Radius" , str(sel[0].Radius))                   # Radius
+                        afficherVR("Sphere Angle1" , str(sel[0].Angle1))                   # Angle1
+                        afficherVR("Sphere Angle2" , str(sel[0].Angle2))                   # Angle2
+                        afficherVR("Sphere Angle3" , str(sel[0].Angle3))                   # Angle3
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Sphere Radius")+str(Around(sel[0].Radius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Sphere Angle1")+str(Around(sel[0].Angle1))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Sphere Angle2")+str(Around(sel[0].Angle2))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Sphere Angle3")+str(Around(sel[0].Angle3))+"\n"
+                except Exception:
+                    #App.Console.PrintError("SphereDimension"+"\n")
+                    None
+
+                # Ellipsoid                                                                #26
+            elif (EllipsoidDimension == 1) and (str(sel[0].Name[:9]) == "Ellipsoid"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Ellipsoid Radius1" , str(sel[0].Radius1))              # Radius1
+                        afficherVR("Ellipsoid Radius2" , str(sel[0].Radius2))              # Radius2
+                        afficherVR("Ellipsoid Radius3" , str(sel[0].Radius3))              # Radius3
+                        afficherVR("Ellipsoid Angle1" , str(sel[0].Angle1))                # Angle1
+                        afficherVR("Ellipsoid Angle2" , str(sel[0].Angle2))                # Angle2
+                        afficherVR("Ellipsoid Angle3" , str(sel[0].Angle3))                # Angle3
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Ellipsoid Radius1")+str(Around(sel[0].Radius1))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Ellipsoid Radius2")+str(Around(sel[0].Radius2))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Ellipsoid Radius3")+str(Around(sel[0].Radius3))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Ellipsoid Angle1")+ str(Around(sel[0].Angle1))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Ellipsoid Angle2")+ str(Around(sel[0].Angle2))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Ellipsoid Angle3")+ str(Around(sel[0].Angle3))+"\n"
+                except Exception:
+                    #App.Console.PrintError("EllipsoidDimension"+"\n")
+                    None
+
+                # Cone                                                                     #27
+            elif (ConeDimension == 1) and (str(sel[0].Name[:4]) == "Cone"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Cone Radius1" , str(sel[0].Radius1))                   # Radius1
+                        afficherVR("Cone Radius2" , str(sel[0].Radius2))                   # Radius2
+                        afficherVR("Cone Height" , str(sel[0].Height))                     # Height
+                        afficherVR("Cone Angle" , str(sel[0].Angle))                       # Angle
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Cone Radius1")+str(Around(sel[0].Radius1))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Cone Radius2")+str(Around(sel[0].Radius2))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Cone Height") +str(Around(sel[0].Height))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Cone Angle") + str(Around(sel[0].Angle))+"\n"
+                except Exception:
+                    #App.Console.PrintError("ConeDimension"+"\n")
+                    None
+
+                # Torus                                                                    #28
+            elif (TorusDimension == 1) and (str(sel[0].Name[:5]) == "Torus"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Torus Radius1" , str(sel[0].Radius1))                  # Radius1
+                        afficherVR("Torus Radius2" , str(sel[0].Radius2))                  # Radius2
+                        afficherVR("Torus Angle1" , str(sel[0].Angle1))                    # Angle1
+                        afficherVR("Torus Angle2" , str(sel[0].Angle2))                    # Angle2
+                        afficherVR("Torus Angle3" , str(sel[0].Angle3))                    # Angle3
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Torus Radius1")+str(Around(sel[0].Radius1))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Torus Radius2")+str(Around(sel[0].Radius2))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Torus Angle1") +str(Around(sel[0].Angle1))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Torus Angle2") +str(Around(sel[0].Angle2))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Torus Angle3") +str(Around(sel[0].Angle3))+"\n"
+                except Exception:
+                    #App.Console.PrintError("TorusDimension"+"\n")
+                    None
+
+                # Plane Part                                                               #29
+            elif (PlanePartDimension == 1) and (str(sel[0].Name[:5]) == "Plane"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Plane Length" , str(sel[0].Length))                    # Length
+                        afficherVR("Plane Width" , str(sel[0].Width))                      # Width
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Plane Length")+str(Around(sel[0].Length))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Plane Width") +str(Around(sel[0].Width))+"\n"
+                except Exception:
+                    #App.Console.PrintError("PlanePartDimension"+"\n")
+                    None
+
+                # Prism Part                                                               #30
+            elif (PrismPartDimension == 1) and (str(sel[0].Name[:5]) == "Prism"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Prism Polygon" , str(sel[0].Polygon))                  # Polygon
+                        afficherVR("Prism Circumradius" , str(sel[0].Circumradius))        # Circumradius
+                        afficherVR("Prism Height" , str(sel[0].Height))                    # Height
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Prism Polygon") +    str(Around(sel[0].Polygon))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Prism Circumradius")+str(Around(sel[0].Circumradius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Prism Height") +     str(Around(sel[0].Height))+"\n"
+                except Exception:
+                    #App.Console.PrintError("PrismPartDimension"+"\n")
+                    None
+
+                # Wedge Part                                                               #31
+            elif (WedgePartDimension == 1) and (str(sel[0].Name[:5]) == "Wedge"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Wedge Xmin" , str(sel[0].Xmin))                        # Xmin
+                        afficherVR("Wedge Ymin" , str(sel[0].Ymin))                        # Ymin
+                        afficherVR("Wedge Zmin" , str(sel[0].Zmin))                        # Zmin
+
+
+                        afficherVR("Wedge X2min" , str(sel[0].X2min))                      # X2min
+                        afficherVR("Wedge Z2min" , str(sel[0].Z2min))                      # Z2min
+                        afficherVR("Wedge Xmax" , str(sel[0].Xmax))                        # Xmax
+
+                        afficherVR("Wedge Ymax" , str(sel[0].Ymax))                        # Ymax
+                        afficherVR("Wedge Zmax" , str(sel[0].Zmax))                        # Zmax
+                        afficherVR("Wedge X2max" , str(sel[0].X2max))                      # X2max
+
+                        afficherVR("Wedge Z2max" , str(sel[0].Z2max))                      # Z2max
+
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Wedge Xmin") +str(Around(sel[0].Xmin))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Wedge Ymin") +str(Around(sel[0].Ymin))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Wedge Zmin") +str(Around(sel[0].Zmin))+"\n"
+
+                    texteInfo += longChaine(str(compteur)+" : Wedge X2min")+str(Around(sel[0].X2min))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Wedge Z2min")+str(Around(sel[0].Z2min))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Wedge Xmax") +str(Around(sel[0].Xmax))+"\n"
+
+                    texteInfo += longChaine(str(compteur)+" : Wedge Ymax") +str(Around(sel[0].Ymax))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Wedge Zmax") +str(Around(sel[0].Zmax))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Wedge X2max")+str(Around(sel[0].X2max))+"\n"
+
+                    texteInfo += longChaine(str(compteur)+" : Wedge Z2max")+str(Around(sel[0].Z2max))+"\n"
+                except Exception:
+                    #App.Console.PrintError("WedgePartDimension"+"\n")
+                    None
+
+                # Helix Part                                                               #32
+            elif (HelixPartDimension == 1) and (str(sel[0].Name[:5]) == "Helix"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Helix Pitch" , str(sel[0].Pitch))                      # Pitch
+                        afficherVR("Helix Height" , str(sel[0].Height))                    # Height
+                        afficherVR("Helix Radius" , str(sel[0].Radius))                    # Radius
+                        afficherVR("Helix Angle" , str(sel[0].Angle))                      # Angle
+                        afficherVR("Helix LocalCoord" , str(sel[0].LocalCoord))            # LocalCoord
+                        afficherVR("Helix Style" , str(sel[0].Style))                      # Style
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Helix Pitch") +    str(Around(sel[0].Pitch))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Helix Height") +   str(Around(sel[0].Height))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Helix Radius") +   str(Around(sel[0].Radius))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Helix Angle") +    str(Around(sel[0].Angle))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Helix LocalCoord")+str(Around(sel[0].LocalCoord))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Helix Style") +    str(Around(sel[0].Style))+"\n"
+                except Exception:
+                    #App.Console.PrintError("HelixPartDimension"+"\n")
+                    None
+
+                # Spiral Part                                                              #33
+            elif (SpiralPartDimension == 1) and (str(sel[0].Name[:6]) == "Spiral"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Spiral Growth" , str(sel[0].Growth))                   # Growth
+                        afficherVR("Spiral Rotations" , str(sel[0].Rotations))             # Rotations
+                        afficherVR("Spiral Radius" , str(sel[0].Radius))                   # Radius
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Spiral Growth") +  str(Around(sel[0].Growth))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Spiral Rotations")+str(Around(sel[0].Rotations))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Spiral Radius") +  str(Around(sel[0].Radius))+"\n"
+                except Exception:
+                    #App.Console.PrintError("SpiralPartDimension"+"\n")
+                    None
+
+                # Vertex Part (Point)                                                      #34
+            elif (VertexPartDimension == 1) and (str(sel[0].Name[:6]) == "Vertex"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Vertex" , "X: "+str(sel[0].X)+" Y: "+str(sel[0].Y)+" Z: " , str(sel[0].Z))  # X Y Z
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Vertex")+" X: "+str(Around(sel[0].X))+" Y: "+str(Around(sel[0].Y))+" Z: "+str(Around(sel[0].Z))+"\n"
+                except Exception:
+                    #App.Console.PrintError("VertexPartDimension"+"\n")
+                    None
+
+                # RegularPolygon Part                                                      #35
+            elif (RegularPolygonPartDimension == 1) and (str(sel[0].Name[:14]) == "RegularPolygon"):
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("RegularPolygon Polygon" , str(sel[0].Polygon))          # Polygon
+                        afficherVR("RegularPolygon Circumradius" , str(sel[0].Circumradius))# Circumradius
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : RegularPolygon") +    str(Around(sel[0].Polygon))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : RegularPolygon Radius")+str(Around(sel[0].Circumradius))+"\n"
+                except Exception:
+                    #App.Console.PrintError("RegularPolygonPartDimension"+"\n")
+                    None
+
+                # Surface de la face                                                       #36
+            if FaceSurface == 1:
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Face area" , str(Gui.Selection.getSelectionEx()[0].SubObjects[0].Area))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Face area")+str(Around(Gui.Selection.getSelectionEx()[0].SubObjects[0].Area))+"\n"
+                except Exception:
+                    #App.Console.PrintError("FaceSurface"+"\n")
+                    None
+
+                #NormalAt                                                                 #37
+            if NormalAt == 1:
+                try:
+                    SubElement = FreeCADGui.Selection.getSelectionEx()[0].SubObjects[0]   # subobject
+                    a = SubElement.normalAt(0,0)                                          # ok Vector normalAt pour face
+                    compteur += 1
+                    if PrintReportView == 1:
+                        afficherVR("NormalAt Face" , "X:"+str(Around(a[0]))+" Y:"+str(Around(a[1]))+" Z:"+str(Around(a[2])))
+                    texteInfo += longChaine(str(compteur)+" : NormalAt Face")+"X:"+str(Around(a[0]))+" Y:"+str(Around(a[1]))+" Z:"+str(Around(a[2]))+"\n"
+                except Exception:
+                    try:
+                        sel = FreeCADGui.Selection.getSelection()[0]                      # object
+                        a = sel.Shape.Edges[0].normalAt(0)                                # ok pour Edges
+                        compteur += 1
+                        if PrintReportView == 1:
+                            afficherVR("NormalAt Edges" , "X:"+str(Around(a[0]))+" Y:"+str(Around(a[1]))+" Z:"+str(Around(a[2])))
+                        texteInfo += longChaine(str(compteur)+" : NormalAt Edges")+"X:"+str(Around(a[0]))+" Y:"+str(Around(a[1]))+" Z:"+str(Around(a[2]))+"\n"
+                    except Exception:
+                        #App.Console.PrintError("NormalAt"+"\n")
+                        None
+
+                # Center Face (mass)                                                       #38
+            if FaceCenter == 1:
+                try:
+                    det = Gui.Selection.getSelectionEx()[0].SubObjects[0].CenterOfMass
+                    if PrintReportView == 1:
+                        afficherVR("Face center" , "X: "+str(det[0])+" Y: "+str(det[1])+" Z: "+str(det[2])) # Vector center mass to face
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Face center")+"X: "+str(Around(det[0]))+" Y: "+str(Around(det[1]))+" Z: "+str(Around(det[2]))+"\n"
+                except Exception:
+                    #App.Console.PrintError("FaceCenter"+"\n")
+                    None
+
+                # BoudBox Face Volume                                                      #39
+            if BoundBoxFaceVol == 1:
+                try:
+                    det = Gui.Selection.getSelectionEx()[0].SubObjects[0]
+                    if PrintReportView == 1:
+                        afficherVR("Face BoundBox Volume" , str(det.BoundBox.XLength)+" x "+str(det.BoundBox.YLength)+" x "+str(det.BoundBox.ZLength)) # BoundBoxFace face volume
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Face BBox Volume")+str(Around(det.BoundBox.XLength))+" x "+str(Around(det.BoundBox.YLength))+" x "+str(Around(det.BoundBox.ZLength))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BoundBoxFaceVol"+"\n")
+                    None
+     
+                # BoudBox Face Center                                                      #40
+            if BoundBoxFaceCent == 1:
+                try:
+                    det = Gui.Selection.getSelectionEx()[0].SubObjects[0].BoundBox.Center
+                    if PrintReportView == 1:
+                        afficherVR("Face BoundBox Center" , "X: "+str(det[0])+" Y: "+str(det[1])+" Z: "+str(det[2]))             # BoundBoxFace face center
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Face BBox Center")+"X: "+str(Around(det[0]))+" Y: "+str(Around(det[1]))+" Z: "+str(Around(det[2]))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BoundBoxFaceCent"+"\n")
+                    None
+
+                # BoudBox Face Coordinates                                                 #41
+            if BoundBoxFaceCoor == 1:
+                try:
+                    det = Gui.Selection.getSelectionEx()[0].SubObjects[0].BoundBox
+                    decodeSplit(det,"BoundBox (")
+                    if PrintReportView == 1:
+                        afficherVR("Face BoundBox Coor" , "X1: "+str(dummy3[0])+" Y1: "+str(dummy3[1])+" Z1: "+str(dummy3[2])) # BoundBoxFace face coordinates
+                        afficherVR("" , "X2: "+str(dummy3[3])+" Y2: "+str(dummy3[4])+" Z2: "+str(dummy3[5]))                 # BoundBoxFace face coordinates
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Face BBox Coor")+"X1: "+str(Around(float(dummy3[0])))+" Y1: "+str(Around(float(dummy3[1])))+" Z1:"+str(Around(float(dummy3[2])))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : ")+"X2: "+str(Around(float(dummy3[3])))+" Y2: "+str(Around(float(dummy3[4])))+" Z2: "+str(Around(float(dummy3[5])))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BoundBoxFaceCoor"+"\n")
+                    None
+     
+            ######Cas d'une forme############################################################
+
+                     # rectangle du BoundBox                                               #42
+            if BounBoxVolumeVol == 1:
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Volume BoundBox Volume" , str(sel[0].Shape.BoundBox.XLength)+" x "+str(sel[0].Shape.BoundBox.YLength)+" x "+str(sel[0].Shape.BoundBox.ZLength))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Volume BBox Volume")+str(Around(sel[0].Shape.BoundBox.XLength))+" x "+str(Around(sel[0].Shape.BoundBox.YLength))+" x "+str(Around(sel[0].Shape.BoundBox.ZLength))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BounBoxVolumeVol"+"\n")
+                    None
+     
+                 # centre de la forme                                                      #43
+            if BounBoxVolumeCent == 1:
+                try:
+                    det = sel[0].Shape.BoundBox.Center
+                    if PrintReportView == 1:
+                        afficherVR("Volume BoundBox Center" , "X: "+str(det[0])+" Y: "+str(det[1])+" Z: "+str(det[2]))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Volume BBox Center")+"X: "+str(Around(det[0]))+" Y: "+str(Around(det[1]))+" Z: "+str(Around(det[2]))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BounBoxVolumeCent"+"\n")
+                    None
+
+                 # boundinbox (dimensions hors tout)                                       #44
+            if BounBoxVolumeCoor == 1:
+                try:
+                    det = sel[0].Shape.BoundBox
+                    decodeSplit(det,"BoundBox (")
+                    if PrintReportView == 1:
+                        afficherVR("Volume BoundBox Coor" , "X1: "+str(dummy3[0])+" Y1: "+str(dummy3[1])+" Z1: "+str(dummy3[2])) # BoundBox object coordinates
+                        afficherVR("" , "X2: "+str(dummy3[3])+" Y2: "+str(dummy3[4])+" Z2: "+str(dummy3[5]))                     # BoundBox object coordinates
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Volume BBox Coor")+"X1: "+str(Around(float(dummy3[0])))+" Y1: "+str(Around(float(dummy3[1])))+" Z1:"+str(Around(float(dummy3[2])))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : ")+"X2: "+str(Around(float(dummy3[3])))+" Y2: "+str(Around(float(dummy3[4])))+" Z2: "+str(Around(float(dummy3[5])))+"\n"
+                except Exception:
+                    #App.Console.PrintError("BounBoxVolumeCoor"+"\n")
+                    None
+     
+                 # volume                                                                  #45
+            if VolumeObject == 1:
+                try:
+                    if PrintReportView == 1:
+                        afficherVR("Volume" , str(sel[0].Shape.Volume))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : Volume")+str(Around(sel[0].Shape.Volume))+"\n"
+                except Exception:
+                    #App.Console.PrintError("VolumeObject"+"\n")
+                    None
+     
+                 # centre de la masse                                                      #46
+            if CenterMass == 1:
+                try:
+                    det = sel[0].Shape
+                    c = det.Solids[0].CenterOfMass 
+                    if PrintReportView == 1:
+                        afficherVR("CenterMass" , "X: "+str(c.x)+" Y: "+str(c.y)+" Z: "+str(c.z))
+                    compteur += 1
+                    texteInfo += longChaine(str(compteur)+" : CenterMass")+"X: "+str(Around(c.x))+" Y: "+str(Around(c.y))+" Z: "+str(Around(c.z))+"\n"
+                except Exception:
+                    #App.Console.PrintError("CenterMass"+"\n")
+                    None
+     
+                 # position de la piece Placement                                          #47
+            if PlacementForme == 1:
+                try:
+                    det = sel[0].Placement
+                    compteur += 1
+                    if PrintReportView == 1:
+                        afficherVR("Placement" , "X: "+str(det.Base[0])+" Y: "+str(det.Base[1])+" Z: "+str(det.Base[2]))
+                    texteInfo += longChaine(str(compteur)+" : Placement")+str(Around(det.Base[0]))+" Y: "+str(Around(det.Base[1]))+" Z: "+str(Around(det.Base[2]))+"\n"
+                    decodeSplit(det,"Yaw-Pitch-Roll=(") # decode 
+                    if PrintReportView == 1:
+                        afficherVR("Rotation" , "Yaw: "+str(dummy3[0])+" Pitch: "+str(dummy3[1])+" Roll: "+str(dummy3[2]))
+                        afficherVR("Rotation Q" , "X: "+str(det.Rotation.Q[0])+" Y: "+str(det.Rotation.Q[1])+" Z: "+str(det.Rotation.Q[2])+" Q: "+str(det.Rotation.Q[3]))
+                    texteInfo += longChaine(str(compteur)+" : Rotation")+"Yaw: "+str(Around(float(dummy3[0])))+" Pitch: "+str(Around(float(dummy3[1])))+" Roll: "+str(Around(float(dummy3[2])))+"\n"
+                    texteInfo += longChaine(str(compteur)+" : Rotation Q")+"X: "+str(Around(float(det.Rotation.Q[0])))+" Y: "+str(Around(float(det.Rotation.Q[1])))+" Z: "+str(Around(float(det.Rotation.Q[2])))+" Q: "+str(Around(float(det.Rotation.Q[3])))+"\n"
+                except Exception:
+                    #App.Console.PrintError("PlacementForme"+"\n")
+                    None
+     
+                # search inclination XY YZ ZX uniquement lignes                            #48
+            if LineInclination == 1:
+                try:
+                    angleX1 = angleY1 = angleZ1 = 0.0
+                    angleX2 = angleY2 = angleZ2 = 0.0
+                    sel = FreeCADGui.Selection.getSelection()   
+                    SubElement = FreeCADGui.Selection.getSelectionEx()   
+                    element_ = SubElement[0].SubElementNames[0]
+                    if element_[:4] == "Edge":
+                        try:
+                            element_ = element_[4:]
+                            a = sel[0].Shape.Edges[int(element_)-1].Vertexes[0]
+                            angleX1 = a.Point.x
+                            angleY1 = a.Point.y
+                            angleZ1 = a.Point.z
+                            try:
+                                a = sel[0].Shape.Edges[int(element_)-1].Vertexes[1]
+                                angleX2 = a.Point.x
+                                angleY2 = a.Point.y
+                                angleZ2 = a.Point.z
+                            except Exception:
+                                Vertx.append("-")
+                                Vertx.append("-")
+                                Vertx.append("-")
+                        except Exception:
+                            None
+                        try:
+                            Plan_xy = angle2(angleX1,angleY1,angleX2,angleY2,mode)
+                        except Exception:
+                            Plan_xy = 0.0
+                        try:
+                            Plan_yz   = angle2(angleY1,angleZ1,angleY2,angleZ2,mode)
+                        except Exception:
+                            Plan_yz = 0.0
+                        try:
+                            Plan_zx = angle2(angleZ1,angleX1,angleZ2,angleX2,mode)
+                        except Exception:
+                            Plan_zx = 0.0
+                        
+                        if PrintReportView == 1:
+                            afficherVR("Inclination Obj" , "XY: "+str(Plan_xy)+" YZ: "+str(Plan_yz)+" ZX: "+str(Plan_zx))
+                        compteur += 1
+                        texteInfo += longChaine(str(compteur)+" : Inclination Obj")+"XY: "+str(Around(Plan_xy))+" YZ: "+str(Around(Plan_yz))+" ZX: "+str(Around(Plan_zx))+"\n"
+                except Exception:
+                    #App.Console.PrintError("LineInclination"+"\n")
+                    None
+    
+                # Vertexes de l'objet selectionne                                          #49
+            if VertexesObject == 1:
+                try:
+                    a = Gui.Selection.getSelectionEx()[0].SubObjects[0].Vertexes
+                    aa = 0
+                    compteur += 1
+                    for a0 in range(len(a)):
+                        aa += 1
+                        if aa % 2 > 0:
+                            if aa == 1:
+                                if PrintReportView == 1:
+                                    afficherVR("Vertexes Obj" , "X"+str(aa)+": "+str(a[a0].Point.x)+" Y"+str(aa)+ ": "+str(a[a0].Point.y)+" Z"+str(aa)+ ": "+str(a[a0].Point.z))
+                                texteInfo += longChaine(str(compteur)+" : Vertexes Obj")+"X"+str(aa)+": "+str(Around(a[a0].Point.x))+" Y"+str(aa)+ ": "+str(Around(a[a0].Point.y))+" Z"+str(aa)+ ": "+str(Around(a[a0].Point.z))+"\n"
+                            else:
+                                if PrintReportView == 1:
+                                    afficherVR("" , "X"+str(aa)+": "+str(a[a0].Point.x)+" Y"+str(aa)+ ": "+str(a[a0].Point.y)+" Z"+str(aa)+ ": "+str(a[a0].Point.z))
+                                texteInfo += longChaine(str(compteur)+" : ")+"X"+str(aa)+": "+str(Around(a[a0].Point.x))+" Y"+str(aa)+ ": "+str(Around(a[a0].Point.y))+" Z"+str(aa)+ ": "+str(Around(a[a0].Point.z))+"\n"
+                        else :
+                            if PrintReportView == 1:
+                                afficherVR("" , "X"+str(aa)+": "+str(a[a0].Point.x)+" Y"+str(aa)+ ": "+str(a[a0].Point.y)+" Z"+str(aa)+ ": "+str(a[a0].Point.z))
+                            texteInfo += longChaine(str(compteur)+" : ")+"X"+str(aa)+": "+str(Around(a[a0].Point.x))+" Y"+str(aa)+ ": "+str(Around(a[a0].Point.y))+" Z"+str(aa)+ ": "+str(Around(a[a0].Point.z))+"\n"
+                except Exception:
+                    #App.Console.PrintError("VertexesObject"+"\n")
+                    None
+
+                # Vertexes complet de la forme                                             #50
+            if VertexesForme == 1:
+                try:
+                    compt_E   = 0
+                    perimetre = 0.0
+                    for j in enumerate(sel[0].Shape.Edges):
+                        compt_E+=1
+                        perimetre += (sel[0].Shape.Edges[compt_E-1].Length)
+                        a = sel[0].Shape.Edges[compt_E-1].Vertexes[0]
+                        if PrintReportView == 1:
+                            afficherVR("Vertexes Form" , "X1: "+str(a.Point.x)+" Y1: "+str(a.Point.y)+" Z1: "+str(a.Point.z))
+                        compteur += 1
+                        texteInfo += longChaine(str(compteur)+" : Vertexes Form")+"X1: "+str(Around(a.Point.x))+" Y1: "+str(Around(a.Point.y))+" Z1: "+str(Around(a.Point.z))+"\n"
+                        a = sel[0].Shape.Edges[compt_E-1].Vertexes[1]
+                        if PrintReportView == 1:
+                            afficherVR("" , "X2: " + str(a.Point.x)+" Y2: "+str(a.Point.y)+" Z2: "+str(a.Point.z))
+                        texteInfo += longChaine(str(compteur)+" : ")+"X2: "+str(Around(a.Point.x))+" Y2: "+str(Around(a.Point.y))+" Z2: "+str(Around(a.Point.z))+"\n"
+                    if PrintReportView == 1:
+                        afficherVR("Perimeter" , str(perimetre))
+                        compteur += 1
+                        texteInfo += longChaine(str(compteur)+" : Perimeter")+str(Around(perimetre))+"\n"
+                except Exception:
+                    #App.Console.PrintError("VertexesForme"+"\n")
+                    None
+
+            ff = ui
+            ff.on_pushButton_Raf_clicked()
+ 
+            if PrintReportView == 1:
+#                App.Console.PrintMessage("*****"+Counter +str(compteur)+"*****"+"\n")
+                App.Console.PrintMessage("____End_FCInfoGlass_____________________________________________"+"\n\n")
+
+s=SelObserver()                                   # for selection
+FreeCADGui.Selection.addObserver(s)               # installe the function in resident mode
+ 
+MainWindow = QtGui.QMainWindow()
+ui = Ui_MainWindow()
+ui.setupUi(MainWindow)
+ 
+MainWindow.show()
+

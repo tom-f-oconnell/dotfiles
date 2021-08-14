@@ -22,6 +22,9 @@ if DEBUG:
 # if so, is there some undo stack i can take advantage of so (when undone)
 # it's not considered modified?
 
+# TODO TODO only hide top-level thing of any group-type objects that are not in
+# selection, so they can manually be selectively re-enabled more easily
+
 state_var = 'previously_visible'
 if hasattr(FreeCAD, state_var):
     if DEBUG:

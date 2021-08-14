@@ -1,0 +1,127 @@
+#***************************************************************************
+#*                                                                         *
+#*   Copyright (c) 2013 Daniel Falck  <ddfalck@gmail.com>                  *  
+#*                                                                         *
+#*   This program is free software; you can redistribute it and/or modify  *
+#*   it under the terms of the GNU Lesser General Public License (LGPL)    *
+#*   as published by the Free Software Foundation; either version 2 of     *
+#*   the License, or (at your option) any later version.                   *
+#*   for detail see the LICENCE text file.                                 *
+#*                                                                         *
+#*   This program is distributed in the hope that it will be useful,       *
+#*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#*   GNU Library General Public License for more details.                  *
+#*                                                                         *
+#*   You should have received a copy of the GNU Library General Public     *
+#*   License along with this program; if not, write to the Free Software   *
+#*   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
+#*   USA                                                                   *
+#*                                                                         *
+#***************************************************************************
+from math import pi
+
+from FreeCAD import Base
+import Part
+import Draft
+
+'''
+This macro makes a list of holes for drilling  from a solid 
+1. Select a solid object that has holes in it and run the macro
+2. It only collects info on holes that are parallel to the Z axis- I don't have
+   a 4 or 5 axis mill at the moment
+3. It pulls the center of the hole bounding box and the XLength for it's
+   diameter
+4. It will place a list of the holes on the clipboard
+5. Uncomment the line that starts with '#Draft.makeLine' and manipulate it, if
+   you want to see lines down the center of each hole.
+6. Manipulate the line that starts with  'holelist.append' to make the list fit
+   your own needs- I've put the ZMax at the ZMax of the solid's bounding box
+   because I want to make sure that my drill tip doesn't collide with anything
+   on the top of the part. YMMV.
+'''
+def findholes(obj):
+    print('findholes')
+    facelist = []
+    holelist = []
+    vz = Base.Vector(0, 0, 1)
+    from pprint import pprint
+    '''
+    for f in obj.Faces:
+        print(f.ParameterRange)
+        vs = f.Vertexes
+        pprint([(v.X, v.Y, v.Z) for v in vs])
+        # eliminate flat faces (?)
+        if (round(f.ParameterRange[0], 8) == 0.0 and
+            round(f.ParameterRange[1], 8) == round(pi*2, 8)): 
+
+            facelist.append(f)
+    '''
+    facelist = list(obj.Faces)
+    #
+
+    print('facelist:', facelist)
+
+    curve_types = set()
+    for h in facelist:
+        # TODO it's a face, but is it not 2d?
+        bbox = h.BoundBox
+        center = bbox.Center
+        print('# wires:', len(h.Wires))
+        for w in h.Wires:
+            print('# edges:', len(w.Edges))
+            for c in w.Edges:
+                curve_types.add(str(type(c.Curve)))
+                #'''
+                if isinstance(c.Curve, Part.Line):
+                    v0 = Base.Vector(
+                        c.Vertexes[0].X, c.Vertexes[0].Y, c.Vertexes[0].Z
+                    )
+                    v1 = Base.Vector(
+                        c.Vertexes[1].X, c.Vertexes[1].Y, c.Vertexes[1].Z
+                    )
+                    # TODO what is this conditional doing?
+                    if v1.sub(v0).x == 0 and v1.sub(v0).y == 0:
+                        lsp = Base.Vector(center.x, center.y, bbox.ZMax)
+                        lep = Base.Vector(center.x, center.y, bbox.ZMin)
+
+                        # TODO come up w/ explanation for what this is doing
+                        if not (obj.isInside(lsp, 0, False) or
+                            obj.isInside(lep, 0, False)):
+
+                            # TODO TODO fix issue(s) causing multiple lines to
+                            # be added for each hole (and seemingly not always
+                            # the same multiple, at least if you include things
+                            # that aren't really holes)
+                            # TODO TODO exclude things that aren't really holes
+
+                            Draft.makeLine(
+                                # TODO why using obj for the first BoundBox?
+                                (center.x, center.y, obj.BoundBox.ZMax),
+                                (center.x, center.y, bbox.ZMin)
+                            )
+                            x = center.x
+                            y = center.y
+                            zmax = obj.BoundBox.ZMax
+                            zmin = bbox.ZMin
+                            diameter = bbox.XLength
+                            #holelist.append((diameter, x, y, zmax, zmin))
+                            print((diameter, x, y, zmax, zmin))
+                #'''
+    '''
+    print('curve_types:')
+    pprint(curve_types)
+    '''
+
+
+    '''
+    clipboard = QtGui.QApplication.clipboard()
+    clipboard.setText(str(holelist))
+    '''
+
+sel = Gui.Selection.getSelection()
+# TODO is the .Shape part necessary? why? what type is expected of selection?
+# work with parts? partfeatures?
+obj = sel[0].Shape
+findholes(obj)
+
