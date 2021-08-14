@@ -7,7 +7,7 @@ Current steps to deploy only config links + VIM extensions on WSL:
    Changing the home folder is among the important such steps.
 2. 
    ```
-   git clone git@github.com:tom-f-oconnell/dotfiles
+   git clone git@github.com:tom-f-oconnell/dotfiles --recurse-submodules
    cd dotfiles
    ./link_only
    ./install_vim_extensions.sh
@@ -32,3 +32,11 @@ compilation that `install_vim_extensions.sh` does:
 vim +PluginInstall +qall
 ```
 
+#### multi-git-status
+
+For now, just manually follow the instructions copied from [here](https://github.com/fboender/multi-git-status):
+
+```
+cd multi-git-status
+PREFIX=~/.local make install
+```

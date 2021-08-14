@@ -1062,6 +1062,11 @@ function clone() {
 # TODO TODO maybe overload this to "clear" in no-arg case
 alias cl="clone"
 
+# Need to follow the install instructions for this in my dotfiles README
+alias mg='mgitstatus -w --no-push --no-pull --no-upstream --no-uncommitted --no-untracked --no-stashes -e -d 1; mgitstatus -e'
+# Also do a fetch on each repo (can be slower)
+alias mgf='mg -f'
+
 function reload_bashrc() {
     # Might still want to do this, in cause sourcing screws with other
     # parts of the venv / conda env...

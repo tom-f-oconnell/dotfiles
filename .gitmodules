@@ -10,3 +10,6 @@
 [submodule "complete-alias"]
 	path = complete-alias
 	url = https://github.com/cykerway/complete-alias
+[submodule "multi-git-status"]
+	path = multi-git-status
+	url = https://github.com/fboender/multi-git-status
