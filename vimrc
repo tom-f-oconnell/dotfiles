@@ -192,7 +192,7 @@ function!  SaveAndQuit()
     if &mod
         " https://vi.stackexchange.com/questions/2408
         write
-    else
+    endif
 
     quit
 
@@ -629,6 +629,7 @@ let mapleader = ","
 " TODO are these spaces after <leader>[some char] functional (seems equiv to l
 " interactively) or are the ignored here?
 nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>
+nnoremap <leader>p oprint(f'{=}')<Esc>3hi
 nnoremap <leader>s oimport sys; sys.exit()<Esc>
 " TODO check i'm not shadowing any possibly-useful pre-existing commands after
 " leader (or is leader entirely for custom commands?)
@@ -673,6 +674,33 @@ nnoremap <leader># o<Esc>87i#<Esc>
 " convention i want to use first, from the ~2 big ones)
 
 nnoremap <leader>h :call ToggleH()<CR>
+
+" This function is provided by the vim-better-whitespace plugin
+nnoremap <leader>w :ToggleWhitespace<CR>
+
+
+" TODO if i actually do get a shortcut i'm happy with for invoking my python scripts,
+" maybe also add one for profiling them with kernprof?
+" 'l' for [l]ine_profiler (invoked from CLI as `kernprof -l -v <x>.py` after installing)
+" This decorator is required to mark functions to profile.
+" TODO maybe save on this one too?
+nnoremap <leader>l O@profile<Esc>
+
+" Technically this will toggle all of them, but I'm assuming that (in the current file)
+" ALL are EITHER commented OR uncommented when run, otherwise it won't guarantee they
+" are all commented to be run without kernprof injecting 'profile' into builtins and
+" might behave in some other weird ways.
+function! ToggleProfileDecCommentState()
+    " The trailing 'e' prevents one search term not being found from causing whole
+    " function to fail.
+    " https://vi.stackexchange.com/questions/10821
+    %s/#@profile/LPROF_DEC_PLACEHOLDER/ge
+    %s/@profile/#@profile/ge
+    %s/LPROF_DEC_PLACEHOLDER/@profile/ge
+endfunction
+
+nnoremap <leader>k :call ToggleProfileDecCommentState()<CR>
+
 
 " TODO maybe add a hotkey for "sourcing" vimrc if not already one
 
