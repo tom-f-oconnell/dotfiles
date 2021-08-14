@@ -660,6 +660,8 @@ function link_to_vagrant() {
 
 alias c='cd'
 
+# TODO TODO accept arguments as well and cd relative to where they'd cd without the
+# arguments (+ tab complete)
 alias c1='cd ..'
 alias c2='cd ../..'
 alias c3='cd ../../..'
@@ -683,9 +685,22 @@ alias pfg="pip freeze | grep"
 # TODO TODO + add option (probably would want an alias with one additional letter, like
 # 'ab' ([b]are) to map to it, to not always require another prompt at startup.)
 alias a='activate'
-alias ca='conda activate'
-
 alias d="diff_or_deactivate"
+
+alias ca='conda activate'
+# [c]onda d[e]activate
+alias ce='conda deactivate'
+# [c]onda [de]activate
+alias cde='conda deactivate'
+
+alias crm="conda env remove --name"
+
+# [c]onda (create from) [f]ile
+alias cf='conda env create -f'
+# TODO parse "name: <name>" line to complete activate command
+#alias cfa='conda env create -f && conda activate <TODO>'
+alias cls='conda env list'
+
 alias rv="echo 'rm -rf venv' && rm -rf venv"
 
 alias pp="pyp"
@@ -787,10 +802,13 @@ alias gc='git commit -m'
 # have wrap git push, so that if it fails b/c there are remote changes,
 # prompt to automatically rebase and retry + prompt to open github
 # in web browser (+improve message on diffs? or is it already OK?)
-# TODO what was --follow-tags for again?
 # (not really intending to actually do both, but rather just want the
 # convenience of using gp for both pushing and pulling)
-alias gp='git pull && git push --follow-tags'
+#alias gp='git pull && git push --follow-tags'
+
+# Using this for just git push until I can fix the above and get confidence in it.
+# TODO what was --follow-tags for again?
+alias gp='git push'
 
 alias gpr='git pull --rebase'
 # git [u]pdate (not a real command, just mnemonic)
@@ -832,6 +850,14 @@ alias gdh='git diff HEAD'
 alias gls='git ls-files'
 
 alias grv='git remote -v'
+
+alias grs='git remote set-url'
+# TODO though make a function / script to just automatically switch it to my account,
+# cause that's what i'm using this for... and i currently still have to type the
+# git@github.com:tom-f-oconnell/ part
+alias grso='git remote set-url origin'
+alias grau='git remote add upstream'
+alias gau='git remote add upstream'
 
 # TODO maybe just use hub here? it have something like this?
 # TODO how to deal w/ origin + upstream? just pick origin?
@@ -1083,6 +1109,14 @@ alias sax='ssh -X atlas'
 
 alias scpr='scp -r'
 
+alias tm='tmux'
+# TODO some shortcut for attaching to the most recent (anything like this already built
+# in to tmux?)? (like w/ no args)
+# TODO TODO convenience wrapper to open a terminal, ssh, and tmux attach to each session
+# in tmux list-sessions output?
+alias ta='tmux attach -t'
+alias tls='tmux list-sessions'
+
 # Just obfuscating a bit, in case somebody is scraping Github for SSH aliases...
 # There's probably a better way.
 duck_pfx="eftm."
@@ -1192,6 +1226,13 @@ alias pir='pip install -r'
 alias pu='pip uninstall -y'
 alias pup='pip install --upgrade pip'
 
+# Invoking a Python script this way will avoid BdqQuit traceback on Ctrl+D at an
+# `ipdb.set_trace()` breakpoint https://stackoverflow.com/questions/34914704
+# NOTE: pretty sure this wasn't working correctly (some prints leading up to breakpoint
+# weren't there. maybe it was breaking at start of script and i just needed to continue
+# or something?)
+#alias pd='python -m ipdb'
+
 # "sphinx test" (sb "build" was taken by source bash)
 alias st='make html && xdg-open build/html/index.html'
 
@@ -1214,6 +1255,17 @@ alias ipy='ipython'
 alias ipy3='ipython3'
 
 alias j='jupyter notebook'
+
+# TODO also:
+# - grep for '@profile' or the like (ideally uncommented...) (would need to move to fn)
+#   and don't call (but warn) if missing
+# - install line_profiler if missing?
+# - delete output file?
+# TODO also add whatever args it took to get units in to seconds?
+alias prof='kernprof -l -v'
+# TODO wrapper to get the biggest offenders / remove many consecutive non-run lines?
+# TODO maybe an alias to [prompt and] remove each '@profile' / similar that exists in
+# python files in current tree?
 
 alias cm='cd ~/catkin && catkin_make'
 
@@ -1356,7 +1408,7 @@ alias src="cd ~/src"
 alias sr="cd ~/src"
 alias cs="cd ~/src"
 
-alias dot="cd ~/src/dotfiles && ls"
+alias dot="cd ~/src/dotfiles && git status"
 # Not using `do` because that is some other keyword.
 alias dt="dot"
 
@@ -1372,7 +1424,6 @@ alias 2pg="cd ~/src/hong2p && vi gui.py"
 alias 2pu="cd ~/src/hong2p/hong2p && vi util.py"
 alias 2pk="cd ~/src/hong2p/hong2p && vi kc_mix_analysis.py"
 alias 2ps="cd ~/src/hong2p/scripts && ls"
-alias cu="cd ~/src/chemutils && ls"
 alias no="cd ~/src/natural_odors && ls"
 
 
@@ -1461,7 +1512,7 @@ alias grr="grep -R"
 # colors...
 # e.g. `grepy --color=always lam | grep -v lambda | wc -l` had the same number of lines
 # as without the `| grep -v lambda` part...
-alias grepy="grep -R --include=\*.py --exclude-dir=site-packages"
+alias grepy="grep -R --include=\*.py --exclude-dir=site-packages --exclude-dir=.eggs --exclude-dir=venv"
 alias gpy="grepy"
 # This will lookup and use the alias definition above at runtime.
 alias grepym="grep_py_in_my_repos.py"
@@ -1665,5 +1716,39 @@ alias md5='md5sum'
 alias sha256='sha256sum'
 
 # --statfile only available in my fork
-alias ss='suite2p --statfile suite2p/combined/stat.npy'
+alias ss='conda activate suite2p && suite2p --statfile suite2p/combined/stat.npy'
+
+function suite2p_and_dff() {
+    conda activate suite2p
+
+    highest_concs_mix_svg="$(ls -Art `python -c 'import os; parts = os.getcwd().split("/"); print("/home/tom/src/al_pair_grids/svg/" + "_".join(parts[5:]))'`/*_trials.svg | tail -n 1)"
+    # eog is default image viewer. xdg-open would also open it via eog.
+    # calling it w/ eog w/o additional arguments or & blocked tho and i dont want that
+    xdg-open $highest_concs_mix_svg
+
+    suite2p --statfile suite2p/combined/stat.npy
+
+    pkill eog
+}
+alias sd='suite2p_and_dff'
+
+alias sl="cd /mnt/d1/2p_data/analysis_intermediates; ls -ltr */*/*/suite2p/combined/iscell.npy | awk '{print \$6, \$7, \$8, \$9}'"
+
+# snap install only one i found that could load .dxf files on 18.04
+# install via `sudo snap install inkscape`
+alias inkscape='snap run inkscape'
+
+# rs = my rsync alias defined above (rsync -auvP)
+# TODO is another --delete<when> option more efficient?
+# Going w/ --delete-after for now b/c presumably I have more time to Ctrl-C it if I
+# notice something wrong...
+# [t]ransfer [d]ata [h]al
+alias tdh='rs --delete-after /mnt/d1/2p_data/raw_data/ hal:~/2p_data/raw_data'
+# [t]ransfer [d]ata [h]al, [a]ll
+alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~/2p_data/analysis_intermediates'
+
+# TODO equivalent aliases to above but for transfering to/from USB stick (including
+# stimulus files to corresponding directory on NAS) + to dropbox backup folder
+# TODO tho maybe prompt to pause syncing before dropbox one?
+# TODO + one to transfer to my home computer
 
