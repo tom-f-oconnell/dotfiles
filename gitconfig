@@ -6,14 +6,17 @@
     excludesfile = ~/.gitignore
 
 # This does seem to cause all sorts of problems though...
-# This works for both pull and push. No need to set upstream when first setting
-# up.
+# TODO fix / try deleting and see if current git+github behavior is annoying enough to
+# warrant this
+# This works for both pull and push. No need to set remote when first setting up.
 # https://stackoverflow.com/questions/658885
 [branch "master"]
 	merge = refs/heads/master
 	remote = origin
 [push]
 	default = simple
+[pull]
+	ff = only
 [alias]
 	root = !pwd
 [diff]

@@ -836,7 +836,11 @@ alias gst='git stash'
 # in "interactive" terminals or something)?
 
 
-alias gsl='git stash list'
+alias gsl='git stash list --date=local'
+# NOTE: this will not drop if the stash has a conflict.
+# TODO may want to also echo a warning to drop after resolving conflict, assuming exit
+# code reflects whether there was one. exit code was 1 in one test where there were
+# conflicts, so this might work
 alias gsp='git stash pop'
 
 # TODO maybe use whatever shell pointer to a text editor there is, rather than
@@ -1405,6 +1409,8 @@ alias mba="cd /mnt/nas/mb_team/analysis_output"
 
 alias ..="cd .."
 alias src="cd ~/src"
+# TODO try to make something like 'sr' that accepts one dir input and make it tab
+# completable based on stuff actually in ~/src
 alias sr="cd ~/src"
 alias cs="cd ~/src"
 
@@ -1751,4 +1757,13 @@ alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~
 # stimulus files to corresponding directory on NAS) + to dropbox backup folder
 # TODO tho maybe prompt to pause syncing before dropbox one?
 # TODO + one to transfer to my home computer
+
+
+function vim_kill() {
+    # TODO check $1 exists
+    # TODO check .$1.swp exists
+    # TODO check that we have actually matched a process before trying to call kill
+    kill $(lsof .$1.swp 2>/dev/null | tail -n 1 | awk '{print $2}')
+}
+alias vk='vim_kill'
 
