@@ -693,6 +693,13 @@ alias pfg="pip freeze | grep"
 alias a='activate'
 alias d="diff_or_deactivate"
 
+
+if ! [ -x "$(command -v mamba)" ]; then
+    export MAMBA_OR_CONDA="conda"
+else
+    export MAMBA_OR_CONDA="mamba"
+fi
+
 alias ca='conda activate'
 # 'conda activate' itself actually doesn't autocomplete...
 # Perhaps see: https://github.com/tartansandal/conda-bash-completion
@@ -705,11 +712,17 @@ alias cde='conda deactivate'
 
 alias crm="conda env remove --name"
 
+# TODO come up w/ mamba replacement for this command, referencing
+# https://github.com/mamba-org/mamba/issues/633
+# (even as-is, still faster using mamba, just not as fast as it could be. mamba does
+# solving but not downloading. solving more important anyway.)
 # [c]onda (create from) [f]ile
-alias cf='conda env create -f'
+alias cf="${MAMBA_OR_CONDA} env create -f"
+
 # TODO parse "name: <name>" line to complete activate command
 #alias cfa='conda env create -f && conda activate <TODO>'
 alias cls='conda env list'
+
 
 alias rv="echo 'rm -rf venv' && rm -rf venv"
 
@@ -867,7 +880,12 @@ alias glh='git log -1'
 # TODO have this output git diff HEAD if argument is already added (though maybe with a
 # message also printed to notify that this is happening)
 alias gd='git diff'
+# TODO modify this completion to only apply to files changed ('git diff' completion
+# doesn't do this either, at least as i have it installed)
+complete -F _complete_alias gd
+
 alias gdh='git diff HEAD'
+complete -F _complete_alias gdh
 
 alias gls='git ls-files'
 
