@@ -636,10 +636,13 @@ nnoremap <leader>s oimport sys; sys.exit()<Esc>
 " TODO maybe modify the # to some kind of autodetected comment character,
 " dependent on filetype?
 nnoremap <leader>t o# TODO 
-nnoremap <leader>m o# TODO maybe 
 nnoremap <leader>c o#<Esc>
 nnoremap <leader>d o"""<cr>"""<Esc>kA
 nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
+
+" TODO also make it so it positions this line at the top of the screen
+" doesn't work
+nnoremap <leader>m /def main(<Enter>zt
 
 " TODO TODO TODO get one of the things below working for print inserts
 " TODO maybe modify this to also select the current word, and copy that
