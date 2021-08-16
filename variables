@@ -3,26 +3,16 @@
 # to indicate it is for *deployment-specific* environment variables
 # (if not obvious enough from their usual purpose...)
 
-export MT_DIR=$HOME/catkin/src/multi_tracker
-export MT_SRC_DIR=$HOME/demo/demo_1/src
-export MT_ANALYSIS_DIR=$MT_DIR/multi_tracker_analysis
-export MT_INPUT_DIR=/media/remy/storage/tracking_data
-export MT_OUTPUT_DIR=$HOME/demo/demo_1/data
-export MT_PLAYBACK_DIR=$MT_DIR/examples/sample_data
-
 # used by some of my data acquisition / analysis tools
-export HONG_NAS="/mnt/nas"
+export HONG_NAS="/local/storage"
+
+# Used this in place of HONG_NAS on my home computer
+#export HONG2P_DATA="$HOME/2p_data"
 
 # Checked before path derived from above when determining where a fly directory is.
 # All data in fly directory must be copied here because there is currently no more
 # granularity.
-#export HONG2P_FAST_DATA_DIR="$HOME/2p_data"
-export HONG2P_FAST_DATA_DIR="/mnt/d1/2p_data"
-
-export EXP_DIR="$HOME/data"
-export DATA_DIR="/mnt/nas/Kristina/direct2nas_experiments"
-
-export IMAGING_EXP_DIR="$HOME/data/flies"
+export HONG2P_FAST_DATA="$HOME/2p_data"
 
 export OLFACTOMETER_HARDWARE_DIR="$HOME/src/tom_olfactometer_configs/hardware"
 export OLFACTOMETER_DEFAULT_HARDWARE="dual_manifold2"
