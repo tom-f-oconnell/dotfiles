@@ -1880,21 +1880,24 @@ alias md5='md5sum'
 alias sha256='sha256sum'
 
 
+AL_PAIR_GRIDS_CONDA_ENV="suite2p"
+
 # TODO make accept argument + add completion like c1/2/etc if i end up using enough
 # Requires hong2p to be setup in current shell environment / python
 function 2p() {
+    conda activate $AL_PAIR_GRIDS_CONDA_ENV
     cd "$(hong2p-data)"
 }
 function 2pr() {
+    conda activate $AL_PAIR_GRIDS_CONDA_ENV
     cd "$(hong2p-raw)"
 }
 function 2pa() {
+    conda activate $AL_PAIR_GRIDS_CONDA_ENV
     cd "$(hong2p-analysis)"
 }
 
 function suite2p_combined_view() {
-    conda activate suite2p
-
     2pa
 
     local prefix
@@ -1918,11 +1921,25 @@ function suite2p_combined_view() {
     # k=color ROIs by correlation w/ selected
     # b=hide "neuropil" trace
     # n=hide "deconv"
-    xdotool key w k b n
+    xdotool key r k b n
+
+    # TODO wait for suite2p to be closed before exiting
+    # (to preserve blocking behavior suite2p_and_dff relied on to kill image viewer
+    # after suite2p was closed)
 }
 alias ss='suite2p_combined_view'
 
 function suite2p_and_dff() {
+    pkill eog
+    pkill suite2p
+
+    # this puts us in the directory we need to be in for the svg picking to work
+    # correctly
+    2pa
+    # assuming this is a relative path from analysis intermediate root to a subdir
+    # corresponding to one experiment
+    cd $1
+
     # NOTE: this won't be the image w/ the biggest response for reverse order stuff
     highest_concs_mix_svg="$(ls -Art `python -c 'import os; parts = os.getcwd().split("/"); print("/home/tom/src/al_pair_grids/svg/" + "_".join(parts[5:]))'`/*_trials.svg | tail -n 1)"
     # eog is default image viewer. xdg-open would also open it via eog.
@@ -1931,7 +1948,25 @@ function suite2p_and_dff() {
 
     suite2p_combined_view "$1"
 
-    pkill eog
+    # Taken from left part of connected screens in `xrandr` output
+    local right_screen_name="DP-4"
+
+    # From output of `wmctrl -l -x` (3rd column)
+    #local image_viewer_class="eog.Eog"
+
+    local image_viewer_class="eog"
+
+    move_wclass.py $image_viewer_class $right_screen_name
+
+    wmctrl -F -a "$(basename $highest_concs_mix_svg)"
+
+    xdotool key Ctrl+Super+Left
+    xdotool key Ctrl+plus
+    xdotool key Ctrl+plus
+
+    printf "\n- $1:\n  - \n\n" | xclip -sel clip
+    # can only restore if i make suite2p_combined_view block until suite2p is closed
+    #pkill eog
 }
 alias sd='suite2p_and_dff'
 
