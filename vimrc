@@ -701,6 +701,9 @@ endfunction
 
 nnoremap <leader>k :call ToggleProfileDecCommentState()<CR>
 
+" Since I always forget the syntax for redirecting to std[e]rr
+nnoremap <leader>e o>&2<Esc>
+
 
 " TODO maybe add a hotkey for "sourcing" vimrc if not already one
 
