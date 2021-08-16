@@ -952,17 +952,22 @@ alias gc='git commit -m'
 # in web browser (+improve message on diffs? or is it already OK?)
 # (not really intending to actually do both, but rather just want the
 # convenience of using gp for both pushing and pulling)
+# (if i get this working, can add back gpr and maybe remove gu* stuff)
 #alias gp='git pull && git push --follow-tags'
 
 # Using this for just git push until I can fix the above and get confidence in it.
 # TODO what was --follow-tags for again?
 alias gp='git push'
 
-alias gpr='git pull --rebase'
 # git [u]pdate (not a real command, just mnemonic)
 # (and gp is already taken, and u is second letter of p[u]ll)
 alias gu='git pull'
 alias gur='git pull --rebase'
+
+# TODO would need some way to find default branch name of remote (e.g. main or master?).
+# new github CLI have anything useful here?
+# [g]it [u]pdate [u]pstream
+#alias guu='git fetch upstream && git rebase upstream/main'
 
 # NOTE: not using 'gs' because the ghostscript package provides gs under the same name.
 # Doesn't seem to be installed by default on 18.04.5 (from *.manifest file), but:
@@ -1023,8 +1028,14 @@ alias gau='git remote add upstream'
 # TODO how to deal w/ origin + upstream? just pick origin?
 # (probably prompt and have then enter a number selecting which / both)
 function open_repo_in_browser() {
+    local remote
+    if [ -z "$1" ]; then
+        remote="origin"
+    else
+        remote="$1"
+    fi
     # getting https link, no matter auth in 'git remote -v'
-    local url="$(git remote -v | grep origin | change_git_auth.py h)#readme"
+    local url="$(git remote -v | grep "$remote" | change_git_auth.py h)#readme"
     # TODO break out above so `git remote -v` is separate or otherwise figure out how
     # to make this fail gracefully w/ reminder about what it does if used not in a git
     # repo (as part of pipe, ext code seems to be 0 regardless of failure in first
@@ -1034,6 +1045,7 @@ function open_repo_in_browser() {
     xdg-open $url
 }
 alias gb='open_repo_in_browser'
+alias gbu='open_repo_in_browser upstream'
 
 # TODO add 'rg' alias to remove git repo if:
 # - no uncommitted changes / untracked files
