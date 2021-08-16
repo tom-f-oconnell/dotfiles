@@ -50,7 +50,7 @@ function verlt() {
 #verlte 2.5.6 2.5.6 && echo "yes" || echo "no" # yes
 #verlt 2.5.6 2.5.6 && echo "yes" || echo "no" # no
 
-# opens a file in Fiji, and appends current directory before argument so Fiji 
+# opens a file in Fiji, and appends current directory before argument so Fiji
 # doesn't freak out
 function fp() {
     $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
@@ -372,9 +372,14 @@ function activate() {
 # will probably shadow anything with that name when they activate an
 # environment.
 function my_deactivate() {
-    # TODO decide if i want to support any cases where 'type' is not available.
-    # maybe default to certain behavior then...
-    deactivate_type="$(type -t deactivate)"
+    # This just seems to be the name of the active environment.
+    # https://stackoverflow.com/questions/51266880
+    if [ -n "$CONDA_DEFAULT_ENV" ]; then
+        conda deactivate
+        return 0
+    fi
+
+    local deactivate_type="$(type -t deactivate)"
 
     if ! [ "$?" -eq 0 ]; then
         echo "No virtual environment active"
@@ -388,24 +393,14 @@ function my_deactivate() {
         # maybe test for them (having an active env in current shell) some other
         # way
         deactivate
-
-    elif [ "$deactivate_type" == "file" ]; then
-        # could also get path to that file (for instance by calling type
-        # again without the -t flag), and check it's executable?
-
-        # TODO could also verify this exists, in at least some form
-        # (not using command -v because it seems it is at least sometimes a fn)
-        #conda_type="$(type -t conda)"
-
-        conda deactivate
     else
-        echo "In my_deactivate, unexpected deactivate type: $deactivate_type"
+        >&2 echo "In my_deactivate, unexpected deactivate type: $deactivate_type"
         return 1
     fi
 }
 
 # Using this to overload the 'd' alias, to have more functionality on my one
-# character aliases. We can always tell it's intended to be 'deactivate', if 
+# character aliases. We can always tell it's intended to be 'deactivate', if
 # there are no arguments.
 function diff_or_deactivate() {
     if [ "$#" -eq 0 ]; then
@@ -558,7 +553,7 @@ function link_to_vagrant() {
 
     if ! [ -z "${just_cleanup}" ]; then
         printf "destroying vagrant machine (if exists)... "
-        vagrant destroy -f > /dev/null 2>&1 
+        vagrant destroy -f > /dev/null 2>&1
         echo "done"
 
         #if is_git_tracked Vagrantfile; then
@@ -666,11 +661,45 @@ alias c='cd'
 # Uses https://github.com/cykerway/complete-alias installed via my dotfiles setup
 complete -F _complete_alias c
 
-# TODO TODO accept arguments as well and cd relative to where they'd cd without the
-# arguments (+ tab complete)
-alias c1='cd ..'
-alias c2='cd ../..'
-alias c3='cd ../../..'
+function c1() {
+    cd "../$1"
+}
+function c2() {
+    cd "../../$1"
+}
+function c3() {
+    cd "../../../$1"
+}
+# https://stackoverflow.com/questions/38737675
+function _cd_up_n() {
+    # https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html
+    # "$1 is the name of the command whose arguments are being completed, $2 is the word
+    # being completed, and $3 is the word preceding the word being completed"
+    local cmd=$1 cur=$2 pre=$3
+    local _cur compreply
+
+    local cd_dir
+    if [ "$cmd" = "c1" ]; then
+        cd_dir=".."
+    elif [ "$cmd" = "c2" ]; then
+        cd_dir="../.."
+    elif [ "$cmd" = "c3" ]; then
+        cd_dir="../../.."
+    else
+        >&2 echo "command $cmd not supported by completion fn _cd_up_n"
+        return 1
+    fi
+
+    _cur="$cd_dir/$cur"
+    compreply=( $( compgen -d "$_cur" ) )
+    COMPREPLY=( ${compreply[@]#$cd_dir/} )
+    if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
+        COMPREPLY[0]=${COMPREPLY[0]}
+    fi
+}
+complete -F _cd_up_n -o nospace -S '/' c1
+complete -F _cd_up_n -o nospace -S '/' c2
+complete -F _cd_up_n -o nospace -S '/' c3
 
 # TODO maybe add these:
 # ti (test import) ~ python -c 'import $1'
@@ -701,8 +730,11 @@ else
 fi
 
 alias ca='conda activate'
-# 'conda activate' itself actually doesn't autocomplete...
-# Perhaps see: https://github.com/tartansandal/conda-bash-completion
+# Perhaps also see: https://github.com/tartansandal/conda-bash-completion
+# (only if useful for other commands. for `conda activate`, this works.)
+# Requires my scripts repo to be on path.
+complete -o nosort -C list_conda_envs.py ca
+
 #complete -F _complete_alias ca
 
 # [c]onda d[e]activate
@@ -712,12 +744,92 @@ alias cde='conda deactivate'
 
 alias crm="conda env remove --name"
 
-# TODO come up w/ mamba replacement for this command, referencing
-# https://github.com/mamba-org/mamba/issues/633
-# (even as-is, still faster using mamba, just not as fast as it could be. mamba does
-# solving but not downloading. solving more important anyway.)
+function is_yaml() {
+    if [[ ( "$#" != 1 ) ]]; then
+        >&2 echo "is_yaml: must pass single filename input"
+        return 2
+    fi
+    # NOTE: not checking we don't have other arguments and not parsing to check it is
+    # valid yaml
+    if [[ "$1" == *.yml ]] || [[ "$1" == *.yaml ]]; then
+        if [ -f "$1" ]; then
+            return 0
+        else
+            >&2 echo "is_yaml: $1 did not exist"
+            return 3
+        fi
+    fi
+    return 1
+}
+function single_yaml_arg() {
+    local retcode
+    local yaml_arg=""
+    for x in "$@"
+    do
+        is_yaml "$x"
+        retcode=$?
+        case $retcode in
+            # 0=true
+            0)
+                if [ -n "$yaml_arg" ]; then
+                    >&2 echo "more than one YAML argument"
+                    return 4
+                fi;;
+
+            # 1=false
+            1) continue;;
+
+            # anything other than 0 or 1 = error
+            *) return $retcode;;
+        esac
+
+        if [ $retcode -eq 0 ]; then
+            yaml_arg="$x"
+        fi
+    done
+    if [ -n "$yaml_arg" ]; then
+        echo "$yaml_arg"
+    fi
+}
+
+function conda_create_from_yaml() {
+
+    # TODO come up w/ mamba replacement for this command (that also uses mamba to
+    # download), referencing https://github.com/mamba-org/mamba/issues/633 (even as-is,
+    # still faster using mamba, just not as fast as it could be. mamba does solving but
+    # not downloading. solving more important anyway.)
+
+    # Excluding the -f flag so we can add it later in the appropriate place
+    local create_cmd="${MAMBA_OR_CONDA} env create"
+
+    local yaml_arg
+    if ! yaml_arg=$(single_yaml_arg "$@"); then
+        return 1
+    fi
+
+    if [ -z "$yaml_arg" ]; then
+        yaml_arg="environment.yml"
+        echo "YAML path not passed. Trying ./environment.yml"
+        # So we get the same error message if it doesn't exist.
+        if ! is_yaml "$yaml_arg"; then
+            return 1
+        fi
+    fi
+
+    local args_arr=( "$@" )
+    if [ -n "$yaml_arg" ]; then
+        args_arr=( "${args_arr[@]/$yaml_arg}")
+    fi
+
+    local create_cmd_with_args="${create_cmd} -f ${yaml_arg} ${args_arr[*]}"
+    eval "${create_cmd_with_args}"
+}
 # [c]onda (create from) [f]ile
-alias cf="${MAMBA_OR_CONDA} env create -f"
+alias cf='conda_create_from_yaml'
+# https://unix.stackexchange.com/questions/566390
+# Requires extglob to be on (check via `shopt extglob`), but it seems on in (some of) my
+# current systems. https://stackoverflow.com/questions/22854848
+complete -f -o plusdirs -X '!*.@(yaml|yml)' cf
 
 # TODO parse "name: <name>" line to complete activate command
 #alias cfa='conda env create -f && conda activate <TODO>'
@@ -813,6 +925,12 @@ alias grm='git rm'
 complete -F _complete_alias grm
 
 alias g='git_fn'
+
+# https://unix.stackexchange.com/questions/216748
+_completion_loader git
+# The sed part just replaces the command name 'git' at end of the printed completion
+# definition with 'g' (my alias for `git_fn`)
+eval $(complete -p git | sed 's/git$/g/')
 
 # TODO git init before both of these adds? init idempotent, or need to check?
 alias ga='git add'
@@ -1104,6 +1222,8 @@ function reload_bashrc() {
 # (or more easily, just warn and NOOP if one is active) first, so that ps1
 # / other env stuff is preserved
 #alias sb="echo 'reloading ~/.bashrc'; source ~/.bashrc"
+# TODO maybe 'set +o xtrace' before (to disable) and restore whatever value we had for
+# xtrace after?
 alias sb="reload_bashrc"
 alias r="sb"
 
@@ -1267,8 +1387,13 @@ function which_module() {
 alias wm='which_module'
 
 alias pi='pip install'
+
 alias pie='pip install -e'
+complete -d pie
+
 alias pir='pip install -r'
+complete -f -o plusdirs -X '!*.txt' pir
+
 # TODO TODO change this to a function that uninstalls python package(s) defined
 # in setup.py in current directory if no argument is specified.
 # (and maybe make another alias that combines this with subsequently
@@ -1277,6 +1402,8 @@ alias pir='pip install -r'
 # root. (pr is a builtin tool related to printing text files, but probably still
 # fine to use that for this alias...)
 # Only this one seems to need confirmation (and thus -y), for some reason.
+# TODO custom tab completion (pip uninstall doesn't seem to have it either, at least by
+# default)
 alias pu='pip uninstall -y'
 alias pup='pip install --upgrade pip'
 
@@ -1337,6 +1464,7 @@ alias rl='ROS_HOME=`pwd` roslaunch'
 #alias cdd='cd /media/threeA/Tom/flies/'
 # & cdd that uses env var to go to data
 
+# TODO rename to rd?
 alias fd='roscd'
 
 # TODO TODO TODO replace this check of completion_loader w/ something that
@@ -1788,3 +1916,11 @@ function vim_kill() {
 }
 alias vk='vim_kill'
 
+# https://stackoverflow.com/questions/48574100
+function toggle_xtrace() {
+    case "$-" in
+        (*x*) set +o xtrace; echo "command echo (xtrace) OFF";;
+        (*) echo "command echo (xtrace) ON"; set -o xtrace;;
+    esac
+}
+alias xt='toggle_xtrace'
