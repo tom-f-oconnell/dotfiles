@@ -743,6 +743,7 @@ alias ce='conda deactivate'
 alias cde='conda deactivate'
 
 alias crm="conda env remove --name"
+complete -o nosort -C list_conda_envs.py crm
 
 function is_yaml() {
     if [[ ( "$#" != 1 ) ]]; then
@@ -986,6 +987,7 @@ alias gsl='git stash list --date=short'
 # code reflects whether there was one. exit code was 1 in one test where there were
 # conflicts, so this might work
 alias gsp="git stash pop || printf \"\e[1;33m\nYou must manually 'git stash drop' after resolving conflict\n\e[0m\""
+alias gsd='git stash drop'
 
 # TODO maybe use whatever shell pointer to a text editor there is, rather than
 # hardcoding 'vi'?
