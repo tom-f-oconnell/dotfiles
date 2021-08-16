@@ -1306,7 +1306,10 @@ alias snk='ssh -o PubkeyAuthentication=no'
 #-crtscts -hupcl'
 
 alias x='xdg-open'
+
 alias rs='rsync -auvP'
+complete -F _complete_alias rs
+
 alias cpconf='cp $HOME/catkin/src/multi_tracker/examples/sample_data/config_20160412_134708_N1.py .; mv config_20160412_134708_N1.py config_`ls -p | grep bag | sed s/_delta_video.bag//g`.py'
 
 
