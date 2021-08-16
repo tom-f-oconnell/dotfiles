@@ -1970,7 +1970,7 @@ function suite2p_and_dff() {
 }
 alias sd='suite2p_and_dff'
 
-alias sl="cd /mnt/d1/2p_data/analysis_intermediates; ls -ltr */*/*/suite2p/combined/iscell.npy | awk '{print \$6, \$7, \$8, \$9}'"
+alias sl="2pa; ls -ltr */*/*/suite2p/combined/iscell.npy | awk '{print \$6, \$7, \$8, \$9}'"
 
 
 # snap install only one i found that could load .dxf files on 18.04
