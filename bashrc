@@ -326,59 +326,6 @@ if [ -d $PYMISTAKE_PATH ]; then
   #export PYMISTAKE_DEBUG="1"
 fi
 
-## TODO TODO only do all the direnv + conda hacks if BOTH are installed
-#
-## Using existence of this file to since show_virtual_env()
-## can make files, but does not seem able to export environment variables
-## back to parent shell... (not sure if there's some way of doing this that
-## makes more sense...)
-## TODO using tty to prevent collisions from diff terminals ok?
-## tmux or stuff like that cause probs?
-#export DIRENV_CONDA_FLAG_FILE_PREFIX="direnv_conda_env_"
-## TODO cases where hardcoding /tmp like this will hurt compat?
-#DIRENV_PS1_UPDATE_FLAG_FILE="/tmp/${DIRENV_CONDA_FLAG_FILE_PREFIX}"
-## Also used to name the anaconda activate/deactivate hook scripts.
-#export DIRENV_TTYSTR=`tty | sed -e "s:/dev/::" -e "s/\//_/g"`
-#DIRENV_PS1_UPDATE_FLAG_FILE+="${DIRENV_TTYSTR}"
-## In case a previous file from same TTY ID (IDs presumably must have been
-## recycled) was somehow not deleted properly.
-#rm -f "${DIRENV_PS1_UPDATE_FLAG_FILE}"
-#export DIRENV_PS1_UPDATE_FLAG_FILE
-#
-#export DIRENV_CONDA_SCRIPT_PREFIX="direnv_ps1_fix_${DIRENV_TTYSTR}.sh"
-#pass_ps1_ctrl_to_conda_str() {
-#    # Just in case functions to update PS1 would for some reason not be run...
-#    if [[ -f "$DIRENV_PS1_UPDATE_FLAG_FILE" ]]; then
-#        local conda_prefix_to_deact=`cat $DIRENV_PS1_UPDATE_FLAG_FILE`
-#
-#        local activate_sh=""
-#        local deactivate_sh=""
-#        if [[ -n "$conda_prefix_to_deact" ]]; then
-#            activate_sh="$conda_prefix_to_deact/etc/conda/activate.d/"
-#            activate_sh+="$DIRENV_CONDA_SCRIPT_PREFIX"
-#            deactivate_sh="$conda_prefix_to_deact/etc/conda/deactivate.d/"
-#            deactivate_sh+="$DIRENV_CONDA_SCRIPT_PREFIX"
-#        fi
-#
-## TODO fix indentation to tabs and tab out heredoc if possible
-#cat <<EOF
-#rm -f "$DIRENV_PS1_UPDATE_FLAG_FILE"
-## The (terminal+env)-specific conda hooks that would delete the above
-## flag file upon manual conda activate / deactivate.
-#rm -f "$activate_sh"
-#rm -f "$deactivate_sh"
-#EOF
-#    else
-#        printf ""
-#    fi
-#}
-#pass_ps1_ctrl_to_conda() {
-#    eval "$(pass_ps1_ctrl_to_conda_str)"
-#}
-#export -f pass_ps1_ctrl_to_conda_str
-#export -f pass_ps1_ctrl_to_conda
-#trap pass_ps1_ctrl_to_conda EXIT
-#
 ## TODO also test case going from having direnv_dir to it being empty/unset
 #show_virtual_env() {
 #  if [[ -n "$DIRENV_DIR" ]]; then
@@ -394,31 +341,14 @@ fi
 #    fi
 #  fi
 #}
-#export -f show_virtual_env
-#PS1='$(show_virtual_env)'$PS1
-## TODO fix how above doesn't seem to let conda clear PS1 in case where
-## base env is enabled by default (base) comes before $(show_virtual_env).
-## if that's the source of the problem, maybe prepend it to backup ps1
-## in POST_COMMAND every time, so conda can so its stuff first?
-## TODO and make my envrc stuff not conflict w/ systems configured to have base
-## enabled by default (should probably never / only under certain circumstances
-## deactivate then. can prob use conda to lookup config as part.)
-#
-## So it can be restored if interaction between direnv and conda
-## screw up PS1.
-#PS1_BACKUP="$PS1"
-#reset_ps1() {
-#    local previous_exit_status=$?;
-#    if ! [[ -n "$CONDA_DEFAULT_ENV" || "$PS1" = "$PS1_BACKUP" ]]; then
-#        export PS1="$PS1_BACKUP"
-#    fi
-#    return $previous_exit_status
-#}
-#export -f reset_ps1
-#PROMPT_COMMAND+=" reset_ps1"
-## TODO TODO may have to investigate circumstances where the above
-# (+ other direnv stuff) causes direnv to add serious lag to commands
 
+show_virtual_env() {
+  if [ -n "$CONDA_DEFAULT_ENV" ]; then
+    echo "($(basename $CONDA_DEFAULT_ENV))"
+  fi
+}
+export show_virtual_env
+PS1='$(show_virtual_env) '$PS1
 
 # TODO TODO extend this to echo variables if their name is to be evaluated
 # by itself (or maybe have it `declare -p <variable-name>`?)

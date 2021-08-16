@@ -1924,3 +1924,5 @@ function toggle_xtrace() {
     esac
 }
 alias xt='toggle_xtrace'
+
+alias da='direnv allow'
