@@ -1879,24 +1879,64 @@ alias mj='makej'
 alias md5='md5sum'
 alias sha256='sha256sum'
 
-# --statfile only available in my fork
-alias ss='conda activate suite2p && suite2p --statfile suite2p/combined/stat.npy'
 
-function suite2p_and_dff() {
+# TODO make accept argument + add completion like c1/2/etc if i end up using enough
+# Requires hong2p to be setup in current shell environment / python
+function 2p() {
+    cd "$(hong2p-data)"
+}
+function 2pr() {
+    cd "$(hong2p-raw)"
+}
+function 2pa() {
+    cd "$(hong2p-analysis)"
+}
+
+function suite2p_combined_view() {
     conda activate suite2p
 
+    2pa
+
+    local prefix
+    if [ -z "$1" ]; then
+        prefix="."
+    else
+        prefix="$1"
+    fi
+    # --statfile only available in my fork
+    suite2p --statfile "$prefix/suite2p/combined/stat.npy" &
+
+    # just estimating, but seems fine so far on my home computer
+    local initial_delay_s=3.0
+
+    sleep $initial_delay_s
+
+    # re: xdotool's support for delays between keys:
+    # https://askubuntu.com/questions/1098762
+
+    # w=mean, r=correlation map, t=max
+    # k=color ROIs by correlation w/ selected
+    # b=hide "neuropil" trace
+    # n=hide "deconv"
+    xdotool key w k b n
+}
+alias ss='suite2p_combined_view'
+
+function suite2p_and_dff() {
+    # NOTE: this won't be the image w/ the biggest response for reverse order stuff
     highest_concs_mix_svg="$(ls -Art `python -c 'import os; parts = os.getcwd().split("/"); print("/home/tom/src/al_pair_grids/svg/" + "_".join(parts[5:]))'`/*_trials.svg | tail -n 1)"
     # eog is default image viewer. xdg-open would also open it via eog.
     # calling it w/ eog w/o additional arguments or & blocked tho and i dont want that
     xdg-open $highest_concs_mix_svg
 
-    suite2p --statfile suite2p/combined/stat.npy
+    suite2p_combined_view "$1"
 
     pkill eog
 }
 alias sd='suite2p_and_dff'
 
 alias sl="cd /mnt/d1/2p_data/analysis_intermediates; ls -ltr */*/*/suite2p/combined/iscell.npy | awk '{print \$6, \$7, \$8, \$9}'"
+
 
 # snap install only one i found that could load .dxf files on 18.04
 # install via `sudo snap install inkscape`
@@ -1915,19 +1955,6 @@ alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~
 # stimulus files to corresponding directory on NAS) + to dropbox backup folder
 # TODO tho maybe prompt to pause syncing before dropbox one?
 # TODO + one to transfer to my home computer
-
-# TODO make accept argument + add completion like c1/2/etc if i end up using enough
-# Requires hong2p to be setup in current shell environment / python
-function 2p() {
-    cd "$(hong2p-data)"
-}
-function 2pr() {
-    cd "$(hong2p-raw)"
-}
-function 2pa() {
-    cd "$(hong2p-analysis)"
-}
-
 
 function vim_kill() {
     # TODO check $1 exists
