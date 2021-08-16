@@ -1578,15 +1578,6 @@ alias scr="scripts"
 
 alias m='man'
 
-alias 2p="cd ~/src/hong2p && ls"
-alias 2pp="cd ~/src/hong2p && vi populate_db.py"
-alias 2pg="cd ~/src/hong2p && vi gui.py"
-alias 2pu="cd ~/src/hong2p/hong2p && vi util.py"
-alias 2pk="cd ~/src/hong2p/hong2p && vi kc_mix_analysis.py"
-alias 2ps="cd ~/src/hong2p/scripts && ls"
-alias no="cd ~/src/natural_odors && ls"
-
-
 # I currently have this python script under GithubCloner in my ~/src/scripts
 # repo, and add it to PATH in the portion of ~/.bashrc that adds ~/src/scripts
 # submodules to PATH.
@@ -1676,6 +1667,7 @@ alias grepy="grep -R --include=\*.py --exclude-dir=site-packages --exclude-dir=.
 alias gpy="grepy"
 # This will lookup and use the alias definition above at runtime.
 alias grepym="grep_py_in_my_repos.py"
+alias gpym='grepym'
 
 # TODO TODO alias to cd to a folder and then vi any .py files 1) w/ prefix of
 # foldername or 2) lone .py files
@@ -1911,6 +1903,18 @@ alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~
 # stimulus files to corresponding directory on NAS) + to dropbox backup folder
 # TODO tho maybe prompt to pause syncing before dropbox one?
 # TODO + one to transfer to my home computer
+
+# TODO make accept argument + add completion like c1/2/etc if i end up using enough
+# Requires hong2p to be setup in current shell environment / python
+function 2p() {
+    cd "$(hong2p-data)"
+}
+function 2pr() {
+    cd "$(hong2p-raw)"
+}
+function 2pa() {
+    cd "$(hong2p-analysis)"
+}
 
 
 function vim_kill() {
