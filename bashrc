@@ -55,12 +55,12 @@ esac
 
 if [ -n "$force_color_prompt" ]; then
     if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	# We have color support; assume it's compliant with Ecma-48
-	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-	# a case would tend to support setf rather than setaf.)
-	color_prompt=yes
+        # We have color support; assume it's compliant with Ecma-48
+        # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+        # a case would tend to support setf rather than setaf.)
+        color_prompt=yes
     else
-	color_prompt=
+        color_prompt=
     fi
 fi
 
@@ -141,7 +141,6 @@ export EDITOR="/usr/bin/vi"
 # https://stackoverflow.com/questions/32189015
 export FIGNORE=".egg-info"
 
-
 # At one point, I decided I needed to either comment anaconda init or ROS init,
 # lest some conflict emerge (which was what again?).
 # See these two posts for discussion of problem + possible
@@ -191,14 +190,6 @@ fi
 
 # TODO better way to manage python path to include my modules nested within src?
 
-if [ -d "$HOME/src/SutterMP285" ]; then
-  export PYTHONPATH="${PYTHONPATH}:$HOME/src/SutterMP285"
-fi
-
-if [ -d "$HOME/catkin/src/multi_tracker/multi_tracker_analysis" ]; then
-  export PATH="$PATH:$HOME/catkin/src/multi_tracker/multi_tracker_analysis"
-fi
-
 # Using a subshell function here to cd safely
 function submodule_paths() (
     if [ "$#" -ne 1 ]; then
@@ -239,61 +230,39 @@ if [ -d "$MY_SCRIPTS_PATH" ]; then
     done
 fi
 
-if [ -f "$HOME/.variables" ]; then
-    . "$HOME/.variables"
-fi
-
 # As alternative to ssh-agent being started on login, see:
 # https://stackoverflow.com/questions/17846529#24347344
 
-SSH_DIR="$HOME/.ssh"
 # see Litmus' answer
 # https://stackoverflow.com/questions/18880024/start-ssh-agent-on-login
-SSH_ENV="$SSH_DIR/environment"
+SSH_DIR="$HOME/.ssh"
+SSH_ENV="$SSH_DIR/ssh-agent-env"
 
-# was trying to eval / exec this (not sure whether either could work),
-# so we can grep the correct command when grepping ps output.
-# (otherwise, adding the -t <NNNN> flag to ssh-agent would require
-# changing the grep pattern to also include this flag...)
-# (for now, just going to remove the end of line restriction?)
-#AGENT_CMD="/usr/bin/ssh-agent -t 28800"
-
-# TODO TODO TODO AddKeysToAgent in config seems to be working, but now i only
-# have access to that agent in one terminal (doesn't work in a new one).
-# fix!!!!! (looks like multiple agents are being created, b/c 
-# SSH_AGENT_PID differs in each shell)
 function start_agent {
-    # TODO modify this so the "succeeded" message is on the same line
-    # (use printf?)
-    echo "Initialising new SSH agent..."
+    printf "Initialising new SSH agent... "
     # The -t flag should set the lifetime of keys within the agent.
     # 28800 is how many seconds there are in 8 hours.
     /usr/bin/ssh-agent -t 28800 | sed 's/^echo/#echo/' > "${SSH_ENV}"
-    #/usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
-    #exec ${AGENT_CMD} | sed 's/^echo/#echo/' > "${SSH_ENV}"
     echo succeeded
     chmod 600 "${SSH_ENV}"
     . "${SSH_ENV}" > /dev/null
     # TODO delete some of the above (up to everything besides just starting
     # ssh-agent), if that was only necessary for this ssh-add call).
-    # trying to have 'AddKeysToAgent yes' in ~/.ssh/config do this now, so that
-    # the password is only needed the first time the key is used, not on login
-    # https://superuser.com/questions/325662
-    # /how-to-make-ssh-agent-automatically-add-the-key-on-demand
-    #/usr/bin/ssh-add;
+
+    # NOTE: this requires 'AddKeysToAgent yes' in ~/.ssh/config, since we aren't
+    # ssh-add'ing here anymore (to only require typing password on ssh attempt, not on
+    # first shell opening). this should be configured as part of my dotfiles setup.
 }
 
 if [ -d "${SSH_DIR}" ]; then
-    # Source SSH settings, if applicable
-    # TODO only do this from first time i use ssh / git, not from first shell?
     # TODO also consider using user Micah's answer to same question, which
-    # should kill ssh_agent when no more bash processes (?)
+    # should kill ssh_agent when no more bash processes
     if [ -f "${SSH_ENV}" ]; then
         . "${SSH_ENV}" > /dev/null
         #ps ${SSH_AGENT_PID} doesn't work under cywgin
 
-        # see comment near AGENT_CMD above
-        #ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ > /dev/null || {
+        # Not also including '$' end of line as part of grep (contra the SO answer this
+        # came from), because my invocation of ssh-agent has trailing arguments.
         ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent > /dev/null || {
             start_agent;
         }
@@ -302,17 +271,9 @@ if [ -d "${SSH_DIR}" ]; then
     fi
 fi
 
-# For rdkit cheminformatics library
-export RDBASE=$HOME/src/rdkit
-export LD_LIBRARY_PATH=$RDBASE/lib:$LD_LIBRARY_PATH
-export PYTHONPATH=$RDBASE:$PYTHONPATH
-
-# What did this flag do again?
+# TODO move to a non-site-specific file just setting variables (maybe .profile?)
+# "so that userpath will be used as the startup folder"
 export MATLAB_USE_USERWORK=1
-
-if [ -f "/opt/openfoam6/etc/bashrc" ]; then
-    source /opt/openfoam6/etc/bashrc
-fi
 
 if [ -x "$(command -v direnv)" ]; then
     # Despite (trying to) move this below bashrc conda section, direnv still
@@ -340,17 +301,16 @@ fi
 # TODO at least test this on a machine without conda, and maybe refactor so this block
 # only gets called if the $HOME/anaconda3[/bin/conda] dir[/executable] exist?
 
-# Added by the 2020.11 Anaconda installer BASH script.
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/home/toor/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else
-    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
+    if [ -f "/home/toor/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/toor/miniconda3/etc/profile.d/conda.sh"
     else
-        export PATH="/home/tom/anaconda3/bin:$PATH"
+        export PATH="/home/toor/miniconda3/bin:$PATH"
     fi
 fi
 unset __conda_setup
@@ -504,13 +464,32 @@ fi
 # (not working...)
 #export LS_COLORS=$(echo $LS_COLORS | sed 's/di=01;34/di=01;94/g')
 
-export PATH="$PATH:/usr/local/nrn/x86_64/bin"
+if [ -d "$HOME/src/rdkit" ]; then
+    # For rdkit cheminformatics library
+    export RDBASE=$HOME/src/rdkit
+    export LD_LIBRARY_PATH=$RDBASE/lib:$LD_LIBRARY_PATH
+    export PYTHONPATH=$RDBASE:$PYTHONPATH
+fi
 
-# Made this directory manually for arduino-cli
-export PATH="$PATH:$HOME/arduino-cli/bin"
+if [ -d "$HOME/src/SutterMP285" ]; then
+  export PYTHONPATH="${PYTHONPATH}:$HOME/src/SutterMP285"
+fi
+
+if [ -f "/opt/openfoam6/etc/bashrc" ]; then
+    source /opt/openfoam6/etc/bashrc
+fi
+
+if [ -d "/usr/local/nrn/x86_64/bin" ]; then
+    export PATH="$PATH:/usr/local/nrn/x86_64/bin"
+fi
+
+if [ -d "$HOME/arduino-cli/bin" ]; then
+    # Made this directory manually for arduino-cli
+    export PATH="$PATH:$HOME/arduino-cli/bin"
+fi
 
 # For https://github.com/hoijui/ReZipDoc
-if [ -d "$HOME/src/ReZipDoc/scripts" ] ; then
+if [ -d "$HOME/src/ReZipDoc/scripts" ]; then
     export PATH="$HOME/src/ReZipDoc/scripts:$PATH"
 fi
 
@@ -518,6 +497,10 @@ fi
 # library, which helps you add FreeCAD libraries to Python sys.path for use in
 # standalone scripts. Not used by FreeCAD itself.
 export FREECAD_EXECUTABLE=$HOME/src/FreeCAD/build/bin/FreeCAD
+
+if [ -f "$HOME/.variables" ]; then
+    . "$HOME/.variables"
+fi
 
 # Alias definitions.
 # Some depend on completion, so important this comes after bash_completion
