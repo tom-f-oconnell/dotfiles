@@ -301,16 +301,17 @@ fi
 # TODO at least test this on a machine without conda, and maybe refactor so this block
 # only gets called if the $HOME/anaconda3[/bin/conda] dir[/executable] exist?
 
+# Added by the 2020.11 Anaconda installer BASH script.
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/toor/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/home/tom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else
-    if [ -f "/home/toor/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/toor/miniconda3/etc/profile.d/conda.sh"
+    if [ -f "/home/tom/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/tom/anaconda3/etc/profile.d/conda.sh"
     else
-        export PATH="/home/toor/miniconda3/bin:$PATH"
+        export PATH="/home/tom/anaconda3/bin:$PATH"
     fi
 fi
 unset __conda_setup
@@ -348,7 +349,7 @@ show_virtual_env() {
   fi
 }
 export show_virtual_env
-PS1='$(show_virtual_env) '$PS1
+#PS1='$(show_virtual_env) '$PS1
 
 # TODO TODO extend this to echo variables if their name is to be evaluated
 # by itself (or maybe have it `declare -p <variable-name>`?)
