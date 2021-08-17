@@ -671,6 +671,7 @@ function c3() {
     cd "../../../$1"
 }
 # https://stackoverflow.com/questions/38737675
+# TODO TODO replace this w/ _dir_completion below
 function _cd_up_n() {
     # https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html
     # "$1 is the name of the command whose arguments are being completed, $2 is the word
@@ -678,21 +679,21 @@ function _cd_up_n() {
     local cmd=$1 cur=$2 pre=$3
     local _cur compreply
 
-    local cd_dir
+    local completion_dir
     if [ "$cmd" = "c1" ]; then
-        cd_dir=".."
+        completion_dir=".."
     elif [ "$cmd" = "c2" ]; then
-        cd_dir="../.."
+        completion_dir="../.."
     elif [ "$cmd" = "c3" ]; then
-        cd_dir="../../.."
+        completion_dir="../../.."
     else
         >&2 echo "command $cmd not supported by completion fn _cd_up_n"
         return 1
     fi
 
-    _cur="$cd_dir/$cur"
+    _cur="$completion_dir/$cur"
     compreply=( $( compgen -d "$_cur" ) )
-    COMPREPLY=( ${compreply[@]#$cd_dir/} )
+    COMPREPLY=( ${compreply[@]#$completion_dir/} )
     if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
         COMPREPLY[0]=${COMPREPLY[0]}
     fi
@@ -700,6 +701,52 @@ function _cd_up_n() {
 complete -F _cd_up_n -o nospace -S '/' c1
 complete -F _cd_up_n -o nospace -S '/' c2
 complete -F _cd_up_n -o nospace -S '/' c3
+
+# Usage: complete -C "_dir_completion <path-to-complete-from>" <func-to-complete-for>
+#
+# $1 should be a path that we want subdirectory completions for.
+#
+# https://stackoverflow.com/questions/56178162
+function _dir_completion() {
+    # https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html
+    # "$1 is the name of the command whose arguments are being completed, $2 is the word
+    # being completed, and $3 is the word preceding the word being completed"
+    #
+    # (and since the argument we pass via -C takes $1, it shifts all these over one)
+    local cmd=$2 cur=$3 pre=$4
+    local _cur compreply
+
+    local completion_dir=$1
+
+    _cur="$completion_dir/$cur"
+    compreply=( $( compgen -d "$_cur" ) )
+    COMPREPLY=( ${compreply[@]#$completion_dir/} )
+    if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
+        COMPREPLY[0]=${COMPREPLY[0]}
+    fi
+
+    # Since -C expects completions printed this way, rather than setting COMPREPLY
+    for reply in "${COMPREPLY[@]}"
+    do
+        printf '%s\n' "$reply"
+    done
+}
+
+# Usage:
+# complete -C "_dir_completion_via_dir_fn <path-to-complete-from>" <func-to-complete-for>
+#
+# $1 should be a command that prints a path that we want subdirectory completions for.
+#
+# Use over _dir_completion if you need the path to be computed when the completion is
+# requested, rather than when this file is sourced.
+function _dir_completion_via_dir_fn() {
+    if [ -x "$(command -v $1)" ]; then
+        local completion_dir
+        if completion_dir=$( $1 2>/dev/null ); then
+            _dir_completion ${completion_dir} ${@:2}
+        fi
+    fi
+}
 
 # TODO maybe add these:
 # ti (test import) ~ python -c 'import $1'
@@ -958,6 +1005,10 @@ alias gc='git commit -m'
 # Using this for just git push until I can fix the above and get confidence in it.
 # TODO what was --follow-tags for again?
 alias gp='git push'
+
+# TODO make function gcp that passes all input ***WITHOUT MANGLING ANYTHING VIA SHELL
+# INTERFERENCE*** (test!) to `git commit -m <here>` and then pushes as well
+# (may more or less be equivalent to fixing my old commit fn)
 
 # git [u]pdate (not a real command, just mnemonic)
 # (and gp is already taken, and u is second letter of p[u]ll)
@@ -1587,7 +1638,7 @@ alias dot="cd ~/src/dotfiles && git status"
 alias dt="dot"
 
 # Too easy to tab complete too `script`, which is annoying.
-#alias scripts="cd ~/src/scripts && ls"
+alias scripts="cd ~/src/scripts && ls"
 alias scr="scripts"
 
 alias m='man'
@@ -1888,16 +1939,38 @@ AL_PAIR_GRIDS_CONDA_ENV="suite2p"
 # Requires hong2p to be setup in current shell environment / python
 function 2p() {
     conda activate $AL_PAIR_GRIDS_CONDA_ENV
-    cd "$(hong2p-data)"
+    cd "$(hong2p-data)/$1"
 }
 function 2pr() {
     conda activate $AL_PAIR_GRIDS_CONDA_ENV
-    cd "$(hong2p-raw)"
+    cd "$(hong2p-raw)/$1"
 }
 function 2pa() {
     conda activate $AL_PAIR_GRIDS_CONDA_ENV
-    cd "$(hong2p-analysis)"
+    cd "$(hong2p-analysis)/$1"
 }
+
+function print_2pa() {
+    if [ -n "$CACHED_HONG2P_ANALYSIS_DIR" ]; then
+        echo $CACHED_HONG2P_ANALYSIS_DIR
+        return
+    fi
+
+    if ! [ "$CONDA_DEFAULT_ENV" = "$AL_PAIR_GRIDS_CONDA_ENV" ]; then
+        conda activate $AL_PAIR_GRIDS_CONDA_ENV
+    fi
+    # Saving to environment variable before printing so we can reply faster
+    CACHED_HONG2P_ANALYSIS_DIR=$(hong2p-analysis)
+    echo $CACHED_HONG2P_ANALYSIS_DIR
+}
+
+complete -C "_dir_completion_via_dir_fn hong2p-data" -o plusdirs -o nospace -S '/' 2p
+complete -C "_dir_completion_via_dir_fn hong2p-raw" -o plusdirs -o nospace -S '/' 2pr
+
+complete -C "_dir_completion_via_dir_fn hong2p-analysis" -o plusdirs -o nospace -S '/' 2pa
+# TODO why does the above work but not this? was trying to not need to conda activate
+# first...
+#complete -C "_dir_completion_via_dir_fn print_2pa" -o plusdirs -o nospace -S '/' 2pa
 
 function suite2p_combined_view() {
     2pa
@@ -1946,7 +2019,12 @@ function suite2p_and_dff() {
     highest_concs_mix_svg="$(ls -Art `python -c 'import os; parts = os.getcwd().split("/"); print("/home/tom/src/al_pair_grids/svg/" + "_".join(parts[5:]))'`/*_trials.svg | tail -n 1)"
     # eog is default image viewer. xdg-open would also open it via eog.
     # calling it w/ eog w/o additional arguments or & blocked tho and i dont want that
-    xdg-open $highest_concs_mix_svg
+
+    if [ -f "$highest_concs_mix_svg" ]; then
+        xdg-open $highest_concs_mix_svg
+    else
+        >&2 echo "$highest_concs_mix_svg not a file!"
+    fi
 
     suite2p_combined_view "$1"
 
@@ -1958,6 +2036,7 @@ function suite2p_and_dff() {
 
     local image_viewer_class="eog"
 
+    # Should be available on the PATH b/c it's in my ~/src/scripts repo
     move_wclass.py $image_viewer_class $right_screen_name
 
     wmctrl -F -a "$(basename $highest_concs_mix_svg)"
@@ -1975,10 +2054,6 @@ alias sd='suite2p_and_dff'
 alias sl="2pa; ls -ltr */*/*/suite2p/combined/iscell.npy | awk '{print \$6, \$7, \$8, \$9}'"
 
 
-# snap install only one i found that could load .dxf files on 18.04
-# install via `sudo snap install inkscape`
-alias inkscape='snap run inkscape'
-
 # rs = my rsync alias defined above (rsync -auvP)
 # TODO is another --delete<when> option more efficient?
 # Going w/ --delete-after for now b/c presumably I have more time to Ctrl-C it if I
@@ -1993,6 +2068,13 @@ alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~
 # TODO tho maybe prompt to pause syncing before dropbox one?
 # TODO + one to transfer to my home computer
 
+
+# snap install only one i found that could load .dxf files on 18.04
+# install via `sudo snap install inkscape`
+alias inkscape='snap run inkscape'
+
+# TODO factor into a fn that does this (w/ deletion behind a prompt!!!) before opening
+# the file in vim as normal
 function vim_kill() {
     # TODO check $1 exists
     # TODO check .$1.swp exists
@@ -2011,3 +2093,4 @@ function toggle_xtrace() {
 alias xt='toggle_xtrace'
 
 alias da='direnv allow'
+
