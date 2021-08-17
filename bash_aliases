@@ -1448,6 +1448,8 @@ alias st='make html && xdg-open build/html/index.html'
 # update, to avoid need for u?
 alias u='sudo apt update'
 alias i='sudo apt install -y'
+alias saa='sudo apt autoremove'
+
 #alias i='ipython'
 alias ipy='ipython'
 alias ipy3='ipython3'
