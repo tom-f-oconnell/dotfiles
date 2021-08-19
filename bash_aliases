@@ -1473,6 +1473,10 @@ complete -f -o plusdirs -X '!*.txt' pir
 # TODO custom tab completion (pip uninstall doesn't seem to have it either, at least by
 # default)
 alias pu='pip uninstall -y'
+# TODO similar completion for an upgrade alias, if i can think of what a good alias for
+# that would be...
+complete -o nosort -C list_pip_installed.py pu
+
 alias pup='pip install --upgrade pip'
 
 # Invoking a Python script this way will avoid BdqQuit traceback on Ctrl+D at an
@@ -1512,8 +1516,7 @@ alias j='jupyter notebook'
 #   and don't call (but warn) if missing
 # - install line_profiler if missing?
 # - delete output file?
-# TODO also add whatever args it took to get units in to seconds?
-alias prof='kernprof -l -v'
+alias prof='kernprof -l -v -u 1'
 # TODO wrapper to get the biggest offenders / remove many consecutive non-run lines?
 # TODO maybe an alias to [prompt and] remove each '@profile' / similar that exists in
 # python files in current tree?
@@ -1638,8 +1641,9 @@ alias dot="cd ~/src/dotfiles && git status"
 alias dt="dot"
 
 # Too easy to tab complete too `script`, which is annoying.
-alias scripts="cd ~/src/scripts && ls"
+alias scripts="cd ~/src/scripts && git status"
 alias scr="scripts"
+alias sc="scripts"
 
 alias m='man'
 
