@@ -2072,6 +2072,10 @@ alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~
 # TODO tho maybe prompt to pause syncing before dropbox one?
 # TODO + one to transfer to my home computer
 
+# [p]air [g]rids (apg is a builtin password generator program)
+alias pg='cd ~/src/al_pair_grids; git status'
+alias pga="pg; conda activate ${AL_PAIR_GRIDS_CONDA_ENV}"
+
 
 # snap install only one i found that could load .dxf files on 18.04
 # install via `sudo snap install inkscape`
