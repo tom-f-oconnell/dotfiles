@@ -45,8 +45,41 @@ set belloff=all
 " TODO TODO vundle hasn't been updated in several years... maybe i should use
 " some other VIM package manager
 
-" TODO TODO TODO why was this not changing which python is actually used?
+" TODO TODO why was this not changing which python is actually used?
 "let g:ycm_server_python_interpreter = '/usr/bin/python3.6'
+
+" TODO TODO TODO possible to get YCM to recognize unchanged .ycm_extra_conf.py files
+" don't need further confirmation after first OK (similar to how direnv works before
+" requiring another `direnv allow`). modify YCM?
+" see also g:ycm_confirm_extra_conf and g:ycm_extra_conf_globlist
+" Technically risky, but who is really going to use this as a vector...
+let g:ycm_confirm_extra_conf = 0
+
+" TODO try to fix how this currently doesn't open in read-only mode if file is being
+" edited by another vim process (or prompt, like splitting normally would)
+" Default is 'same-buffer'
+let g:ycm_goto_buffer_command = 'split-or-existing-window'
+
+" TODO TODO TODO if ever gonna use YCM RefactorRename feature, might need to see the
+" quickfix window for that, and i think this function also applies there. possible to
+" tell which is being called?
+" TODO maybe just delete this customization fn and call :ccl in <leader>G command?
+" (or leave customization and call :copen in a RefactorRename shortcut?)
+" TODO TODO TODO why does RefactorRename take SOOOO long. i have only ever had it time
+" out on me, both for cases where the name actually went across files and cases where it
+" didn't. see: https://gitter.im/Valloric/YouCompleteMe?at=5f1ca96c65895258e89ea2f9 for
+" some discussion.
+function! s:CustomizeYcmQuickFixWindow()
+  " Close quickfix window (can still search through w/ :cn/:cp or my <leader>[N/n]
+  " bindings to vim-qf equivalent commands)
+  ccl
+endfunction
+
+autocmd User YcmQuickFixOpened call s:CustomizeYcmQuickFixWindow()
+
+" TODO would `let g:ycm_disable_signature_help = 1` and disabling (how? doesn't seem
+" doc'd) `g:ycm_auto_hover` both disable the popups i find annoying when shown for
+" python stdlib stuff?
 
 " TODO TODO configure s.t. vundle doesn't add stuff to my dotfiles repo
 " in a way that would either be confusing or interfere with anything.
@@ -70,40 +103,7 @@ Plugin 'VundleVim/Vundle.vim'
 
 " TODO test vundle can always compile this (ideally on WSL too)
 " if it can't, may want to handle this one manually.
-"Plugin 'Valloric/YouCompleteMe'
-
-" Trying to see if feature added in
-" https://github.com/VundleVim/Vundle.vim/pull/604 supports installing an older
-" version of YCM (referenced by commit, for now), as I currently need to get it
-" to work with VIM <8.2 (7.4 [maybe patched to ~8?] vim-gtk).
-" TODO might need to update vundle for this to work?
-" TODO could also just try forking and keeping my HEAD at this commit if i can't
-" get this to work
-" at this this syntax didn't work
-"Plugin 'Valloric/YouCompleteMed@d98f896'
-
-" My fork at d98f896.
-" TODO TODO TODO still getting the same error as in ppa case!!! fix!
-" YouCompleteMe unavailable: invalid syntax (vimsupport.py, line 184)
-" TODO maybe i just need to build YouCompleteMe myself again, or at lesat check
-" that i still have any requried dependencies (before installing maybe?)
-" TODO might try finding last commit still w/ 3.5 support and then just using
-" sysem python3. i tried using a 3.6 venv but that didn't work
-" python3 install.py. also tried `python3.6 install.py --clang-completer`.
-" https://github.com/ycm-core/YouCompleteMe/issues/3711 seems to indicate it
-" should work, but maybe that support was added after the commit i reverted to?
-" ok so https://github.com/ycm-core/YouCompleteMe/issues/3732
-" `:py3 print( __import__( 'sys' ).version )` -> 3.5, despite 3.6 being used for
-" build. why?
-" I also tried setting the path to the inteprete to match build python (see
-" above), but it didn't seem to change anything:
-" https://github.com/ycm-core/YouCompleteMe/issues/2917
-" https://github.com/ycm-core/YouCompleteMe/issues/2136
-" NOTE: this is the version i was using most recently (not stock/stock@d9..), but
-" commented now cause was intermittently (only in some shells and editing some files;
-" both ~/.vimrc and some .py files at least) got "Vim: Caught deadling signal ABRT",
-" and disabling this seemed to fix it
-"Plugin 'tom-f-oconnell/YouCompleteMe'
+Plugin 'Valloric/YouCompleteMe'
 
 Plugin 'dense-analysis/ale'
 
@@ -117,10 +117,10 @@ Plugin 'airblade/vim-gitgutter'
 " TODO what does this do again?
 Plugin 'henrik/vim-indexed-search'
 
-" Provides the cfi (current function info) function used below, in custom
-" statusline.
 " TODO (as per comments below) consider trying to replace w/ tagstack,etc
-Plugin 'tyru/current-func-info.vim'
+" (above comment was from when i was still using tyru/current-func-info.vim
+" current solution seems to work better w/in python at least, so maybe no need)
+Plugin 'mgedmin/taghelper.vim'
 
 " TODO more modern version of this? some other site seemed to have something
 " that highlighted the opening and closing whatever; did it close them too?
@@ -139,6 +139,10 @@ Plugin 'lervag/vimtex'
 Plugin 'tpope/vim-unimpaired'
 
 Plugin 'ntpeters/vim-better-whitespace'
+
+Plugin 'romainl/vim-qf'
+
+Plugin 'wellle/context.vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()
@@ -572,11 +576,10 @@ set statusline=%f\ %h%w%m%r\
 " definitely don't need this line, but this might be a good addon
 "set statusline+=%{SyntasticStatuslineFlag()}
 
-" TODO TODO TODO hack saving last edited file + function name (using same thing
-" to get function name below) to some repo level or global file, so that pytest
-" alias can run JUST this test, to skip potentially time intensive tests that
-" i'm not working on (and also just to prevent other tests from confusing me
-" when i'm reading the output)
+" TODO TODO hack saving last edited file + function name (using same thing to get
+" function name below) to some repo level or global file, so that pytest alias can run
+" JUST this test, to skip potentially time intensive tests that i'm not working on (and
+" also just to prevent other tests from confusing me when i'm reading the output)
 "
 " TODO shortcut to toggle old statusline?
 
@@ -587,27 +590,18 @@ set statusline=%f\ %h%w%m%r\
 " and https://stackoverflow.com/questions/33699049
 
 " TODO need to special case non python files here (to at least not append this
-" part?) certain file types (ones where cfi doesn't work)?
-" (does cfi actually *error* anywhere, or was it just that it wasn't installed?
+" part?) certain file types (ones where taghelper doesn't work)?
+" (does taghelper actually *error* anywhere, or was it just that it wasn't installed?
 " probably just wasn't installed...)
-
-" (NOTE: these fixes are more important how that i'm trying to use this to hack
-" together something that runs only the most recent test i was editing in
-" pytest)
-" TODO TODO possible to work in whitespace / empty lines in function too?
-" (doesn't now)
-" TODO TODO fix false positives (e.g. in choice_analysis, in top-level code
-" after press, the status bar says we are still in the function press)
-" Show the current function name on statusline. Works* for at least Python.
-" TODO only enable this custom statusline (any of the mods, not just the
-" function name line) if python?
-" `cfi` requires the addon https://github.com/tyru/current-func-info.vim
-"set statusline+=' %{cfi#format("%s", "")}'
 
 set statusline+=%*
 
 " end of default statusline (with ruler)
 set statusline+=%=%(%l,%c%V\ %=\ %P%)
+
+" This will put the function name in square brackets at the far right in the statusline
+" TODO maybe try to embed s.t. it's just to the right of the filename?
+let &statusline .= ' %{taghelper#curtag()}'
 
 " TODO just display func name in another color? (or flank w/ symbols like
 " ex?)
@@ -639,6 +633,24 @@ nnoremap <leader>t o# TODO
 nnoremap <leader>c o#<Esc>
 nnoremap <leader>d o"""<cr>"""<Esc>kA
 nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
+
+" Should default to GoToDefinition if available.
+nnoremap <leader>g :YcmCompleter GoTo<CR>
+" Populates quickfix list w/ all references (in current file?)
+nnoremap <leader>G :YcmCompleter GoToReferences<CR>
+
+" NOTE: see also qf_loc_[previous/next] if I end up using the "location list" in
+" addition to the quickfix list
+"nnoremap <leader>1 <Plug>(qf_qf_previous)
+"nnoremap <leader>2 <Plug>(qf_qf_next)
+"nmap <Home> <Plug>(qf_qf_previous)
+"nmap <End> <Plug>(qf_qf_next)
+nmap <leader>N <Plug>(qf_qf_previous)
+nmap <leader>n <Plug>(qf_qf_next)
+
+
+" TODO add ycm command for renaming once i get clear on how to tell whether it's
+" operating on multiple files + get it to behave as i want
 
 " TODO also make it so it positions this line at the top of the screen
 " doesn't work
