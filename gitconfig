@@ -2,8 +2,15 @@
 	email = toconnel@caltech.edu
     name = Tom O'Connell
 
+# This `less --quit-if-one-screen -m --mouse +Gg` shows percentage like I want for long
+# output, but the output takes up the full screen for files shorter than one screen,
+# which makes it not worth overall. Adding `--tilde -s -S -R` options didn't seem to
+# help. See https://unix.stackexchange.com/questions/329093 for possible wrapper-based
+# solution. See my question https://unix.stackexchange.com/questions/676057 for a
+# possible solution without making a wrapper.
 [core]
     excludesfile = ~/.gitignore
+	pager = less --quit-if-one-screen --mouse --wheel-lines=5
 
 # This does seem to cause all sorts of problems though...
 # TODO fix / try deleting and see if current git+github behavior is annoying enough to
