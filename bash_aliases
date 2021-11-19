@@ -1601,6 +1601,9 @@ fi
 alias v='vi'
 alias sv='sudo vi'
 
+# [v]im [p]lugin [i]nstall
+alias vpi='vim +PluginInstall +qall'
+
 alias black='black --skip-string-normalization'
 
 # It seems if it was saved w/ a diff version of python or something, nothing is

@@ -29,6 +29,7 @@ The above might cause some issues. Not sure.
 To only install Vundle plugins, without trying to do the YouCompleteMe
 compilation that `install_vim_extensions.sh` does:
 ```
+# I also have this aliased as `vpi`
 vim +PluginInstall +qall
 ```
 
