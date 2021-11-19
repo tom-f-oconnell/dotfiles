@@ -50,12 +50,6 @@ function verlt() {
 #verlte 2.5.6 2.5.6 && echo "yes" || echo "no" # yes
 #verlt 2.5.6 2.5.6 && echo "yes" || echo "no" # no
 
-# opens a file in Fiji, and appends current directory before argument so Fiji
-# doesn't freak out
-function fp() {
-    $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
-}
-
 function git_commit_add() {
     # TODO delete after debugging
     echo "CHECK THAT LOGGED COMMIT MESSAGE IS ACTUALLY WHAT YOU WANT"
@@ -986,10 +980,10 @@ complete -F _complete_alias ga
 
 alias gaa='git add --all'
 
-#alias gca='git commit -am'
 #alias gac='git commit -am'
-alias gca='git_commit_add'
 alias gac='git_commit_add'
+
+alias gca='git commit --amend'
 
 alias gc='git commit -m'
 
@@ -1459,7 +1453,13 @@ alias pi='pip install'
 alias pie='pip install -e'
 complete -d pie
 
-alias pir='pip install -r'
+function pir() {
+    if [ "$#" -eq 0 ]; then
+        pip install -r requirements.txt
+    else
+        pip install -r "$@"
+    fi
+}
 complete -f -o plusdirs -X '!*.txt' pir
 
 # TODO TODO change this to a function that uninstalls python package(s) defined
@@ -1505,8 +1505,12 @@ alias u='sudo apt update'
 alias i='sudo apt install -y'
 alias saa='sudo apt autoremove'
 
-#alias i='ipython'
-alias ipy='ipython'
+if [ -x "$(command -v ipython3)" ]; then
+    if ! [ -x "$(command -v ipython)" ]; then
+        alias ipy='ipython3'
+        alias ipython='ipython3'
+    fi
+fi
 alias ipy3='ipython3'
 
 alias j='jupyter notebook'
@@ -1744,6 +1748,8 @@ alias gpym='grepym'
 alias dlwebsite="dlwebsite.py"
 
 alias lr='ls -ltr'
+alias lh='ls -lh'
+alias lrh='ls -ltrh'
 
 # Since I already have muscle memory for typing 'df -h'
 # The goal is just to include the lines for real storage devices (the things I generally
@@ -1759,6 +1765,8 @@ alias vrc="vi ~/.vimrc"
 alias ba="vi ~/.bash_aliases"
 
 alias mi="vi ~/src/scripts/movein.sh"
+
+alias vars='vi ~/.variables'
 
 # [d]isable [c]ustom [e]xcepthook
 alias dce="PYMISTAKE_DISABLE=1"
@@ -1937,16 +1945,28 @@ alias md5='md5sum'
 alias sha256='sha256sum'
 
 
+# opens a file in Fiji, and appends current directory before argument so Fiji
+# doesn't freak out
+function open_in_fiji() {
+    $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
+}
+alias ij='open_in_fiji'
+
 AL_PAIR_GRIDS_CONDA_ENV="suite2p"
 
+function activate_al_pair_grids_conda_env() {
+    if ! [ "$CONDA_DEFAULT_ENV" = "$AL_PAIR_GRIDS_CONDA_ENV" ]; then
+        conda activate $AL_PAIR_GRIDS_CONDA_ENV
+    fi
+}
 # TODO make accept argument + add completion like c1/2/etc if i end up using enough
 # Requires hong2p to be setup in current shell environment / python
 function 2p() {
-    conda activate $AL_PAIR_GRIDS_CONDA_ENV
+    activate_al_pair_grids_conda_env
     cd "$(hong2p-data)/$1"
 }
 function 2pr() {
-    conda activate $AL_PAIR_GRIDS_CONDA_ENV
+    activate_al_pair_grids_conda_env
     cd "$(hong2p-raw)/$1"
 }
 function 2pa() {
@@ -1980,16 +2000,20 @@ function suite2p_combined_view() {
     2pa
 
     local prefix
-    if [ -z "$1" ]; then
-        prefix="."
-    else
-        prefix="$1"
-    fi
+    # TODO don't cd via `2pa` above if i want using '.' as an option
+    #if [ -z "$1" ]; then
+    #    prefix="."
+    #else
+    #    prefix="$1"
+    #fi
+    prefix="$1"
+
     # --statfile only available in my fork
     suite2p --statfile "$prefix/suite2p/combined/stat.npy" &
 
     # just estimating, but seems fine so far on my home computer
-    local initial_delay_s=3.0
+    #local initial_delay_s=3.0
+    local initial_delay_s=4.0
 
     sleep $initial_delay_s
 
@@ -2012,44 +2036,60 @@ function suite2p_and_dff() {
     pkill eog
     pkill suite2p
 
-    # this puts us in the directory we need to be in for the svg picking to work
-    # correctly
+    # Both ensures an environment is active such that `hong2p-analysis` is defined, and
+    # puts us in analysis root.
     2pa
-    # assuming this is a relative path from analysis intermediate root to a subdir
-    # corresponding to one experiment
+
+    local analysis_root="$(hong2p-analysis)"
+    local cd_dir="$(hong2p-analysis)/$1"
+    if ! [ -d "$cd_dir" ]; then
+        >&2 echo "$1 not a directory under $analysis_root"
+        return 1
+    fi
+
+    pushd . > /dev/null
     cd $1
 
+    # TODO replace getcwd() part in here and then remove pushd / cd / popd calls
     # NOTE: this won't be the image w/ the biggest response for reverse order stuff
     highest_concs_mix_svg="$(ls -Art `python -c 'import os; parts = os.getcwd().split("/"); print("/home/tom/src/al_pair_grids/svg/" + "_".join(parts[5:]))'`/*_trials.svg | tail -n 1)"
     # eog is default image viewer. xdg-open would also open it via eog.
     # calling it w/ eog w/o additional arguments or & blocked tho and i dont want that
 
+    popd > /dev/null
+
     if [ -f "$highest_concs_mix_svg" ]; then
         xdg-open $highest_concs_mix_svg
+
+        # From output of `wmctrl -l -x` (3rd column)
+        #local image_viewer_class="eog.Eog"
+
+        local image_viewer_class="eog"
+
+        # Should be available on the PATH b/c it's in my ~/src/scripts repo
+        move_wclass.py $image_viewer_class right
+
+        # TODO maybe a delay here would make it more reliable?
+
+        #sleep 0.5
+        sleep 1.0
+
+        # TODO what was this doing again?
+        #wmctrl -F -a "$(basename $highest_concs_mix_svg)"
+
+        xdotool key Ctrl+Super+Left
+        xdotool key Ctrl+plus
+        xdotool key Ctrl+plus
+
     else
         >&2 echo "$highest_concs_mix_svg not a file!"
     fi
 
     suite2p_combined_view "$1"
 
-    # Taken from left part of connected screens in `xrandr` output
-    local right_screen_name="DP-4"
-
-    # From output of `wmctrl -l -x` (3rd column)
-    #local image_viewer_class="eog.Eog"
-
-    local image_viewer_class="eog"
-
-    # Should be available on the PATH b/c it's in my ~/src/scripts repo
-    move_wclass.py $image_viewer_class $right_screen_name
-
-    wmctrl -F -a "$(basename $highest_concs_mix_svg)"
-
-    xdotool key Ctrl+Super+Left
-    xdotool key Ctrl+plus
-    xdotool key Ctrl+plus
-
+    # for pasting experiment ID into notes about ROIs
     printf "\n- $1:\n  - \n\n" | xclip -sel clip
+
     # can only restore if i make suite2p_combined_view block until suite2p is closed
     #pkill eog
 }
@@ -2101,4 +2141,6 @@ function toggle_xtrace() {
 alias xt='toggle_xtrace'
 
 alias da='direnv allow'
+
+alias ycm='curr_python_ycm_conf.py'
 
