@@ -79,3 +79,7 @@ build/
 
 # These are FreeCAD created backups of the main .FCStd files
 *.FCStd1
+
+# Since I currently just use this to point to project specific conda/venvs and those
+# paths are mostly system specific
+.ycm_extra_conf.py
