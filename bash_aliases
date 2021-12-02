@@ -1453,6 +1453,20 @@ alias pi='pip install'
 alias pie='pip install -e'
 complete -d pie
 
+function pig() {
+    if ! [ "$#" -eq 1 ]; then
+        echo "must have one argument in form of <Github-user>/<repo>"
+        return 1
+    fi
+
+    # TODO TODO check if it's in a hardcoded list w/ repos i have ssh set up for or
+    # explicitly test that somehow (then using ssh://github.com:<user>/<repo>),
+    # defaulting to https auth str?
+    # TODO or just like pig[s/h] for the one i'll use less?
+
+    pip install "git+https://github.com/$1"
+}
+
 function pir() {
     if [ "$#" -eq 0 ]; then
         pip install -r requirements.txt
