@@ -144,6 +144,11 @@ Plugin 'romainl/vim-qf'
 
 Plugin 'wellle/context.vim'
 
+" Adds <leader>d by default (which is what I was using for similar before anyway)
+" NOTE: this requires a subsequent `:call doge#install()`
+" TODO add this step to my vim setup script
+Plugin 'kkoomen/vim-doge'
+
 " All of your Plugins must be added before the following line
 call vundle#end()
 " To ignore plugin indent changes, instead use:
@@ -184,7 +189,7 @@ endif
 " Below I remap (normal mode) q to this, and Q to q as in:
 " https://stackoverflow.com/questions/10956261
 " Q does already enter 'Ex' mode, but I'm pretty sure I didn't want that anyway.
-function!  SaveAndQuit()
+function! SaveAndQuit()
     " NOTE: the checking of whether the file is modified is because :wq will change
     " modification time whether or not the file actually changed.
     " Also, I had previously had this fall back to the macro-recording-initiation
@@ -192,6 +197,7 @@ function!  SaveAndQuit()
     " but I found myself just always wanting 'q' to quit, and I still hadn't actually
     " gotten used to using macros for anything.
 
+    " TODO any reason not to replace this w/ `update`? is mod check equiv?
     " https://stackoverflow.com/questions/13107453
     if &mod
         " https://vi.stackexchange.com/questions/2408
@@ -631,7 +637,18 @@ nnoremap <leader>s oimport sys; sys.exit()<Esc>
 " dependent on filetype?
 nnoremap <leader>t o# TODO 
 nnoremap <leader>c o#<Esc>
-nnoremap <leader>d o"""<cr>"""<Esc>kA
+
+let g:doge_doc_standard_python = 'google'
+" TODO maybe disable doge default <leader>d mapping and make my own that first jumps to
+" line w/ def/class for current fn/class before calling
+
+" TODO make it some kind of function that takes input so flow can be:
+" fn name <Enter> arg1, ..., argN <Enter>
+" (with cursor then getting placed at appropriate indentation to start body)
+" ...rather than haveing to change modes and navigate over to enter args
+" (similar to how doge plugin uses tab to cycle through items to fill in)
+
+" TODO maybe a separate version behind <leader>F to add docstring too?
 nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
 
 " Should default to GoToDefinition if available.
@@ -690,9 +707,15 @@ nnoremap <leader># o<Esc>87i#<Esc>
 
 nnoremap <leader>h :call ToggleH()<CR>
 
-" This function is provided by the vim-better-whitespace plugin
-nnoremap <leader>w :ToggleWhitespace<CR>
+" TODO delete if this doesn't end up feeling smoother / if i find a single key solution
+" (which i'd prefer) i'm happy with
+" update = write if modified
+" TODO if i like, make also add <leader>q and remove my current hacky setup preventing
+" use of q for macros
+nnoremap <leader>w :update<CR>
 
+" This function is provided by the vim-better-whitespace plugin
+nnoremap <leader>W :ToggleWhitespace<CR>
 
 " TODO if i actually do get a shortcut i'm happy with for invoking my python scripts,
 " maybe also add one for profiling them with kernprof?
@@ -700,6 +723,10 @@ nnoremap <leader>w :ToggleWhitespace<CR>
 " This decorator is required to mark functions to profile.
 " TODO maybe save on this one too?
 nnoremap <leader>l O@profile<Esc>
+
+" TODO shortcut to link to visually selected lines w/ snippet highlight function in
+" github. ideally in a way s.t. if online is out of date but that snippet hasn't
+" changed, it uses the git information to translate to old line numbers somehow?
 
 " Technically this will toggle all of them, but I'm assuming that (in the current file)
 " ALL are EITHER commented OR uncommented when run, otherwise it won't guarantee they
