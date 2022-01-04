@@ -28,6 +28,7 @@
 
 " can this be reversed? not sure I mind?
 set nocompatible
+" TODO why did i have this off? (do think i turn it on later tho...)
 filetype off
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
@@ -81,6 +82,10 @@ autocmd User YcmQuickFixOpened call s:CustomizeYcmQuickFixWindow()
 " doc'd) `g:ycm_auto_hover` both disable the popups i find annoying when shown for
 " python stdlib stuff?
 
+" TODO TODO try moving to using either vim-plug or builtin package management.
+" see: https://github.com/VundleVim/Vundle.vim/issues/955 for reasons Vundle dev hasn't
+" been active for a while
+
 " TODO TODO configure s.t. vundle doesn't add stuff to my dotfiles repo
 " in a way that would either be confusing or interfere with anything.
 " this probably means either telling git to ignore some dir or have vundle
@@ -94,6 +99,10 @@ call vundle#begin()
 " under 'bundle'?
 " how can i get it to work on WSL and ubuntu in a way that doesn't require
 " explicitly hardcoding in each plugin??
+
+" TODO look in to:
+" - svermeulen/vim-subversive: quick find replace w/ new 's' motion (maybe can replace
+"   some of my hacks for this?)
 
 " TODO test paths above (rtp + begin) allow this to work in my dotbot repo
 " (don't want to have to manually download this, and want vundle to be able
@@ -127,6 +136,13 @@ Plugin 'mgedmin/taghelper.vim'
 Plugin 'Raimondi/delimitMate'
 
 Plugin 'plasticboy/vim-markdown'
+
+" Could also try 'instant-markdown/vim-instant-markdown' or
+" 'skanehira/preview-markdown.vim'. The latter renders in a VIM split not a browser.
+"
+" NOTE: requires `:call mkdp#util#install()` after `:PluginInstall`
+Plugin 'iamcco/markdown-preview.nvim'
+
 Plugin 'lervag/vimtex'
 
 " Trying mainly for `[f` / `]f` to switch between files, though might want to try
@@ -144,16 +160,21 @@ Plugin 'romainl/vim-qf'
 
 Plugin 'wellle/context.vim'
 
+" TODO TODO figure out how to get this to add a 'Returns: ' section as well (populated
+" w/ variables at least for references maybe? might be possible by making a new standard
+" from their python one? see their github.)
+"
 " Adds <leader>d by default (which is what I was using for similar before anyway)
-" NOTE: this requires a subsequent `:call doge#install()`
-" TODO add this step to my vim setup script
+" NOTE: requires `:call doge#install()` after `:PluginInstall`
 Plugin 'kkoomen/vim-doge'
+
+Plugin 'preservim/nerdcommenter'
+
+" lukhio/vim-mapping-conflicts seems useful, but raised a bunch of errors when I tested
+" it.
 
 " All of your Plugins must be added before the following line
 call vundle#end()
-" To ignore plugin indent changes, instead use:
-"filetype plugin on
-
 " Brief help
 " :PluginList       - lists configured plugins
 " :PluginInstall    - installs plugins; append `!` to update or just
@@ -266,7 +287,11 @@ function! ToggleH()
 endfunction
 
 syntax on
+
+" TODO consolidate w/ lines further below that conditionally sets this...
 filetype plugin indent on
+" To ignore plugin indent changes, instead use:
+"filetype plugin on
 
 " May prefer to break at space + punctuation? See breakat option.
 " TODO is this even worth it, if hard-breaking at 88 (w/ tw)?
@@ -341,6 +366,9 @@ set expandtab
 set cinkeys-=0#
 set cinoptions+=#1s
 
+" TODO move filetype specific stuff to ~/vim/ftplugin/<filetype>_mappings.vim files
+" (requires `:filetype plugin on`), as https://vi.stackexchange.com/questions/10664
+
 " Since FreeCAD macros are written in Python.
 " This is the extension that FreeCAD gives them (at least by default).
 au! BufNewFile,BufRead *.FCMacro setlocal ft=python
@@ -397,10 +425,11 @@ let g:pyindent_continue = '&shiftwidth'
 " covered bewteen nmap/imap that i might still want... not 100% sure 'map' is
 " what i want either though...
 " https://vi.stackexchange.com/questions/2089
-au BufRead *.py nmap <F5> :w<cr>:!./%<cr>
-au BufRead *.py imap <F5> <Esc>:w<cr>!./%<cr>
-"au BufRead *.py nmap <F5> :w<cr>:!python %<cr>
-"au BufRead *.py imap <F5> <Esc>:w<cr>!python %<cr>
+" TODO maybe call these inside :term ?
+au BufRead *.py nmap <buffer> <F5> :w<cr>:!./%<cr>
+au BufRead *.py imap <buffer> <F5> <Esc>:w<cr>!./%<cr>
+"au BufRead *.py nmap <buffer> <F5> :w<cr>:!python %<cr>
+"au BufRead *.py imap <buffer> <F5> <Esc>:w<cr>!python %<cr>
 
 " sets new python files to executable by default
 " TODO tabs to spaces in vimrc
@@ -420,8 +449,8 @@ au BufWritePre *.sh if !filereadable(expand('%')) |
 " TODO why can't i just do this directly in above?
 au BufWritePost *.sh if get(b:, 'is_new', 0) |
 	\silent execute '!chmod +x %' | e | endif
-au BufRead *.sh nmap <F5> :w<cr>:!bash %<cr>
-au BufRead *.sh imap <F5> <Esc>:w<cr>!bash %<cr>
+au BufRead *.sh nmap <buffer> <F5> :w<cr>:!bash %<cr>
+au BufRead *.sh imap <buffer> <F5> <Esc>:w<cr>!bash %<cr>
 
 au BufNewFile *.sh 0r ~/.vim/skel.sh
 au BufNewFile *.sh normal G
@@ -452,6 +481,10 @@ au Filetype markdown setlocal expandtab tabstop=3 shiftwidth=3
 " TODO TODO now that i'm disabling spell by default, make some hotkey
 " to quickly toggle the spellcheck visuals (share w/ txt below)
 au Filetype markdown setlocal nospell spelllang=en_us
+
+" TODO maybe just use MarkdownPreview (when would i want to MarkdownPreviewStop?)
+" Requires 'iamcco/markdown-preview.nvim' plugin
+au Filetype markdown nmap <buffer> <F5> <Plug>MarkdownPreviewToggle
 
 " To exclude spellcheck from certain .txt files
 " TODO TODO TODO revert change that deleted the "Filetype special_txt..." line
@@ -622,6 +655,30 @@ set mouse=a
 
 nnoremap q :call SaveAndQuit()<CR>
 
+" To list all <F*> mappings (https://vi.stackexchange.com/questions/20192):
+function! FKeyMaps()
+    for i in range(1, 12)
+        if !empty(mapcheck('<F'.i.'>'))
+            execute 'map <F'.i.'>'
+        endif
+    endfor
+endfunction
+
+" Tried to have this as <leader><F1> but the mapping for <F1> is all that was triggered.
+" Same with <F2>.
+nmap <F10> :FKeyMaps<CR>
+
+" To list all leader commands, use `:map <leader>` or `:verbose map <leader>`
+
+" Leader commands added by plugins:
+" - nerdcommenter: many with the prefix of <leader>c
+
+" TODO TODO leader command for jumping to end of current indention block (i.e. the body
+" of a long loop in python) (some plugin for this?)
+
+" TODO TODO find a way (plugin?) to get/insert at current indentation level for commands
+" that insert lines (python specific OK)
+
 " TODO shortcut to select current line + next line, and then zg? (i do it a lot)
 
 " Custom functions on the 'Leader' keyboard
@@ -631,12 +688,16 @@ let mapleader = ","
 nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>
 nnoremap <leader>p oprint(f'{=}')<Esc>3hi
 nnoremap <leader>s oimport sys; sys.exit()<Esc>
-" TODO check i'm not shadowing any possibly-useful pre-existing commands after
-" leader (or is leader entirely for custom commands?)
+
 " TODO maybe modify the # to some kind of autodetected comment character,
 " dependent on filetype?
-nnoremap <leader>t o# TODO 
-nnoremap <leader>c o#<Esc>
+" TODO TODO TODO figure out how to use NERDCommenter for this. it should be possible.
+
+nnoremap <leader>1 o# TODO 
+nnoremap <leader>1 o break?
+nnoremap <leader>2 o# TODO TODO 
+nnoremap <leader>3 o# TODO TODO TODO 
+nnoremap <leader>4 o# TODO TODO TODO TODO 
 
 let g:doge_doc_standard_python = 'google'
 " TODO maybe disable doge default <leader>d mapping and make my own that first jumps to
@@ -656,18 +717,21 @@ nnoremap <leader>g :YcmCompleter GoTo<CR>
 " Populates quickfix list w/ all references (in current file?)
 nnoremap <leader>G :YcmCompleter GoToReferences<CR>
 
+
+" For explanation of what <Plug> is: https://vi.stackexchange.com/questions/31012
+"
 " NOTE: see also qf_loc_[previous/next] if I end up using the "location list" in
 " addition to the quickfix list
-"nnoremap <leader>1 <Plug>(qf_qf_previous)
-"nnoremap <leader>2 <Plug>(qf_qf_next)
-"nmap <Home> <Plug>(qf_qf_previous)
-"nmap <End> <Plug>(qf_qf_next)
 nmap <leader>N <Plug>(qf_qf_previous)
 nmap <leader>n <Plug>(qf_qf_next)
 
+" Replace all instances of word under cursor
+" :YcmCompleter RefactorRename <name> would be preferable if it didn't time out...
+" TODO modify so you only have to type the new name, not the '/g' at the end too
+" TODO maybe look into replacing w/ 'subversive' plugin? it do what i think?
+nmap <leader>r *:%s//
 
-" TODO add ycm command for renaming once i get clear on how to tell whether it's
-" operating on multiple files + get it to behave as i want
+" TODO maybe add <leader>R for RefactorRename if i get that to work OK
 
 " TODO also make it so it positions this line at the top of the screen
 " doesn't work
