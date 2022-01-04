@@ -760,6 +760,8 @@ alias pfg="pip freeze | grep"
 #   python3 venvs? or was it another black being used?)
 # TODO TODO + add option (probably would want an alias with one additional letter, like
 # 'ab' ([b]are) to map to it, to not always require another prompt at startup.)
+# TODO TODO TODO recursively search above if none not found echoing which it finds? or
+# prompt?
 alias a='activate'
 alias d="diff_or_deactivate"
 
@@ -1499,6 +1501,27 @@ alias pup='pip install --upgrade pip'
 # weren't there. maybe it was breaking at start of script and i just needed to continue
 # or something?)
 #alias pd='python -m ipdb'
+
+# https://stackoverflow.com/questions/39162569
+alias pt='pytest --pdbcls=IPython.terminal.debugger:Pdb'
+
+# requires a 'slow' mark is defined in project pytest config, as well as using the mark
+# where appropriate on specific tests
+alias pytestfast='pt -m "not slow"'
+alias ptfast='pytestfast'
+
+# TODO TODO implement completion for running single tests by name, so that if you type
+# pytest test/test_util.py::<TAB> it lists/completes through functions defined in that
+# file w/ test prefix
+
+# The --capture=no allows debug breakpoints in code to work, and the --pdb starts one
+# (postmortem only?) after test fails. Former might interfere w/ some pytest functions?
+alias pytestdebug='pt --capture=no --pdb'
+alias ptdebug='pytestdebug'
+
+# Show durations for all tests (n>0 shows for n slowest)
+alias pytesttime='pt --durations=0'
+alias pttime='pytesttime'
 
 # "sphinx test" (sb "build" was taken by source bash)
 alias st='make html && xdg-open build/html/index.html'
