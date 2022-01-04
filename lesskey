@@ -1,0 +1,17 @@
+# Was trying to get search to wraparound from bottom back to top in manpages.
+# See `man lesskey` for more options.
+
+# https://unix.stackexchange.com/questions/255862
+
+# Requires at least less v568 (20.04 has 551 by default and I haven't found a PPA yet)
+##command
+#/ forw-search ^W
+#? back-search ^W
+
+# Didn't seem to produce the behavior I wanted (though author said he tested it in
+# v530)
+##command
+#\eB back-search
+#\eF forw-search
+#/ noaction gg\eF
+#? noaction G\eB

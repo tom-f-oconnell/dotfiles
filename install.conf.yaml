@@ -39,13 +39,16 @@
     ~/.vimrc:
     ~/.vim:
     ~/.tmux.conf:
+
+    #~/.lesskey:
+
     ~/.gitconfig:
     ~/.gitignore:
     ~/.config/LibreCAD:
     ~/.config/inkscape:
     ~/.direnvrc:
     # TODO automatically "direnv allow" this
-    ~/.envrc:
+    #~/.envrc:
     # TODO some way to toggle this between base default enabled / not.
     # probably copy rather than link, to keep changes out of version control.
     ~/.condarc:
