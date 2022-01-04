@@ -25,7 +25,7 @@
     stdin: True
 
 # TODO shortcut (just link all according to some convention?)
-- link: 
+- link:
     ~/.bashrc:
     ~/.bash_aliases:
     ~/.bash_completion:
@@ -45,7 +45,6 @@
     ~/.gitconfig:
     ~/.gitignore:
     ~/.config/LibreCAD:
-    ~/.config/inkscape:
     ~/.direnvrc:
     # TODO automatically "direnv allow" this
     #~/.envrc:
@@ -72,7 +71,7 @@
 # TODO need to use git://? will that work w/ SSH key set later?
 # TODO i kind of want stdout/err/in for all things. way to make it default?
 - shell:
-  - 
+  -
     description: "Getting/updating accessory scripts repo"
     command: "./get_scripts.sh"
     stdout: True
@@ -84,7 +83,7 @@
     stdout: True
     stderr: True
     stdin: True
-  - 
+  -
     description: "Installing VIM extensions"
     command: "./install_vim_extensions.sh"
     stdout: False
@@ -94,7 +93,7 @@
 
 # TODO uncomment if i figure out how to add that submodule back there w/o
 # issues...
-#  - 
+#  -
 #    description: "Installing requirements for GithubCloner"
 #    command: "pip3 install --user -r util/GithubCloner/requirements.txt"
 #    stdout: False
