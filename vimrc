@@ -666,7 +666,7 @@ endfunction
 
 " Tried to have this as <leader><F1> but the mapping for <F1> is all that was triggered.
 " Same with <F2>.
-nmap <F10> :FKeyMaps<CR>
+nmap <F10> :call FKeyMaps()<CR>
 
 " To list all leader commands, use `:map <leader>` or `:verbose map <leader>`
 
