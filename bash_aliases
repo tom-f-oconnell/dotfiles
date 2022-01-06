@@ -651,6 +651,9 @@ alias cr='cp -r'
 alias cpr='cp -r'
 
 # TODO maybe 'git status' if it's a git repo (factor to fn)?
+# TODO modify autocompletion to also include stuff under ~/src (assuming it won't be
+# shadowed mostly / when we care) and cd there directly (even possible? might need
+# completion to add the ~/src/ prefix in those cases)
 alias c='cd'
 # Uses https://github.com/cykerway/complete-alias installed via my dotfiles setup
 complete -F _complete_alias c
@@ -1086,14 +1089,27 @@ alias gau='git remote add upstream'
 # TODO how to deal w/ origin + upstream? just pick origin?
 # (probably prompt and have then enter a number selecting which / both)
 function open_repo_in_browser() {
+
     local remote
+    # Assuming if $1 is empty $2 must also be. ...maaaybe not true?
     if [ -z "$1" ]; then
         remote="origin"
     else
         remote="$1"
     fi
-    # getting https link, no matter auth in 'git remote -v'
-    local url="$(git remote -v | grep "$remote" | change_git_auth.py h)#readme"
+
+    local url_suffix
+    if [ -z "$2" ]; then
+        url_suffix="#readme"
+    else
+        url_suffix="$2"
+    fi
+
+    # TODO TODO check some lines contain remote before proceeding. fail w/ msg.
+    #
+    # Getting https link, no matter auth in 'git remote -v'
+    local url="$(git remote -v | grep "$remote" | change_git_auth.py h)${url_suffix}"
+
     # TODO break out above so `git remote -v` is separate or otherwise figure out how
     # to make this fail gracefully w/ reminder about what it does if used not in a git
     # repo (as part of pipe, ext code seems to be 0 regardless of failure in first
@@ -1102,8 +1118,13 @@ function open_repo_in_browser() {
     echo "opening $url in $browser"
     xdg-open $url
 }
-alias gb='open_repo_in_browser'
+
+alias gb='open_repo_in_browser origin'
 alias gbu='open_repo_in_browser upstream'
+
+# /commits seems to use default branch, which is what I want.
+alias gbl='open_repo_in_browser origin /commits'
+alias gbul='open_repo_in_browser upstream /commits'
 
 # Requires grip, installable via `pip install grip` (on 20.04 at least)
 function render_and_display_markdown() {
@@ -1291,13 +1312,20 @@ function clone() {
         done
     fi
 }
-# TODO TODO maybe overload this to "clear" in no-arg case
+
+# TODO TODO try to switch all hub stuff to gh (official CLI), try to use it again, and
+# try to get autocomplete working (and with any aliases too!)
 alias cl="clone"
 
 # TODO add another alias that runs this, but only on repos modified within some
 # reasonable time window (maybe ~1week / ~1mo)
+#
+# I believe the first command is *just* to warn about non-git directories, which is why
+# it is fine that the mgf alias below only passes the -f argument to the second command.
+#
 # Need to follow the install instructions for this in my dotfiles README
-alias mg='mgitstatus -w --no-push --no-pull --no-upstream --no-uncommitted --no-untracked --no-stashes -e -d 1; mgitstatus -e'
+alias mg='mgitstatus -w --no-push --no-pull --no-upstream --no-uncommitted --no-untracked --no-stashes -e -d 1; mgitstatus -e -d 1'
+
 # Also do a fetch on each repo (can be slower)
 alias mgf='mg -f'
 
