@@ -765,6 +765,15 @@ alias pfg="pip freeze | grep"
 alias a='activate'
 alias d="diff_or_deactivate"
 
+function diff_dirs() {
+    # TODO refactor to share ignore defs for warn printing and passing via -x
+    printf "\033[1;33m" >&2
+    printf "Ignoring (if they exist): venv, .git, __pycache__, *.egg-info" >&2
+    printf "\033[0m\n" >&2
+
+    diff -q -r -x venv -x .git -x __pycache__ -x *.egg-info "$@"
+}
+alias diffd='diff_dirs'
 
 if ! [ -x "$(command -v mamba)" ]; then
     export MAMBA_OR_CONDA="conda"
@@ -805,6 +814,8 @@ function is_yaml() {
     fi
     return 1
 }
+# TODO TODO generalize to arbitrary filetypes, defaulting to *.<ext> if only one in cwd
+# (though latter behavior may not be what we want in current usage of this)
 function single_yaml_arg() {
     local retcode
     local yaml_arg=""
@@ -1093,6 +1104,32 @@ function open_repo_in_browser() {
 }
 alias gb='open_repo_in_browser'
 alias gbu='open_repo_in_browser upstream'
+
+# Requires grip, installable via `pip install grip` (on 20.04 at least)
+function render_and_display_markdown() {
+
+    # TODO better to use mktemp or something?
+    local grip_export_path='/tmp/grip_render.html'
+
+    # TODO modify to take argument or default to opening lone *.md file if there is one
+    local markdown_path='README.md'
+
+    # TODO try to use vim w/ the iamcco/markdown-preview.nvim plugin i'm using to
+    # replace need to install this separate thing? `vim <x>.md +MarkdownPreview` almost
+    # does what i want, but i would ideally want this to happen in the background in a
+    # way where both vim and whatever is serving the rendered HTML exit after closing
+    # the preview
+    # TODO why does my version of grip not seem to work like `grip --export` example in
+    # README (only working w/ `--export` if i explicitly specify markdown file like
+    # `grip README.md --export`)
+    # TODO any way to get these renders to show up in a dark theme like i have
+    # configured on github? same question but for my vim plugin too.
+
+    rm -f "$grip_export_path"
+    grip "$markdown_path" --export "$grip_export_path" --quiet && xdg-open "$grip_export_path"
+}
+# [m]ark[d]own
+alias md='render_and_display_markdown'
 
 # TODO add 'rg' alias to remove git repo if:
 # - no uncommitted changes / untracked files
