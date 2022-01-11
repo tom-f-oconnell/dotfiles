@@ -70,6 +70,7 @@ let g:ycm_goto_buffer_command = 'split-or-existing-window'
 " out on me, both for cases where the name actually went across files and cases where it
 " didn't. see: https://gitter.im/Valloric/YouCompleteMe?at=5f1ca96c65895258e89ea2f9 for
 " some discussion.
+" `function!` (vs `function`) means to overwrite the function if it exists.
 function! s:CustomizeYcmQuickFixWindow()
   " Close quickfix window (can still search through w/ :cn/:cp or my <leader>[N/n]
   " bindings to vim-qf equivalent commands)
@@ -90,6 +91,7 @@ autocmd User YcmQuickFixOpened call s:CustomizeYcmQuickFixWindow()
 " in a way that would either be confusing or interfere with anything.
 " this probably means either telling git to ignore some dir or have vundle
 " always install to some other path.
+
 call vundle#begin()
 " alternatively, pass a path where Vundle should install plugins
 "call vundle#begin('~/some/path/here')
@@ -186,7 +188,7 @@ call vundle#end()
 " see :h vundle for more details or wiki for FAQ
 
 " https://stackoverflow.com/questions/57014805
-function! IsWSL()
+function IsWSL()
   if has("unix")
     let lines = readfile("/proc/version")
     if lines[0] =~ "Microsoft"
@@ -210,7 +212,7 @@ endif
 " Below I remap (normal mode) q to this, and Q to q as in:
 " https://stackoverflow.com/questions/10956261
 " Q does already enter 'Ex' mode, but I'm pretty sure I didn't want that anyway.
-function! SaveAndQuit()
+function SaveAndQuit()
     " NOTE: the checking of whether the file is modified is because :wq will change
     " modification time whether or not the file actually changed.
     " Also, I had previously had this fall back to the macro-recording-initiation
@@ -237,7 +239,7 @@ endfunction
 " https://stackoverflow.com/questions/1290285
 " http://vimdoc.sourceforge.net/htmldoc/change.html#fo-table
 " https://vim.fandom.com/wiki/Automatic_word_wrapping
-function! WillBreakLines()
+function WillBreakLines()
     " This '&l:' prefix specifically gets the local option, as setlocal (though
     " I think also works for local variables that are not internal VIM options).
     " The 'l' is not interchangeable with other characters. See :help let for
@@ -272,7 +274,7 @@ hi Search ctermbg=Red
 " (if appropriate given wrap options)
 " Map <leader>h to this below.
 let s:activatedh = 0
-function! ToggleH()
+function ToggleH()
     if !WillBreakLines()
         return
     endif
@@ -619,8 +621,6 @@ set statusline=%f\ %h%w%m%r\
 " function name below) to some repo level or global file, so that pytest alias can run
 " JUST this test, to skip potentially time intensive tests that i'm not working on (and
 " also just to prevent other tests from confusing me when i'm reading the output)
-"
-" TODO shortcut to toggle old statusline?
 
 " TODO TODO see also Taglist extension and others bookmarked around the same
 " time. may ultimately provide a more reliable way to get function names.
@@ -656,7 +656,7 @@ set mouse=a
 nnoremap q :call SaveAndQuit()<CR>
 
 " To list all <F*> mappings (https://vi.stackexchange.com/questions/20192):
-function! FKeyMaps()
+function FKeyMaps()
     for i in range(1, 12)
         if !empty(mapcheck('<F'.i.'>'))
             execute 'map <F'.i.'>'
@@ -681,11 +681,73 @@ nmap <F10> :call FKeyMaps()<CR>
 
 " TODO shortcut to select current line + next line, and then zg? (i do it a lot)
 
+" TODO is this even necessary or does my 'o' + python filetype settings already handle
+" as well as anything could?
+function PyInsertAtCurrIndent()
+    " TODO will this fn need modification to work both in the body of a fn and on the
+    " line defining the fn? test.
+
+    " https://stackoverflow.com/questions/14993012
+    " Counted in spaces: https://stackoverflow.com/questions/46090914
+    let l:curr_indent_spaces = indent(line('.'))
+
+    " TODO TODO before attempting to improve behavior of just 'o'<what i want>, i need
+    " to make sense of 'o' behavior. it seems there might be some (python) code-specific
+    " thing at work already
+
+    " TODO special handling for lines w/ whitespace only? necessary?
+
+    " NOTE: the first branch of this is currently disabled b/c auto tab stuff doesn't
+    " take effect for me since no text is entered after 'o' command before insert mode
+    " is left (doesn't matter that there is `startinsert` at end)
+    "if l:curr_indent_spaces != 0
+    if 0 && l:curr_indent_spaces != 0
+        echom "curr indent:" l:curr_indent_spaces "spaces"
+        execute "normal! o\<esc>"
+    else
+        " TODO TODO TODO use something other than counting '.' in this tag, as it will
+        " do nothing for any block contruct other than functions /
+        " nests-of-only-functions!
+        " TODO maybe search (upwards?) until we get a line w/ non-zero indent in the
+        " same tag, and use that indent?
+        echom "curr indent == 0"
+
+        let l:curr_tag = taghelper#curtag()
+        if len(l:curr_tag) == 0
+            let l:curr_indent_multiple = 0
+        else
+            " https://vi.stackexchange.com/questions/21622
+            let l:curr_indent_multiple = count(l:curr_tag, '.') + 1
+        endif
+
+        echom "curr indent multiple:" l:curr_indent_multiple
+
+        " TODO is tabstop suppossed to be 4 for python? what's diff between it and
+        " shiftwidth? any reason not to just use shiftwidth (what has seemed to matter
+        " so far, as only it is 4 for me now in a python file, w/ tabstop=8).  also,
+        " what's softtabstop / does it matter?
+        let l:curr_indent_spaces = l:curr_indent_multiple * &l:shiftwidth
+
+        echom "curr indent:" l:curr_indent_spaces "spaces"
+
+        " https://vi.stackexchange.com/questions/9644
+        " https://learnvimscriptthehardway.stevelosh.com/chapters/30.html
+        execute "normal! o" . repeat(' ', l:curr_indent_spaces) . "\<esc>"
+    endif
+
+    " https://stackoverflow.com/questions/11587124
+    startinsert
+
+endfunction
+
 " Custom functions on the 'Leader' keyboard
 let mapleader = ","
 " TODO are these spaces after <leader>[some char] functional (seems equiv to l
 " interactively) or are the ignored here?
-nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>
+nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>kA<CR>
+nnoremap <leader>B o#TODO delete<CR>import ipdb; ipdb.set_trace()<CR>#<Esc>2kA<CR>
+"nnoremap <leader>b :call PyInsertAtCurrIndent()<CR>import ipdb; ipdb.set_trace()<Esc>
+
 nnoremap <leader>p oprint(f'{=}')<Esc>3hi
 nnoremap <leader>s oimport sys; sys.exit()<Esc>
 
@@ -796,7 +858,7 @@ nnoremap <leader>l O@profile<Esc>
 " ALL are EITHER commented OR uncommented when run, otherwise it won't guarantee they
 " are all commented to be run without kernprof injecting 'profile' into builtins and
 " might behave in some other weird ways.
-function! ToggleProfileDecCommentState()
+function ToggleProfileDecCommentState()
     " The trailing 'e' prevents one search term not being found from causing whole
     " function to fail.
     " https://vi.stackexchange.com/questions/10821
@@ -846,7 +908,7 @@ inoremap <special> <expr> <Esc>[200~ XTermPasteBegin()
 
 " I'm not really sure how this is also setting nopaste at the end, but I tested
 " it, and it is.
-function! XTermPasteBegin()
+function XTermPasteBegin()
   set pastetoggle=<Esc>[201~
   set paste
   return ""
