@@ -28,4 +28,8 @@ alias vh !next(iter(%1.values() if type(%1) is dict else %1))
 alias ls import subprocess; subprocess.run(['ls',  '--color'])
 alias lr import subprocess; subprocess.run(['ls', '--color', '-ltr'])
 
+# [d]ataframe [p]rint
+# Seems the default max_rows/max_cols/max_colwidth are all unrestricted.
+alias dp print(%1.to_string())
+
 # TODO cat alias
