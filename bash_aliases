@@ -1022,7 +1022,11 @@ alias gp='git push'
 
 # git [u]pdate (not a real command, just mnemonic)
 # (and gp is already taken, and u is second letter of p[u]ll)
-alias gu='git pull'
+# might return this to without --rebase if other types of git pull end up being major
+# parts of my workflow
+#alias gu='git pull'
+alias gu='git pull --rebase'
+
 alias gur='git pull --rebase'
 
 # TODO would need some way to find default branch name of remote (e.g. main or master?).
@@ -1119,6 +1123,7 @@ function open_repo_in_browser() {
     xdg-open $url
 }
 
+# TODO just go to my own gh page if not in a git repo?
 alias gb='open_repo_in_browser origin'
 alias gbu='open_repo_in_browser upstream'
 
@@ -1147,6 +1152,8 @@ function render_and_display_markdown() {
     # configured on github? same question but for my vim plugin too.
 
     rm -f "$grip_export_path"
+    # TODO add grip arg to put [relative/full?] path to file in title, so unambiguous if
+    # looking at multiple
     grip "$markdown_path" --export "$grip_export_path" --quiet && xdg-open "$grip_export_path"
 }
 # [m]ark[d]own
@@ -1317,6 +1324,8 @@ function clone() {
 # try to get autocomplete working (and with any aliases too!)
 alias cl="clone"
 
+# TODO TODO modify/wrap mgitstatus so i can have an option to show git status for
+# (certain?) flagged stuff
 # TODO add another alias that runs this, but only on repos modified within some
 # reasonable time window (maybe ~1week / ~1mo)
 #
@@ -1616,6 +1625,12 @@ fi
 alias ipy3='ipython3'
 
 alias j='jupyter notebook'
+
+function open_csv_as_pandas_dataframe() {
+    ipython -i -c "import pandas as pd; fname=\"$1\"; df = pd.read_csv(fname); print(f'\n{fname}\n\n{df}')"
+}
+alias pd='open_csv_as_pandas_dataframe'
+complete -f -o plusdirs -X '!*.csv' pd
 
 # TODO also:
 # - grep for '@profile' or the like (ideally uncommented...) (would need to move to fn)
@@ -2248,4 +2263,18 @@ alias xt='toggle_xtrace'
 alias da='direnv allow'
 
 alias ycm='curr_python_ycm_conf.py'
+
+function cd_to_qmk_keymap() {
+    # TODO TODO TODO use hardcoded qmk_firmware path b/c need to activate venv there for
+    # any qmk commands to work (at least as installed in linux)
+
+    # TODO NOOP + err msg if any not set
+    local qmk_home=$(qmk config user.qmk_home)
+    local kb=$(qmk config user.keyboard)
+    local km=$(qmk config user.keymap)
+
+    local km_dir="${qmk_home#*=}/keyboards/${kb#*=}/keymaps/${km#*=}"
+    cd "$km_dir"
+}
+alias km='cd_to_qmk_keymap'
 
