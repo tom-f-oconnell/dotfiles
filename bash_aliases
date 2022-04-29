@@ -1587,11 +1587,19 @@ alias ptfast='pytestfast'
 # TODO TODO implement completion for running single tests by name, so that if you type
 # pytest test/test_util.py::<TAB> it lists/completes through functions defined in that
 # file w/ test prefix
+# TODO TODO just make all the aliases treat a single argument (at least in single
+# quotes?) as a substring to use the `-k 'pattern'` to match w/
 
 # The --capture=no allows debug breakpoints in code to work, and the --pdb starts one
 # (postmortem only?) after test fails. Former might interfere w/ some pytest functions?
-alias pytestdebug='pt --capture=no --pdb'
+# TODO separate alias including the postmortem?
+#alias pytestdebug='pt --capture=no --pdb'
+alias pytestdebug='pt --capture=no'
 alias ptdebug='pytestdebug'
+alias ptd='pytestdebug'
+
+# [p]y[t]est [p]ostmortem
+alias ptp='pt --capture=no --pdb'
 
 # Show durations for all tests (n>0 shows for n slowest)
 alias pytesttime='pt --durations=0'
@@ -1620,6 +1628,8 @@ if [ -x "$(command -v ipython3)" ]; then
     if ! [ -x "$(command -v ipython)" ]; then
         alias ipy='ipython3'
         alias ipython='ipython3'
+    else
+        alias ipy='ipython'
     fi
 fi
 alias ipy3='ipython3'
@@ -1638,6 +1648,10 @@ complete -f -o plusdirs -X '!*.csv' pd
 # - install line_profiler if missing?
 # - delete output file?
 alias prof='kernprof -l -v -u 1'
+
+# `pip install memory-profiler`. Uses same @profile decorator as kernprof above.
+alias memprof='python -m memory_profiler'
+
 # TODO wrapper to get the biggest offenders / remove many consecutive non-run lines?
 # TODO maybe an alias to [prompt and] remove each '@profile' / similar that exists in
 # python files in current tree?
@@ -1722,6 +1736,9 @@ alias sv='sudo vi'
 alias vpi='vim +PluginInstall +qall'
 
 alias black='black --skip-string-normalization'
+
+alias pylintv='pylint --output-format=colorized --disable=fixme,invalid-name'
+alias pylint='pylint --output-format=colorized --disable=fixme,invalid-name,missing-function-docstring,missing-module-docstring'
 
 # It seems if it was saved w/ a diff version of python or something, nothing is
 # printed? kind of odd, considering it worked with 3 and I thought i would have
@@ -2074,7 +2091,7 @@ alias ij='open_in_fiji'
 
 AL_PAIR_GRIDS_CONDA_ENV="suite2p"
 
-function activate_al_pair_grids_conda_env() {
+function activate_al_analysis_conda_env() {
     if ! [ "$CONDA_DEFAULT_ENV" = "$AL_PAIR_GRIDS_CONDA_ENV" ]; then
         conda activate $AL_PAIR_GRIDS_CONDA_ENV
     fi
@@ -2082,11 +2099,11 @@ function activate_al_pair_grids_conda_env() {
 # TODO make accept argument + add completion like c1/2/etc if i end up using enough
 # Requires hong2p to be setup in current shell environment / python
 function 2p() {
-    activate_al_pair_grids_conda_env
+    activate_al_analysis_conda_env
     cd "$(hong2p-data)/$1"
 }
 function 2pr() {
-    activate_al_pair_grids_conda_env
+    activate_al_analysis_conda_env
     cd "$(hong2p-raw)/$1"
 }
 function 2pa() {
@@ -2172,7 +2189,7 @@ function suite2p_and_dff() {
 
     # TODO replace getcwd() part in here and then remove pushd / cd / popd calls
     # NOTE: this won't be the image w/ the biggest response for reverse order stuff
-    highest_concs_mix_svg="$(ls -Art `python -c 'import os; parts = os.getcwd().split("/"); print("/home/tom/src/al_pair_grids/svg/" + "_".join(parts[5:]))'`/*_trials.svg | tail -n 1)"
+    highest_concs_mix_svg="$(ls -Art `python -c 'import os; parts = os.getcwd().split("/"); print("/home/tom/src/al_analysis/svg/" + "_".join(parts[5:]))'`/*_trials.svg | tail -n 1)"
     # eog is default image viewer. xdg-open would also open it via eog.
     # calling it w/ eog w/o additional arguments or & blocked tho and i dont want that
 
@@ -2232,8 +2249,9 @@ alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~
 # TODO tho maybe prompt to pause syncing before dropbox one?
 # TODO + one to transfer to my home computer
 
-# [p]air [g]rids (apg is a builtin password generator program)
-alias pg='cd ~/src/al_pair_grids; git status'
+# [p]air [g]rids (old name al_analysis was al_pair_grids) (apg is a builtin password
+# generator program)
+alias pg='cd ~/src/al_analysis; git status'
 alias pga="pg; conda activate ${AL_PAIR_GRIDS_CONDA_ENV}"
 
 
