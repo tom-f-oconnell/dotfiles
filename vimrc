@@ -1,4 +1,7 @@
 
+" TODO try out default seems settings and see if there is any behavior i would like to
+" preserve, as in: https://vi.stackexchange.com/questions/22944
+
 " TODO TODO figure out (editing this is needed) how to use the visual selection
 " yank i often use to copy/paste multiple lines in vim to copy lines to the
 " system clipboard (and maybe warn w/ appropriate error if i can't, b/c vim /
@@ -28,6 +31,8 @@
 
 " can this be reversed? not sure I mind?
 set nocompatible
+" TODO TODO why does commenting this seem to screw up csv plugin initialization (despite
+" errors showing indicating i should probably not have this...)
 " TODO why did i have this off? (do think i turn it on later tho...)
 filetype off
 " set the runtime path to include Vundle and initialize
@@ -91,6 +96,8 @@ autocmd User YcmQuickFixOpened call s:CustomizeYcmQuickFixWindow()
 " in a way that would either be confusing or interfere with anything.
 " this probably means either telling git to ignore some dir or have vundle
 " always install to some other path.
+
+let g:csv_bind_B = 1
 
 call vundle#begin()
 " alternatively, pass a path where Vundle should install plugins
@@ -172,8 +179,14 @@ Plugin 'kkoomen/vim-doge'
 
 Plugin 'preservim/nerdcommenter'
 
+" TODO maybe also try mechatroner/rainbow_csv (similar # of commits / recency, but a bit
+" fewer contributors ~2022)
+Plugin 'chrisbra/csv.vim'
+
 " lukhio/vim-mapping-conflicts seems useful, but raised a bunch of errors when I tested
 " it.
+
+Plugin 'morhetz/gruvbox'
 
 " All of your Plugins must be added before the following line
 call vundle#end()
@@ -197,6 +210,43 @@ function IsWSL()
   endif
   return 0
 endfunction
+
+" Defaults to dark w/ my mostly stock gnome-terminal/bash on Ubuntu 20.04, but gets set
+" to light in tmux on the same machine, screwing up the colors. See notes in .tmux.conf
+" for more details.
+set background=dark
+
+" TODO TODO anything possible to make colors more consistent inside / outside of tmux?
+" inside tmux, colors seem more muted, as mentioned in link below.
+"
+" Copied from: https://github.com/morhetz/gruvbox/wiki/Terminal-specific
+"
+" Use 24-bit (true-color) mode in Vim/Neovim when outside tmux.
+" If you're using tmux version 2.2 or later, you can remove the outermost $TMUX check
+" and use tmux's 24-bit color support.
+" (see http://sunaku.github.io/tmux-24bit-color.html#usage for more information)
+"if (empty($TMUX))
+if (has("nvim"))
+  " For Neovim 0.1.3 and 0.1.4
+  " https://github.com/neovim/neovim/pull/2198
+  let $NVIM_TUI_ENABLE_TRUE_COLOR=1
+endif
+" For Neovim > 0.1.5 and Vim > patch 7.4.1799
+" https://github.com/vim/vim/commit/61be73bb0f965a895bfb064ea3e55476ac175162
+" Based on Vim patch 7.4.1770 (`guicolors` option)
+" https://github.com/vim/vim/commit/8a633e3427b47286869aa4b96f2bfc1fe65b25cd
+" https://github.com/neovim/neovim/wiki/Following-HEAD#20160511
+if (has("termguicolors"))
+  set termguicolors
+endif
+"endif
+
+" For other themes, see: https://vimcolorschemes.com
+"
+" Recommended init line (over just `colorscheme gruvbox`) from:
+" https://github.com/morhetz/gruvbox/wiki/Installation
+autocmd vimenter * ++nested colorscheme gruvbox
+
 
 " TODO test this isn't triggered in ubuntu
 if IsWSL()
@@ -744,7 +794,8 @@ endfunction
 let mapleader = ","
 " TODO are these spaces after <leader>[some char] functional (seems equiv to l
 " interactively) or are the ignored here?
-nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>kA<CR>
+nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>k<CR>
+"nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>kA<CR>
 nnoremap <leader>B o#TODO delete<CR>import ipdb; ipdb.set_trace()<CR>#<Esc>2kA<CR>
 "nnoremap <leader>b :call PyInsertAtCurrIndent()<CR>import ipdb; ipdb.set_trace()<Esc>
 
@@ -925,4 +976,7 @@ set display+=lastline
 " file, but i can't switch off w/o enabling that formatoption b/c my check)
 " At end to ensure it happens after any filetypes are redefined at load.
 call ToggleH()
+
+" TODO fix so there is never any of the highlighting associated with this for CSV files
+"au Filetype csv call ToggleH()
 
