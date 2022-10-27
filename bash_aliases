@@ -518,6 +518,7 @@ function is_git_tracked() (
 
 # TODO TODO maybe optionally accept a line of files, and then use those instead
 # of all files?
+# TODO remind myself of + document the purpose of this
 function link_to_vagrant() {
     local vagrant_dirs_root=~/src/misc
     if ! [ -d "$vagrant_dirs_root" ]; then
@@ -900,9 +901,13 @@ alias pp="pyp"
 
 # TODO maybe add (aliases->) fn to make a venv w/ arbitrary python version in
 # tmp dir?
-
+# [va]grant
+alias va="vagrant status"
+alias vg="vagrant global-status"
+alias vgp="vagrant global-status --prune"
 alias vu="vagrant up && vagrant ssh"
 alias vr="vagrant reload && vagrant ssh"
+alias vh="vagrant halt"
 alias vd="vagrant destroy -f"
 alias vs="vagrant ssh"
 alias vb="vagrant box"
@@ -928,8 +933,10 @@ alias vc="just_cleanup=0 link_to_vagrant"
 # TODO TODO change this after figuring out which (if any) commands can be run
 # without sudo + after just reconfiguring things to not need to run anything
 # with sudo in most circumstance!
-alias docker="sudo docker"
+#alias docker="sudo docker"
 
+# TODO still pass all extra args through to these though, so i can append -h if i forget
+# what they are, etc
 # TODO maybe [just] one alias that (re)builds AND then runs?
 function docker_build() {
     docker build -t $(basename `pwd`) .
@@ -950,7 +957,8 @@ function docker_rmi() {
 alias db="docker_build"
 alias dr="docker_run_bash"
 # TODO maybe change to dbt for [t]est?
-alias dbr="docker_build && docker_run"
+# TODO change to just "docker run <x>" by default (without bash entrypoint)?
+alias dbr="docker_build && docker_run_bash"
 alias drm="docker_rmi"
 alias dp="docker system prune"
 alias dls="echo 'Images:'; docker image list; echo ''; echo 'Containers:'; docker container list"
@@ -1360,7 +1368,6 @@ function reload_bashrc() {
 # TODO maybe 'set +o xtrace' before (to disable) and restore whatever value we had for
 # xtrace after?
 alias sb="reload_bashrc"
-alias r="sb"
 
 alias o="sudo"
 
@@ -1622,6 +1629,7 @@ alias st='make html && xdg-open build/html/index.html'
 # update, to avoid need for u?
 alias u='sudo apt update'
 alias i='sudo apt install -y'
+alias r='sudo apt remove -y'
 alias saa='sudo apt autoremove'
 
 if [ -x "$(command -v ipython3)" ]; then
@@ -1787,6 +1795,7 @@ alias scr="scripts"
 alias sc="scripts"
 
 alias m='man'
+complete -F _complete_alias m
 
 # I currently have this python script under GithubCloner in my ~/src/scripts
 # repo, and add it to PATH in the portion of ~/.bashrc that adds ~/src/scripts
@@ -1884,7 +1893,11 @@ alias gpym='grepym'
 
 alias dlwebsite="dlwebsite.py"
 
+# sort by mtime (when file contents were changed)
 alias lr='ls -ltr'
+# sorted by ctime = when inodes changed on disk (NOT when file contents were changed)
+alias lc='ls -lcr'
+
 alias lh='ls -lh'
 alias lrh='ls -ltrh'
 
@@ -2296,3 +2309,18 @@ function cd_to_qmk_keymap() {
 }
 alias km='cd_to_qmk_keymap'
 
+alias why='aptitude why'
+
+# TODO maybe rename all to mu*, so i can have mu alone do `mullvad` or `mullvad status`
+# if no args?
+alias mvc='mullvad connect'
+#alias mvd='mullvad disconnect'
+alias mvs='mullvad status'
+# TODO make it run the get command if no arguments passed, otherwise set
+alias mva='mullvad account'
+
+alias mvu='cd ~/src/misc/torrent_vpn_vagrant && vu'
+
+alias t8='traceroute 8.8.8.8'
+
+color_errs()(set -o pipefail;"$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2))

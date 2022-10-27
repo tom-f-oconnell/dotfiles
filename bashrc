@@ -321,11 +321,13 @@ unset __conda_setup
 # doing its setup with a potentially-error-full custom startup script of mine.
 # One example of a problem: the eval in the conda setup means if
 # usercustomize.py prints anything, it will also be eval'd.
-PYMISTAKE_PATH=$HOME/src/pymistake
-if [ -d $PYMISTAKE_PATH ]; then
-  export PYTHONPATH="${PYTHONPATH}:${PYMISTAKE_PATH}"
-  #export PYMISTAKE_DEBUG="1"
-fi
+#PYMISTAKE_PATH=$HOME/src/pymistake
+#if [ -d $PYMISTAKE_PATH ]; then
+#  export PYTHONPATH="${PYTHONPATH}:${PYMISTAKE_PATH}"
+#  #export PYMISTAKE_DEBUG="1"
+#fi
+# This is not working to avoid reaching lack-of-excepthook-error in 20.04
+#PYMISTAKE_DISABLE="1"
 
 ## TODO also test case going from having direnv_dir to it being empty/unset
 #show_virtual_env() {
@@ -454,3 +456,11 @@ export XDG_DATA_HOME=${XDG_DATA_HOME:="$HOME/.local/share"}
 export XDG_CONFIG_HOME=${XDG_CONFIG_HOME:="$HOME/.config"}
 export XDG_CACHE_HOME=${XDG_CACHE_HOME:="$HOME/.cache"}
 
+# Part of getting GPU tensorflow setup on 20.04 largely using instructions from:
+# https://heads0rtai1s.github.io/2021/02/25/gpu-setup-r-python-ubuntu/
+CUDA_PATH=/usr/local/cuda-11.0
+if [ -d "$CUDA_PATH" ]; then
+    export PATH=$CUDA_PATH/bin${PATH:+:${PATH}}
+    export LD_LIBRARY_PATH=$CUDA_PATH/lib64:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$CUDA_PATH/include:$LD_LIBRARY_PATH
+fi
