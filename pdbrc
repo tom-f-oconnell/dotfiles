@@ -54,3 +54,14 @@ alias dp print((%1.to_frame() if isinstance(%1, pd.Series) else %1).to_string())
 # TODO test for stuff that i want to keep open while continuing debugging. work as is?
 # or need to run in background somehow?
 alias x import subprocess; subprocess.run(['xdg-open', str(%1)])
+
+# this is to go to line in vim, which is assumed to be in neighboring window.
+# also assumes linux with xdotool installed.
+#
+# function='trace_dispatch' seems to be last element in stack that is debugger related
+# (all preceding elements should be too?). stuff after should be from before debugger
+# entered, i.e. the context in which the debugger is actually initially operating in.
+#
+# TODO possible to refactor to use a predefined fn or something (rather than this huge
+# ugly one-liner)?
+alias g import inspect,subprocess,time; subprocess.run(f'xdotool key alt+grave; xdotool key Escape; sleep 0.05; xdotool type ":{inspect.stack()[[x.function for x in inspect.stack()].index("trace_dispatch") + 1].lineno}"; sleep 0.05; xdotool key Return', shell=True)
