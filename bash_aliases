@@ -648,58 +648,6 @@ function link_to_vagrant() {
     #fi
 }
 
-alias cr='cp -r'
-alias cpr='cp -r'
-
-# TODO maybe 'git status' if it's a git repo (factor to fn)?
-# TODO modify autocompletion to also include stuff under ~/src (assuming it won't be
-# shadowed mostly / when we care) and cd there directly (even possible? might need
-# completion to add the ~/src/ prefix in those cases)
-alias c='cd'
-# Uses https://github.com/cykerway/complete-alias installed via my dotfiles setup
-complete -F _complete_alias c
-
-function c1() {
-    cd "../$1"
-}
-function c2() {
-    cd "../../$1"
-}
-function c3() {
-    cd "../../../$1"
-}
-# https://stackoverflow.com/questions/38737675
-# TODO TODO replace this w/ _dir_completion below
-function _cd_up_n() {
-    # https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html
-    # "$1 is the name of the command whose arguments are being completed, $2 is the word
-    # being completed, and $3 is the word preceding the word being completed"
-    local cmd=$1 cur=$2 pre=$3
-    local _cur compreply
-
-    local completion_dir
-    if [ "$cmd" = "c1" ]; then
-        completion_dir=".."
-    elif [ "$cmd" = "c2" ]; then
-        completion_dir="../.."
-    elif [ "$cmd" = "c3" ]; then
-        completion_dir="../../.."
-    else
-        >&2 echo "command $cmd not supported by completion fn _cd_up_n"
-        return 1
-    fi
-
-    _cur="$completion_dir/$cur"
-    compreply=( $( compgen -d "$_cur" ) )
-    COMPREPLY=( ${compreply[@]#$completion_dir/} )
-    if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
-        COMPREPLY[0]=${COMPREPLY[0]}
-    fi
-}
-complete -F _cd_up_n -o nospace -S '/' c1
-complete -F _cd_up_n -o nospace -S '/' c2
-complete -F _cd_up_n -o nospace -S '/' c3
-
 # Usage: complete -C "_dir_completion <path-to-complete-from>" <func-to-complete-for>
 #
 # $1 should be a path that we want subdirectory completions for.
@@ -746,6 +694,72 @@ function _dir_completion_via_dir_fn() {
     fi
 }
 
+
+alias cr='cp -r'
+alias cpr='cp -r'
+
+# TODO maybe 'git status' if it's a git repo (factor to fn)?
+# TODO modify autocompletion to also include stuff under ~/src (assuming it won't be
+# shadowed mostly / when we care) and cd there directly (even possible? might need
+# completion to add the ~/src/ prefix in those cases)
+alias c='cd'
+# Uses https://github.com/cykerway/complete-alias installed via my dotfiles setup
+complete -F _complete_alias c
+
+function c1() {
+    cd "../$1"
+}
+function c2() {
+    cd "../../$1"
+}
+function c3() {
+    cd "../../../$1"
+}
+
+# TODO replace this w/ _dir_completion above (-> delete this)
+# https://stackoverflow.com/questions/38737675
+function _cd_up_n() {
+    # https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html
+    # "$1 is the name of the command whose arguments are being completed, $2 is the word
+    # being completed, and $3 is the word preceding the word being completed"
+    local cmd=$1 cur=$2 pre=$3
+    local _cur compreply
+
+    local completion_dir
+    if [ "$cmd" = "c1" ]; then
+        completion_dir=".."
+    elif [ "$cmd" = "c2" ]; then
+        completion_dir="../.."
+    elif [ "$cmd" = "c3" ]; then
+        completion_dir="../../.."
+    else
+        >&2 echo "command $cmd not supported by completion fn _cd_up_n"
+        return 1
+    fi
+
+    _cur="$completion_dir/$cur"
+    compreply=( $( compgen -d "$_cur" ) )
+    COMPREPLY=( ${compreply[@]#$completion_dir/} )
+    if [[ ${#COMPREPLY[@]} -eq 1 ]]; then
+        COMPREPLY[0]=${COMPREPLY[0]}
+    fi
+}
+# TODO delete if _dir_completion replacements below work (it does not yet)
+complete -F _cd_up_n -o nospace -S '/' c1
+complete -F _cd_up_n -o nospace -S '/' c2
+complete -F _cd_up_n -o nospace -S '/' c3
+
+# not actually working, nor w/ an additional '..' in each. dir seems wrong
+# maybe it's partially the extra args?
+#complete -C "_dir_completion .." -o plusdirs -o nospace -S '/' c1
+#complete -C "_dir_completion ../.." -o plusdirs -o nospace -S '/' c2
+#complete -C "_dir_completion ../../.." -o plusdirs -o nospace -S '/' c3
+
+function cs() {
+    cd "${HOME}/src/$1"
+}
+complete -C "_dir_completion ${HOME}/src" -o plusdirs -o nospace -S '/' cs
+
 # TODO maybe add these:
 # ti (test import) ~ python -c 'import $1'
 # ppv (pv is common i think) (python package version)
@@ -753,7 +767,7 @@ function _dir_completion_via_dir_fn() {
 #     (check pip first though? or both?)
 
 alias pf="pip freeze"
-alias pfg="pip freeze | grep"
+alias pfg="pip freeze | grep -i"
 
 # TODO TODO add some kind of requirements.txt file to my dotfiles with packages to
 # always install fresh in all venvs created through this function. include things like:
@@ -786,6 +800,11 @@ else
 fi
 
 alias ca='conda activate'
+# TODO TODO implement some kind of cache for list_conda_envs.py, so that it doesn't need
+# to take so long for already known environments (with caveat that it would probably
+# then sometimes tab complete deleted environment names, but it's not like deleting
+# environments is that common...)
+#
 # Perhaps also see: https://github.com/tartansandal/conda-bash-completion
 # (only if useful for other commands. for `conda activate`, this works.)
 # Requires my scripts repo to be on path.
@@ -800,6 +819,16 @@ alias cde='conda deactivate'
 
 alias crm="conda env remove --name"
 complete -o nosort -C list_conda_envs.py crm
+
+# TODO convert to a fn, so i can take args but still activate after creation
+# TODO TODO and at that point, maybe just have 'ca' do both of these things, and if the
+# name doesn't already exist, it makes a new one (or at y/n prompts to?)
+#
+# mamba syntax:
+# mamba create -n <name> <list of packages>
+#
+# [c]onda [m]a[k]e
+alias cmk="${MAMBA_OR_CONDA} create -n"
 
 function is_yaml() {
     if [[ ( "$#" != 1 ) ]]; then
@@ -852,6 +881,9 @@ function single_yaml_arg() {
 }
 
 function conda_create_from_yaml() {
+    # TODO TODO see more recent comments about maybe using "mamba env update"
+    # (which does allow a YAML arg) in the mamba case, rather than "mamba create"
+    # https://github.com/mamba-org/mamba/issues/633
 
     # TODO come up w/ mamba replacement for this command (that also uses mamba to
     # download), referencing https://github.com/mamba-org/mamba/issues/633 (even as-is,
@@ -1002,6 +1034,11 @@ eval $(complete -p git | sed 's/git$/g/')
 alias ga='git add'
 complete -F _complete_alias ga
 
+#  https://stackoverflow.com/questions/572549/difference-between-git-add-a-and-git-add
+# "stages modifications and deletions, without new files"
+# (generally what i would want)
+alias gau='git add -u'
+
 alias gaa='git add --all'
 
 #alias gac='git commit -am'
@@ -1042,6 +1079,9 @@ alias gur='git pull --rebase'
 # [g]it [u]pdate [u]pstream
 #alias guu='git fetch upstream && git rebase upstream/main'
 
+alias grc='git rebase --continue'
+alias gra='git rebase --abort'
+
 # NOTE: not using 'gs' because the ghostscript package provides gs under the same name.
 # Doesn't seem to be installed by default on 18.04.5 (from *.manifest file), but:
 # tom@blackbox:~$ aptitude why ghostscript
@@ -1072,6 +1112,9 @@ alias gsd='git stash drop'
 alias gi='vi .gitignore'
 
 alias gl='git log'
+alias glf='git log --follow'
+# TODO just glp?
+alias glfp='git log --follow --patch'
 # [g]it [l]og [h]ead (just show the first entry)
 alias glh='git log -1'
 
@@ -1083,6 +1126,7 @@ alias gd='git diff'
 complete -F _complete_alias gd
 
 alias gdh='git diff HEAD'
+alias gdh1='git diff HEAD~1'
 complete -F _complete_alias gdh
 
 alias gls='git ls-files'
@@ -1095,7 +1139,6 @@ alias grs='git remote set-url'
 # git@github.com:tom-f-oconnell/ part
 alias grso='git remote set-url origin'
 alias grau='git remote add upstream'
-alias gau='git remote add upstream'
 
 # TODO maybe just use hub here? it have something like this?
 # TODO how to deal w/ origin + upstream? just pick origin?
@@ -1132,12 +1175,18 @@ function open_repo_in_browser() {
 }
 
 # TODO just go to my own gh page if not in a git repo?
-alias gb='open_repo_in_browser origin'
-alias gbu='open_repo_in_browser upstream'
+# TODO TODO update open_repo_in_browser to make a new window (so as to not often need to
+# switch to the last-used firefox window in another workspace)
+# TODO TODO update open_repo_in_browser to also take a path in repo, and open the code
+# there in github when passed
+alias gw='open_repo_in_browser origin'
+alias gwu='open_repo_in_browser upstream'
 
 # /commits seems to use default branch, which is what I want.
-alias gbl='open_repo_in_browser origin /commits'
-alias gbul='open_repo_in_browser upstream /commits'
+alias gwl='open_repo_in_browser origin /commits'
+alias gwul='open_repo_in_browser upstream /commits'
+
+alias gb='git branch'
 
 # Requires grip, installable via `pip install grip` (on 20.04 at least)
 function render_and_display_markdown() {
@@ -1332,6 +1381,12 @@ function clone() {
 # try to get autocomplete working (and with any aliases too!)
 alias cl="clone"
 
+# TODO option to exclude stuff not modified past a certain date / recency?
+# TODO test these (at least mgf) can also show if upstream has stuff we don't
+# TODO TODO have it print output in order of when anything in each repo was last
+# modified (or reverse)?
+# TODO TODO TODO just for stuff where i'm the repo owner [/ a contributor]
+# (also for ejhonglab / orgs i'm in. don't i already have a list of those here?)
 # TODO TODO modify/wrap mgitstatus so i can have an option to show git status for
 # (certain?) flagged stuff
 # TODO add another alias that runs this, but only on repos modified within some
@@ -1341,10 +1396,16 @@ alias cl="clone"
 # it is fine that the mgf alias below only passes the -f argument to the second command.
 #
 # Need to follow the install instructions for this in my dotfiles README
-alias mg='mgitstatus -w --no-push --no-pull --no-upstream --no-uncommitted --no-untracked --no-stashes -e -d 1; mgitstatus -e -d 1'
+# repo
+alias _mg='mgitstatus -w --no-push --no-pull --no-upstream --no-uncommitted --no-untracked --no-stashes -e -d 1; mgitstatus -e -d 1'
+alias mg='echo "not fetching each repo (mgf to fetch each too)"; _mg'
+
+# TODO TODO should i have an option without all the --no-* flags above? want to check
+# some of those things too sometimes?
 
 # Also do a fetch on each repo (can be slower)
-alias mgf='mg -f'
+alias mgf='_mg -f'
+
 
 function reload_bashrc() {
     # Might still want to do this, in cause sourcing screws with other
@@ -1380,6 +1441,7 @@ alias lac='LAC'
 
 #alias plots='scp tom@eftm.duckdns.org:~/lab/hong/src/*html .'
 alias fiji='$HOME/Fiji.app/ImageJ-linux64'
+alias ImageJ='$HOME/Fiji.app/ImageJ-linux64'
 
 alias f='cd ~/shared/FoundryVTT'
 
@@ -1447,7 +1509,16 @@ alias snk='ssh -o PubkeyAuthentication=no'
 #-onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon
 #-crtscts -hupcl'
 
-alias x='xdg-open'
+function xdg_open_with_default() {
+    if [ ! -z $1 ]; then
+        # (have arguments)
+        xdg-open "$@"
+    else
+        # (have no arguments, open current directory in GUI file browser)
+        xdg-open .
+    fi
+}
+alias x='xdg_open_with_default'
 
 alias rs='rsync -auvP'
 complete -F _complete_alias rs
@@ -1482,6 +1553,11 @@ if [ -x "$(command -v python3)" ]; then
     fi
 fi
 alias py='python'
+complete -F _complete_alias py
+
+alias pyw='python -W error'
+complete -F _complete_alias pyw
+
 alias py3='python3'
 alias p='python'
 alias p3='python3'
@@ -1531,9 +1607,17 @@ function which_module() {
 }
 alias wm='which_module'
 
+# TODO TODO TODO pip alias that first makes a backup of conda environment (in some
+# central directory), any time pip is used in an active conda environment, to actually
+# be able to rollback stuff if pip screws something up
+
 alias pi='pip install'
 
 alias pie='pip install -e'
+# TODO just always do this one, if adding [dev] doesn't fail if not present, or maybe
+# detect if there is an extras_require={... ,'dev'=..., ...} key, and call this if so
+# TODO TODO TODO modify this to take a path and append '[dev]' to the end of it
+alias pied='pip install -e .[dev]'
 complete -d pie
 
 function pig() {
@@ -1590,6 +1674,7 @@ alias pt='pytest --pdbcls=IPython.terminal.debugger:Pdb'
 # where appropriate on specific tests
 alias pytestfast='pt -m "not slow"'
 alias ptfast='pytestfast'
+alias ptf='pytestfast'
 
 # TODO TODO implement completion for running single tests by name, so that if you type
 # pytest test/test_util.py::<TAB> it lists/completes through functions defined in that
@@ -1605,6 +1690,9 @@ alias pytestdebug='pt --capture=no'
 alias ptdebug='pytestdebug'
 alias ptd='pytestdebug'
 
+alias ptfd='pt -m "not slow" --capture=no'
+alias ptdf='pt -m "not slow" --capture=no'
+
 # [p]y[t]est [p]ostmortem
 alias ptp='pt --capture=no --pdb'
 
@@ -1612,6 +1700,13 @@ alias ptp='pt --capture=no --pdb'
 alias pytesttime='pt --durations=0'
 alias pttime='pytesttime'
 
+# TODO make something that wraps this (+ copies a template requirements and stuff that
+# i like, makes an environment, installs them, etc) (maybe also structures stuff like i
+# might want for GH-pages stuff, w/ docsrc and docs)
+alias sq='sphinx-quickstart'
+# TODO also check '_build'? it seems that is the default, and only after changing the
+# Makefile created by sphinx-quickstart (or changing some parameter as part of
+# quickstart?) was one of mine named just 'build'.
 # "sphinx test" (sb "build" was taken by source bash)
 alias st='make html && xdg-open build/html/index.html'
 
@@ -1737,6 +1832,9 @@ alias transfer_data3='rsync -avPurz $HOME/data tom@atlas:/home/tom/'
 if ! [ -x "$(command -v vi)" ]; then
     alias vi='vim'
 fi
+# TODO TODO update so that if i give a filename like <fname>:<lineno>, it opens and
+# jumps to the lineno (+centers screen)? or are ':' actually a valid part of paths
+# somewhere / would it cause other problems?
 alias v='vi'
 alias sv='sudo vi'
 
@@ -1747,6 +1845,18 @@ alias black='black --skip-string-normalization'
 
 alias pylintv='pylint --output-format=colorized --disable=fixme,invalid-name'
 alias pylint='pylint --output-format=colorized --disable=fixme,invalid-name,missing-function-docstring,missing-module-docstring'
+
+alias missing-imports='pylint --disable=all --enable=undefined-variable'
+alias unused-imports='pylint --disable=all --enable=unused-import'
+
+# If we make watch an alias to itself, it then we can use aliases after it.
+# https://unix.stackexchange.com/questions/25327/watch-command-alias-expansion
+# didn't actually work w/ `watch missing-imports hong2p/roi.py`
+#alias watch='watch'
+
+# TODO delete if i get watch to work w/ aliases (see above)
+alias watch-missing-imports='pylint --disable=all --enable=undefined-variable'
+alias watch-unused-imports='pylint --disable=all --enable=unused-import'
 
 # It seems if it was saved w/ a diff version of python or something, nothing is
 # printed? kind of odd, considering it worked with 3 and I thought i would have
@@ -1777,13 +1887,6 @@ alias mbr="cd /mnt/nas/mb_team/raw_data"
 alias mba="cd /mnt/nas/mb_team/analysis_output"
 # TODO make aliases like mbr/mba above, but to go to latest fly dir / first of
 # latest unanalyzed (mbrl/mbal)
-
-alias ..="cd .."
-alias src="cd ~/src"
-# TODO try to make something like 'sr' that accepts one dir input and make it tab
-# completable based on stuff actually in ~/src
-alias sr="cd ~/src"
-alias cs="cd ~/src"
 
 alias dot="cd ~/src/dotfiles && git status"
 # Not using `do` because that is some other keyword.
@@ -1879,10 +1982,10 @@ alias grr="grep -R"
 # Using this syntax for multiple exclude-dir b/c it's friendly with grepym.
 # TODO kinda want --color=always, but for some reason it seemed to break the actual
 # matching in a pipe to a subsequent grep, which is more important than the
-# colors...
+# colors... (can i repro?)
 # e.g. `grepy --color=always lam | grep -v lambda | wc -l` had the same number of lines
 # as without the `| grep -v lambda` part...
-alias grepy="grep -R --include=\*.py --exclude-dir=site-packages --exclude-dir=.eggs --exclude-dir=venv"
+alias grepy="grep -R --color=always --include=\*.py --exclude-dir=site-packages --exclude-dir=.eggs --exclude-dir=venv"
 alias gpy="grepy"
 # This will lookup and use the alias definition above at runtime.
 alias grepym="grep_py_in_my_repos.py"
@@ -1898,8 +2001,12 @@ alias lr='ls -ltr'
 # sorted by ctime = when inodes changed on disk (NOT when file contents were changed)
 alias lc='ls -lcr'
 
+# -A is like -a but doesn't include '.' and '..'. there's an `alias la='ls -A'`
+# somewhere (maybe in ~/.bashrc by default?)
+alias lra='ls -ltrA'
 alias lh='ls -lh'
 alias lrh='ls -ltrh'
+alias lhr='ls -ltrh'
 
 # Since I already have muscle memory for typing 'df -h'
 # The goal is just to include the lines for real storage devices (the things I generally
@@ -2098,29 +2205,56 @@ alias sha256='sha256sum'
 # opens a file in Fiji, and appends current directory before argument so Fiji
 # doesn't freak out
 function open_in_fiji() {
-    $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
+    if [ $# -eq 0 ]; then
+        $HOME/Fiji.app/ImageJ-linux64
+    else
+        $HOME/Fiji.app/ImageJ-linux64 $(pwd)/$1
+    fi
 }
 alias ij='open_in_fiji'
 
-AL_PAIR_GRIDS_CONDA_ENV="suite2p"
+#AL_ANALYSIS_CONDA_ENV="suite2p"
+AL_ANALYSIS_VENV="$HOME/src/al_analysis/venv"
 
-function activate_al_analysis_conda_env() {
-    if ! [ "$CONDA_DEFAULT_ENV" = "$AL_PAIR_GRIDS_CONDA_ENV" ]; then
-        conda activate $AL_PAIR_GRIDS_CONDA_ENV
+function activate_al_analysis_env() {
+
+    # "if AL_ANALYSIS_VENV is set (to a non-empty str)"
+    if [[ ! -z "${AL_ANALYSIS_VENV}" ]]; then
+
+        if [[ ! -z "${AL_ANALYSIS_CONDA_ENV}" ]]; then
+            echo 'unset either $AL_ANALYSIS_CONDA_ENV or $AL_ANALYSIS_VENV'
+            exit 1
+        fi
+
+        if ! [ "${VIRTUAL_ENV}" = "${AL_ANALYSIS_VENV}" ]; then
+            # (assuming the *nix activate script location)
+            . "${AL_ANALYSIS_VENV}/bin/activate"
+        fi
+
+    elif [[ ! -z "${AL_ANALYSIS_CONDA_ENV}" ]]; then
+
+        if ! [ "$CONDA_DEFAULT_ENV" = "$AL_ANALYSIS_CONDA_ENV" ]; then
+            conda activate $AL_ANALYSIS_CONDA_ENV
+        fi
+    else
+        echo 'set one of $AL_ANALYSIS_CONDA_ENV or $AL_ANALYSIS_VENV'
+        exit 2
     fi
 }
 # TODO make accept argument + add completion like c1/2/etc if i end up using enough
 # Requires hong2p to be setup in current shell environment / python
 function 2p() {
-    activate_al_analysis_conda_env
+    activate_al_analysis_env
     cd "$(hong2p-data)/$1"
 }
 function 2pr() {
-    activate_al_analysis_conda_env
+    activate_al_analysis_env
     cd "$(hong2p-raw)/$1"
 }
 function 2pa() {
-    conda activate $AL_PAIR_GRIDS_CONDA_ENV
+    # TODO replace w/ activating my al_analysis venv in the meantime (while the conda
+    # env i used to used is still broken...)?
+    activate_al_analysis_env
     cd "$(hong2p-analysis)/$1"
 }
 
@@ -2130,17 +2264,15 @@ function print_2pa() {
         return
     fi
 
-    if ! [ "$CONDA_DEFAULT_ENV" = "$AL_PAIR_GRIDS_CONDA_ENV" ]; then
-        conda activate $AL_PAIR_GRIDS_CONDA_ENV
-    fi
+    activate_al_analysis_env
     # Saving to environment variable before printing so we can reply faster
     CACHED_HONG2P_ANALYSIS_DIR=$(hong2p-analysis)
     echo $CACHED_HONG2P_ANALYSIS_DIR
 }
 
+# TODO what are all of `-o plusdirs -o nospace -S '/'` for again? comment explaining
 complete -C "_dir_completion_via_dir_fn hong2p-data" -o plusdirs -o nospace -S '/' 2p
 complete -C "_dir_completion_via_dir_fn hong2p-raw" -o plusdirs -o nospace -S '/' 2pr
-
 complete -C "_dir_completion_via_dir_fn hong2p-analysis" -o plusdirs -o nospace -S '/' 2pa
 # TODO why does the above work but not this? was trying to not need to conda activate
 # first...
@@ -2265,26 +2397,51 @@ alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~
 # [p]air [g]rids (old name al_analysis was al_pair_grids) (apg is a builtin password
 # generator program)
 alias pg='cd ~/src/al_analysis; git status'
-alias pga="pg; conda activate ${AL_PAIR_GRIDS_CONDA_ENV}"
+alias pga="pg; conda activate ${AL_ANALYSIS_CONDA_ENV}"
 
 
 # snap install only one i found that could load .dxf files on 18.04
 # install via `sudo snap install inkscape`
 alias inkscape='snap run inkscape'
 
-# TODO factor into a fn that does this (w/ deletion behind a prompt!!!) before opening
+# TODO TODO factor into a fn that does this (w/ deletion behind a prompt) before opening
 # the file in vim as normal
+# TODO refactor to share the vim-process-finding-part with vim_reptyr
 function vim_kill() {
     # TODO check $1 exists
     # TODO check .$1.swp exists
     # TODO check that we have actually matched a process before trying to call kill
     kill $(lsof .$1.swp 2>/dev/null | tail -n 1 | awk '{print $2}')
 }
+function vim_reptyr() {
+    # TODO see TODOs in vim_kill, where this was copied from (/ refactor)
+    #
+    # TODO maybe do w/ `-T  Steal the entire terminal session of the target
+    # (experimental)`? maybe don't?. 2023-11-07: think it might have just caused a
+    # problem trying to use this?
+    #reptyr -T $(lsof .$1.swp 2>/dev/null | tail -n 1 | awk '{print $2}')
+    reptyr $(lsof .$1.swp 2>/dev/null | tail -n 1 | awk '{print $2}')
+}
+# TODO TODO also `&& vim $1` / something like that
+# TODO update so it also works if called with a relative path that includes a directory,
+# e.g. `vk a/b.py`. currently seems to not find process?
+# (split $1 and only prepend '.' to final path component)
 alias vk='vim_kill'
+#
+# TODO TODO TODO edit to automatically modify this file if needed (to get reptyr to
+# work)
+# Unable to attach to pid 1390467: Operation not permitted
+# The kernel denied permission while attaching. If your uid matches
+# the target's, check the value of /proc/sys/kernel/yama/ptrace_scope.
+# For more information, see /etc/sysctl.d/10-ptrace.conf
+alias vrp='vim_reptyr'
 
+# TODO what was this for again? add comment explaining.
+#
 # https://stackoverflow.com/questions/48574100
 function toggle_xtrace() {
     case "$-" in
+        # TODO comment explaining how this switch statement works
         (*x*) set +o xtrace; echo "command echo (xtrace) OFF";;
         (*) echo "command echo (xtrace) ON"; set -o xtrace;;
     esac
@@ -2324,3 +2481,24 @@ alias mvu='cd ~/src/misc/torrent_vpn_vagrant && vu'
 alias t8='traceroute 8.8.8.8'
 
 color_errs()(set -o pipefail;"$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2))
+
+# hacky hardcoded versions of similar fns/aliases i intended to have completion for an
+# optional arg (but which i think are currently broken) (b/c currently goes to one on
+# NAS. need to fix logic in hong2p.util. analysis_intermediates one works)
+alias raw_data='cd /mnt/d1/2p_data/raw_data'
+
+# https://unix.stackexchange.com/questions/34248
+alias broken-symlinks='find . -xtype l'
+
+# Since I have not so far used any filters other than the default '.', which just
+# prints input.
+alias jq='jq .'
+# The 'command' prefix is just to prevent it from using the jq alias above, but also
+# unclear on why this seemed needed even with jql defined first, and not sure I've
+# always needed stuff like this in similar contexts...
+alias jql='command jq length'
+
+complete -F _complete_alias jq
+
+# TODO add alias for recursively (or not) finding oldest / newest file in a directory
+# (by mtime at least, maybe also ctime versions?)
