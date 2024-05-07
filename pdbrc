@@ -1,6 +1,12 @@
 
 import IPython
 
+# TODO try to configure my debugger like so:
+# https://stackoverflow.com/questions/4716533
+# ...to be able to use it (/ another debugger) inside multiprocessing subprocesses
+
+# TODO means of adding separate hotkeys (modifiers on arrows? Pg[Up/Dn]?)
+# for scrolling global history (for a given script?) indep of current history
 
 # TODO possible to include something in here to avoid nasty BdbQuit traceback when
 # exiting a `ipdb.set_trace()` breakpoint via Ctrl+D ?
@@ -25,11 +31,26 @@ alias v %1.values()
 alias kh !next(iter(%1.keys()))
 alias vh !next(iter(%1.values() if type(%1) is dict else %1))
 
+# TODO actually take arguments for this too (and allow either str literal or variable)
+# (Path too ideally)
 alias ls import subprocess; subprocess.run(['ls',  '--color'])
 alias lr import subprocess; subprocess.run(['ls', '--color', '-ltr'])
 
 # [d]ataframe [p]rint
 # Seems the default max_rows/max_cols/max_colwidth are all unrestricted.
-alias dp print(%1.to_string())
+# Converting .to_frame() if Series, cause Series.to_string() missing some important
+# options, like max_colwidth (and limits it by default).
+alias dp print((%1.to_frame() if isinstance(%1, pd.Series) else %1).to_string())
 
 # TODO cat alias
+
+# TODO TODO alias like grep, but to use colorized / just unicode color control sequences
+# to color text matching (2nd) argument to alias
+
+# TODO any way to get an alias for printing current exception (when debugger is in an
+# except block) to work? traceback.print_exc() in `except` currently produces:
+# AttributeError: 'TerminalPdb' object has no attribute 'do_traceback'
+
+# TODO test for stuff that i want to keep open while continuing debugging. work as is?
+# or need to run in background somehow?
+alias x import subprocess; subprocess.run(['xdg-open', str(%1)])
