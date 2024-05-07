@@ -1073,6 +1073,8 @@ alias gp='git push'
 alias gu='git pull --rebase'
 
 alias gur='git pull --rebase'
+# delete if there's push command starting with r i want to use?
+alias gpr='git pull --rebase'
 
 # TODO would need some way to find default branch name of remote (e.g. main or master?).
 # new github CLI have anything useful here?
