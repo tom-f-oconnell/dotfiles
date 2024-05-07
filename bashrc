@@ -421,6 +421,11 @@ if [ -d "$HOME/arduino-cli/bin" ]; then
     export PATH="$PATH:$HOME/arduino-cli/bin"
 fi
 
+if [ -d "$HOME/Fiji.app" ]; then
+    # where I decided to install Fiji on my lab+home computers
+    export PATH="$PATH:$HOME/Fiji.app"
+fi
+
 # For https://github.com/hoijui/ReZipDoc
 if [ -d "$HOME/src/ReZipDoc/scripts" ]; then
     export PATH="$HOME/src/ReZipDoc/scripts:$PATH"
