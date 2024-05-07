@@ -1,3 +1,11 @@
+" TODO TODO hotkey to open current file in github (or to make github permalink to
+" selected lines?) (-> copy to clipboard) (similar to gw alias, maybe make hokey keys as
+" similar as possible)
+" TODO any way to I->help info for token to pull up web pages for documentation
+" (at least for major stuff in python, like stdlib/numpy/pandas/xarray/seaborn)
+" TODO are documentation sites generally easy to find from something in source code?
+" what about finding the specific function page? sphinx do something that helps with
+" that?
 
 " TODO try out default seems settings and see if there is any behavior i would like to
 " preserve, as in: https://vi.stackexchange.com/questions/22944
@@ -186,6 +194,16 @@ Plugin 'chrisbra/csv.vim'
 " lukhio/vim-mapping-conflicts seems useful, but raised a bunch of errors when I tested
 " it.
 
+" FastFold strongly recommended in simpylfold docs
+Plugin 'Konfekt/FastFold'
+Plugin 'tmhedberg/simpylfold'
+
+" TODO test this out:
+" https://github.com/python-mode/python-mode
+" (just wanted it for folding really, but now i'm planning on using simplyfold for that.
+" may still get some use of the more IDE-type features.)
+" Plug 'python-mode/python-mode', { 'for': 'python', 'branch': 'develop' }
+
 Plugin 'morhetz/gruvbox'
 
 " All of your Plugins must be added before the following line
@@ -359,7 +377,7 @@ filetype plugin indent on
 " ToggleH, and so default behaviors can be set for different filetypes)
 " TODO also figure out where default format options are coming from for
 " different filetypes. for example, opening a ft=cpp file i get 'croql',
-" but opening ft=launch, i get 'tcq'.
+" but opening ft=launch (now just ft=xml for those), i get 'tcq'.
 " NOTE: see the discussion on the same wrapping topic above ToggleH Some people
 " are also saying wrap / linebreak (at least by default?) don't actually make
 " new lines (inserting appropriate characters), so maybe this never did what I
@@ -527,9 +545,14 @@ au BufNewFile .envrc 0r ~/.vim/envrc_skel
 au! BufNewFile,BufRead keywords.txt setlocal ft=arduino_keywords_txt
 au Filetype arduino_keywords_txt setlocal shiftwidth=8 noexpandtab softtabstop=0
 
-au! BufNewFile,BufRead *.launch setlocal ft=launch
-au Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
-"textwidth=0
+" TODO fix how now ,H shortcut doesn't work to hide highlighting of end of long lines
+" (now that i replaced commented lines below w/ these. do want the xml syntax
+" highlighting tho)
+au! BufNewFile,BufRead *.launch setlocal ft=xml
+au Filetype xml setlocal expandtab tabstop=2 shiftwidth=2
+"au! BufNewFile,BufRead *.launch setlocal ft=launch
+"au Filetype launch setlocal expandtab tabstop=2 shiftwidth=2
+""textwidth=0
 
 set spellfile=$HOME/src/dotfiles/vim/spell/spellfile.utf-8.add
 au! BufNewFile,BufRead *.md setlocal ft=markdown
@@ -800,21 +823,80 @@ let mapleader = ","
 " interactively) or are the ignored here?
 nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>k<CR>
 "nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>kA<CR>
-nnoremap <leader>B o#TODO delete<CR>import ipdb; ipdb.set_trace()<CR>#<Esc>2kA<CR>
+nnoremap <leader>B o# TODO delete<CR>import ipdb; ipdb.set_trace()<CR>#<Esc>kA<CR>
+"nnoremap <leader>D o#TODO delete<CR>#<Esc>kA<CR>
+nnoremap <leader>D o# TODO delete<Esc>k<CR>
 "nnoremap <leader>b :call PyInsertAtCurrIndent()<CR>import ipdb; ipdb.set_trace()<Esc>
 
 nnoremap <leader>p oprint(f'{=}')<Esc>3hi
-nnoremap <leader>s oimport sys; sys.exit()<Esc>
+
+" strip all trailing whitespace. https://vi.stackexchange.com/questions/454
+" TODO also print a message saying what we did? ok as-is?
+nnoremap <leader>s :let _s=@/<Bar>:%s/\s\+$//e<Bar>:let @/=_s<Bar><CR>
+
+" TODO delete this one? never use it...
+nnoremap <leader>S oimport sys; sys.exit()<Esc>
+"nnoremap <leader>S i¯\_(ツ)_/¯<Esc>
 
 " TODO maybe modify the # to some kind of autodetected comment character,
 " dependent on filetype?
 " TODO TODO TODO figure out how to use NERDCommenter for this. it should be possible.
 
 nnoremap <leader>1 o# TODO 
-nnoremap <leader>1 o break?
 nnoremap <leader>2 o# TODO TODO 
 nnoremap <leader>3 o# TODO TODO TODO 
 nnoremap <leader>4 o# TODO TODO TODO TODO 
+
+
+" Using simpylfold plugin instead of this now.
+" https://stackoverflow.com/questions/357785
+"set foldmethod=indent
+" To not fold inner stuff
+"set foldnestmax=2
+
+" TODO test this doesn't conflict w/ existing gutter stuff (the git plugin)
+" + resolve/find a plugin for this if it does
+" TODO TODO or could i condense the amount of horizontal space the two take up somehow?
+" i just need a small fold indicator, and the git stuff could just color/draw on top of
+" any fold indicator as appropriate?
+" TODO TODO how to get this to not show when all folds are closed?
+" TODO TODO likewise, make sure git gutter thing isn't taking up that column unless file
+" is actually changed
+set foldcolumn=1
+
+" TODO TODO TODO how to maintain syntax highlighting and make fold text shorter?
+" re: better folded line summaries, see:
+" https://vi.stackexchange.com/questions/4627
+" https://vi.stackexchange.com/questions/14481
+" etc. maybe there is a plugin for this tho?
+" (from googling "vim change how folds are displayed")
+"
+" re: syntax highlighting, googling seems to indicate it's not possible =(
+" TODO TODO TODO maybe just fold everything below the first line then, and change my
+" toggling hotkeys to move a line down first (and then back up after toggling)
+
+" TODO shortcuts involving SimpylFoldDocstrings/SimpylFoldImports
+
+" TODO have stuff shorter than some threshold (maybe that it fits on screen, but
+" probably more like 2-3 screens worth) start unfolded? or everything start that way?
+
+let g:SimpylFold_fold_docstring = 0
+let g:SimpylFold_fold_blank = 1
+
+" TODO TODO hotkeys for toggling all folds?
+" https://vim.fandom.com/wiki/Folding
+
+" NOTE: opening / closing one level of folds across whole file = zm / zr
+" For toggling folds with space
+nnoremap <space> za
+vnoremap <space> zf
+
+"nnoremap <leader><space> 
+
+" TODO TODO is there really not a plugin / way to make foldlevel just the highest level
+" currently present? if not, implement.
+set foldlevelstart=3
+
 
 let g:doge_doc_standard_python = 'google'
 " TODO maybe disable doge default <leader>d mapping and make my own that first jumps to
@@ -829,12 +911,17 @@ let g:doge_doc_standard_python = 'google'
 " TODO maybe a separate version behind <leader>F to add docstring too?
 nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
 
+" TODO swap g and G (GoToReferences probably what i want more often?)
+"
 " Should default to GoToDefinition if available.
 nnoremap <leader>g :YcmCompleter GoTo<CR>
 " Populates quickfix list w/ all references (in current file?)
 nnoremap <leader>G :YcmCompleter GoToReferences<CR>
 
 
+" These commands are to navigate through the results from the YcmCompleter search(es)
+" above (at least for GoToReferences, maybe also GoTo in some cases?)
+"
 " For explanation of what <Plug> is: https://vi.stackexchange.com/questions/31012
 "
 " NOTE: see also qf_loc_[previous/next] if I end up using the "location list" in
@@ -847,6 +934,9 @@ nmap <leader>n <Plug>(qf_qf_next)
 " TODO modify so you only have to type the new name, not the '/g' at the end too
 " TODO maybe look into replacing w/ 'subversive' plugin? it do what i think?
 nmap <leader>r *:%s//
+
+" TODO TODO did i have something like above for searching for whole word under cursor
+" (i.e. as with :\<WORD\>)? where? add something like that?
 
 " TODO maybe add <leader>R for RefactorRename if i get that to work OK
 
@@ -940,6 +1030,39 @@ nnoremap <leader>e o>&2<Esc>
 " triggering warnings in vim)
 " TODO maybe simplest way would just be to try to get vim to save and reopen at
 " current position?
+
+" TODO work? trying to get easy copy paste.
+" adapted from: https://vi.stackexchange.com/questions/36781
+" see also: https://vim.fandom.com/wiki/Accessing_the_system_clipboard
+"
+" mabye really isn't gonna work w/ just Ctrl prefix? despite one guy in comments somehow
+" having it work for him? wasn't working for me when testing w/ vim inside tmux.
+" does seem like it could be a tmux display/terminal issue. bit unclear.
+" see:
+" https://gist.github.com/mikeboiko/b6e50210b4fb351b036f1103ea3c18a9
+" https://unix.stackexchange.com/questions/591293/how-do-i-correctly-reset-display
+" https://goosebearingbashshell.github.io/2017/12/07/reset-display-variable-in-tmux.html
+" https://superuser.com/questions/1742713/how-to-pipe-vim-clipboard-through-tmux
+" yea, it works in a fresh tmux session, where DISPLAY is still :0
+" i must have [connected (this alone change it?) / started] via ssh the other tmux
+" session, which seems to have changed DISPLAY to something else.
+" so far i could only get DISPLAY to be non-:0 if starting tmux from ssh
+"nnoremap <C-c> "+y  " Normal (must follow with an operator)
+"xnoremap <C-c> "+y  " Visual
+" M=meta (alt key). S=shift?
+" not working? i have clipboard and x11 support...
+nnoremap <M-S-c> "+y  " Normal (must follow with an operator)
+xnoremap <M-S-c> "+y  " Visual
+" TODO do for Ctrl[-Shift]-v too, thought that seems to maybe already work? at least in
+" some modes
+
+" <leader>c might be used by some nerd commenter stuff, but not sure i actually want to
+" try using that extension...
+noremap <leader>y "+y
+noremap <leader>v "+p
+" TODO delete these ones? useful? * is x11 selection buffer, right?
+noremap <leader>Y "*y
+noremap <leader>V "*p
 
 
 noremap <F12> <Esc>:syntax sync fromstart<CR>
