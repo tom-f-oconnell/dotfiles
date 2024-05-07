@@ -4,7 +4,7 @@
 # (if not obvious enough from their usual purpose...)
 
 # used by some of my data acquisition / analysis tools
-export HONG_NAS="/local/storage"
+export HONG_NAS="/mnt/nas"
 
 # Used this in place of HONG_NAS on my home computer
 #export HONG2P_DATA="$HOME/2p_data"
@@ -12,8 +12,21 @@ export HONG_NAS="/local/storage"
 # Checked before path derived from above when determining where a fly directory is.
 # All data in fly directory must be copied here because there is currently no more
 # granularity.
-export HONG2P_FAST_DATA="$HOME/2p_data"
+export HONG2P_FAST_DATA="/mnt/d1/2p_data"
 
 export OLFACTOMETER_HARDWARE_DIR="$HOME/src/tom_olfactometer_configs/hardware"
+#export OLFACTOMETER_DEFAULT_HARDWARE="single_manifold2"
 export OLFACTOMETER_DEFAULT_HARDWARE="dual_manifold2"
+#export OLFACTOMETER_DEFAULT_HARDWARE="dual_config_yang"
+export OLFACTOMETER_DEBUG=1
 
+# If this is unset, imagej_macros/overlay_rois_in_curr_z.py should default to trying to
+# use a venv/.venv in plot_scripot_dir (probably ~/src/al_analysis)
+#
+# TODO maybe remake from scratch under name 'al_analysis' (would be consistent w/ sam's
+# new install of my pipeline)
+##export AL_ANALYSIS_CONDA_ENV="al_analysis"
+#export AL_ANALYSIS_CONDA_ENV="suite2p"
+
+# Used by al_analysis/backup_ijrois.py
+export AL_IJROI_BACKUP_DIR="/mnt/nas/Tom/backups"
