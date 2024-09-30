@@ -64,6 +64,14 @@
     # (on windows at least)
     #~/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1: powershell_profile
 
+    ~/.config/vlc/vlcrc: vlcrc
+
+    ~/.config/nautilus/scripts-accels: nautilus/config_nautilus_scripts-accels
+    # TODO check this dir symlink is created correctly
+    # TODO TODO fix (when running ./link_only)
+    # Nonexistent source ~/.local/share/nautilus/scripts -> local-share-nautilus-scripts
+    ~/.local/share/nautilus/scripts: local-share-nautilus-scripts
+
 # TODO print output of these commands
 # TODO do i want submodule update to be recursive? manually specify?
 # TODO if already running w/ root permissions, maybe don't do user on last pip

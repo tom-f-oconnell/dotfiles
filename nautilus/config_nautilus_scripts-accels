@@ -1,0 +1,42 @@
+; Prepend parent directories name (followed by one '_') to each file in current
+; directory
+; TODO test this works if something is selected too (whether dir or file)
+p PrependParentName
+u UndoPrependParentName
+; Adding an empty line above this would prevent config from working...
+# (any workaround? this formatting is terrible)
+; NOTE: blank lines can seem to make this config not work
+; Taken from RobotMan's answer here: https://askubuntu.com/questions/680016
+; Should open in current nautilus directory.
+; If you select one or more files, their names will be passed as parameters to the
+; executable.
+; F4 Terminal
+; Didn't work:
+; <Alt>t Terminal
+t Terminal
+; To open currently selected this. Maybe just do xdg-open?
+; TODO looks like selected files[/dirs?] are in argv[1:] (wrap in script to check it's
+; just len 1? xdg-open work w/ multiple?) delete one of these scripts and merge them?
+e OpenSelected
+w OpenParentInVLC
+; (via xdotool)
+;w KeyUp
+; TODO want both? actually, the second seemed to overwrite the first? kinda confused
+; maybe something else went wrong?
+;s KeyDown
+;x KeyDown
+s KeyUp
+x KeyDown
+d DuplicateInCWD
+q QuitViaCtrlW
+; TODO 1 work as hotkey?
+1 KeyBackspace
+; default nautilus back hotkey (can i achieve this via nautilus settings?)
+2 KeyAltLeft
+; default nautilus forward hotkey (can i achieve this via nautilus settings?)
+3 KeyAltRight
+; Commented lines must have a space after the semicolon
+; Examples of other key combinations:
+; <Control>F12 Terminal
+; <Alt>F12 Terminal
+; <Shift>F12 Terminal

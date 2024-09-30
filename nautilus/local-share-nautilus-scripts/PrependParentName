@@ -1,0 +1,32 @@
+#! /usr/bin/python3
+
+#import sys
+from pathlib import Path
+
+# TODO also option to rename to include only any extra info in parent (but not lose info
+# in each child file name) (e.g. to add resolution info)
+if __name__ == '__main__':
+    # TODO delete / comment
+    log_file = Path.home() / 'nautilus_test.log'
+
+    #log_file.write_text(f'{sys.argv=}')
+
+    cwd = Path.cwd()
+    #log_file.write_text(f'{cwd=}\n')
+
+    for f in cwd.glob('*'):
+        # TODO this excludes dirs, right?
+        if not f.is_file():
+            continue
+
+        if f.is_symlink():
+            continue
+
+        prefix = f'{f.parent.name}_'
+        new_name = f.parent / f'{prefix}{f.name}'
+
+        if not f.name.startswith(prefix):
+            f.rename(new_name)
+
+        # TODO delete/comment
+        #log_file.write_text(f'renaming {f} -> {new_name}\n')

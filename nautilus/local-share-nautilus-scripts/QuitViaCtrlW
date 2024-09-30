@@ -1,0 +1,3 @@
+#! /bin/sh
+# TODO simpler way to accomplish (nautilus settings?)?
+xdotool key ctrl+w

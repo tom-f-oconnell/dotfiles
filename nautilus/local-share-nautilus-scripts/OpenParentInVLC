@@ -1,0 +1,18 @@
+#! /bin/bash
+
+# Should pass all arguments but first one (command name, I think, when called from
+# nautilus hotkey). These arguments should be any selected files.
+# https://stackoverflow.com/questions/9057387
+#xdg-open "${@:2}"
+
+# TODO off by one?
+# https://stackoverflow.com/questions/18568706
+if [ "$#" -ne 1 ]; then
+    echo "Illegal number of parameters"
+fi
+
+# I thought from earlier testing I'd need all args after first, but here it seems I need
+# $@ for some reason... (all args)
+#vlc `dirname "$@"`
+# TODO TODO behave this way unless dir arg is passed, then use that
+vlc --no-random "`pwd`"

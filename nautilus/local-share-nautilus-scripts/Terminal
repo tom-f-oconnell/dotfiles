@@ -1,0 +1,4 @@
+#! /bin/sh
+# TODO use diff shebang line? or not matter since we opening terminal?
+# just want same setup as if opening via right click -> open in terminal
+gnome-terminal

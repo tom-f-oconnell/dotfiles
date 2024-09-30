@@ -1,0 +1,6 @@
+#! /bin/sh
+# TODO any reason to run in background w/ & or something?
+# TODO need to open separate? how?
+# xdg-open didn't pass the required --new-window
+nautilus --new-window `pwd`
+# TODO xdotool to move to right half of screen (via unity hotkeys)?

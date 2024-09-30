@@ -1,0 +1,10 @@
+#! /bin/bash
+
+# Should pass all arguments but first one (command name, I think, when called from
+# nautilus hotkey). These arguments should be any selected files.
+# https://stackoverflow.com/questions/9057387
+#xdg-open "${@:2}"
+
+# I thought from earlier testing I'd need all args after first, but here it seems I need
+# $@ for some reason... (all args)
+xdg-open "$@"
