@@ -64,13 +64,17 @@
     # (on windows at least)
     #~/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1: powershell_profile
 
+    # TODO TODO TODO (possible to?) fix how editing settings in VLC gui seems to
+    # overwrite the symlink set up by dotbot (or just don't edit settings in GUI? that
+    # kinda sucks though)
+    # TODO or just have the link_only script integrate those changes and re-link? need
+    # to do any diffing / anything first?
     ~/.config/vlc/vlcrc: vlcrc
 
+    # This file defines hotkeys to trigger scripts under the directory below.
     ~/.config/nautilus/scripts-accels: nautilus/config_nautilus_scripts-accels
-    # TODO check this dir symlink is created correctly
-    # TODO TODO fix (when running ./link_only)
-    # Nonexistent source ~/.local/share/nautilus/scripts -> local-share-nautilus-scripts
-    ~/.local/share/nautilus/scripts: local-share-nautilus-scripts
+    # Directory containing scripts to be triggered by hotkeys in config file above.
+    ~/.local/share/nautilus/scripts/: nautilus/local-share-nautilus-scripts/
 
 # TODO print output of these commands
 # TODO do i want submodule update to be recursive? manually specify?
