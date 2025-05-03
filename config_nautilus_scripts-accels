@@ -1,0 +1,16 @@
+; NOTE: blank lines can seem to make this config not work
+; Taken from RobotMan's answer here: https://askubuntu.com/questions/680016
+; Should open in current nautilus directory.
+; If you select one or more files, their names will be passed as parameters to the
+; executable.
+; F4 Terminal
+; Didn't work:
+; <Alt>t Terminal
+t Terminal
+c ImageToClipboard
+
+; Commented lines must have a space after the semicolon
+; Examples of other key combinations:
+; <Control>F12 Terminal
+; <Alt>F12 Terminal
+; <Shift>F12 Terminal

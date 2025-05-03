@@ -1046,6 +1046,9 @@ alias gac='git_commit_add'
 
 alias gca='git commit --amend'
 
+# TODO TODO change to work w/ multiple -m flags (or decide how else i want to write
+# commit messages to use new lines, or otherwise format them better than i'm doing now)
+# https://stackoverflow.com/questions/5064563
 alias gc='git commit -m'
 
 # TODO TODO either here or somewhere else, which maybe gets called here,
@@ -1126,6 +1129,9 @@ alias gd='git diff'
 # TODO modify this completion to only apply to files changed ('git diff' completion
 # doesn't do this either, at least as i have it installed)
 complete -F _complete_alias gd
+
+alias gds='git diff --staged'
+complete -F _complete_alias gds
 
 alias gdh='git diff HEAD'
 alias gdh1='git diff HEAD~1'
@@ -1495,7 +1501,10 @@ alias tm='tmux'
 # TODO TODO convenience wrapper to open a terminal, ssh, and tmux attach to each session
 # in tmux list-sessions output?
 alias ta='tmux attach -t'
-alias tls='tmux list-sessions'
+# among my scripts repo. runs `tmux list-sessions` (with it's own -F option), and also
+# checks for files open in child editor processes, and appends that info to end of each
+# session line
+alias tls='list_files_being_edited_under_tmux_sessions.py'
 
 # Just obfuscating a bit, in case somebody is scraping Github for SSH aliases...
 # There's probably a better way.
@@ -2416,12 +2425,24 @@ function vim_kill() {
     kill $(lsof .$1.swp 2>/dev/null | tail -n 1 | awk '{print $2}')
 }
 function vim_reptyr() {
+    # TODO also check line in /etc/sysctl.d/10-ptrace.conf? or would that also have the
+    # effect of setting the value in this file?
+    # https://github.com/nelhage/reptyr
+    local ptrace_scope_file=/proc/sys/kernel/yama/ptrace_scope
+
+    # TODO err w/ message if this file doesn't exist?
+    if [ "1" == "$(cat ${ptrace_scope_file})" ]; then
+        sudo sh -c "echo 0 > ${ptrace_scope_file}"
+    fi
+
     # TODO see TODOs in vim_kill, where this was copied from (/ refactor)
     #
     # TODO maybe do w/ `-T  Steal the entire terminal session of the target
     # (experimental)`? maybe don't?. 2023-11-07: think it might have just caused a
     # problem trying to use this?
     #reptyr -T $(lsof .$1.swp 2>/dev/null | tail -n 1 | awk '{print $2}')
+    #
+    # TODO refactor to share RHS of this w/ vim_kill above?
     reptyr $(lsof .$1.swp 2>/dev/null | tail -n 1 | awk '{print $2}')
 }
 # TODO TODO also `&& vim $1` / something like that

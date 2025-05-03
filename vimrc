@@ -74,6 +74,9 @@ let g:ycm_confirm_extra_conf = 0
 " Default is 'same-buffer'
 let g:ycm_goto_buffer_command = 'split-or-existing-window'
 
+" Default: 1000
+let g:ycm_disable_for_files_larger_than_kb = 10000
+
 " TODO TODO TODO if ever gonna use YCM RefactorRename feature, might need to see the
 " quickfix window for that, and i think this function also applies there. possible to
 " tell which is being called?
@@ -911,14 +914,13 @@ let g:doge_doc_standard_python = 'google'
 " TODO maybe a separate version behind <leader>F to add docstring too?
 nnoremap <leader>f o<cr>def ():<cr><Esc>k$2hi
 
-" TODO swap g and G (GoToReferences probably what i want more often?)
+" TODO TODO try to get this search (or the navigation commands below) to start from
+" current cursor position (like w/ N/n in normal search)
 "
-" Should default to GoToDefinition if available.
-nnoremap <leader>g :YcmCompleter GoTo<CR>
 " Populates quickfix list w/ all references (in current file?)
-nnoremap <leader>G :YcmCompleter GoToReferences<CR>
-
-
+nnoremap <leader>g :YcmCompleter GoToReferences<CR>
+" Should default to GoToDefinition if available.
+nnoremap <leader>G :YcmCompleter GoTo<CR>
 " These commands are to navigate through the results from the YcmCompleter search(es)
 " above (at least for GoToReferences, maybe also GoTo in some cases?)
 "

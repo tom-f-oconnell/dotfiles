@@ -31,10 +31,58 @@ alias v %1.values()
 alias kh !next(iter(%1.keys()))
 alias vh !next(iter(%1.values() if type(%1) is dict else %1))
 
-# TODO actually take arguments for this too (and allow either str literal or variable)
-# (Path too ideally)
-alias ls import subprocess; subprocess.run(['ls',  '--color'])
-alias lr import subprocess; subprocess.run(['ls', '--color', '-ltr'])
+# NOTE on my how I settled on my (exec-based) hacky solution for an optional Path arg
+# in an alias (used for `lr` alias below)
+#
+# no explicit mention of optional args in:
+# https://docs.python.org/3/library/pdb.html#debugger-aliases
+# ...maybe the %* "all the parameters" var could work?
+#
+# when no arg passed, results in `SyntaxError: invalid syntax`
+# (prob same if it were just print(%1))
+# alias test print(repr(%1))
+#
+# seems like it might be basis of something useful
+# (works w/ 0 and multiple args)
+# alias t2 print(%*)
+#
+# > t3
+#
+# > t3 'test'
+# t e s t
+# > t3 <some Path object>
+# TypeError: 'PosixPath' object is not iterable
+# alias t3 print(*tuple(%*))
+#
+# %* is not a single object. this fails for anything other than 1 argument.
+# alias t4 print(type(%*))
+#
+# again, SyntaxError w/ no args
+# alias t5 print([x for x in %*])
+#
+# (works w/ exec but not eval, which SyntaxError's for either 0/1 input)
+# https://stackoverflow.com/questions/2524853/how-should-i-put-try-except-in-a-single-line
+# alias t6 exec('try: print([x for x in tuple(%*)])\nexcept TypeError: print(str(%*))')
+# > t6
+# []
+# > plot_root = Path('pdf')
+# > t6 plot_root
+# pdf
+#
+# if i could get it to work w/ eval, might be able to avoid setting this global var, but
+# for now i can get it to work like:
+# alias t7 exec('try: _ls_dir=list(tuple(%*))\nexcept TypeError: _ls_dir=[str(%*)]'); print(_ls_dir); print(len(_ls_dir))
+
+# this version was almost what i wanted, but it printed a line like:
+# CompletedProcess(args=['ls', '--color', '-ltr', 'pdf'], returncode=0)
+# after the ls output.
+# alias lr1 import subprocess; exec('try: _ls_dir=list(tuple(%*))\nexcept TypeError: _ls_dir=[str(%*)]'); subprocess.run(['ls',  '--color', '-ltr'] + _ls_dir)
+
+# see comment above for what this exec part is doing
+alias ls import subprocess; exec('try: _ls_dir=list(tuple(%*))\nexcept TypeError: _ls_dir=[str(%*)]'); print(subprocess.run(['ls',  '--color'] + _ls_dir, capture_output=True, text=True).stdout.strip())
+
+# without .strip(), there is a blank line following ls output.
+alias lr import subprocess; exec('try: _ls_dir=list(tuple(%*))\nexcept TypeError: _ls_dir=[str(%*)]'); print(subprocess.run(['ls',  '--color', '-ltr'] + _ls_dir, capture_output=True, text=True).stdout.strip())
 
 # [d]ataframe [p]rint
 # Seems the default max_rows/max_cols/max_colwidth are all unrestricted.
@@ -54,6 +102,8 @@ alias dp print((%1.to_frame() if isinstance(%1, pd.Series) else %1).to_string())
 # TODO test for stuff that i want to keep open while continuing debugging. work as is?
 # or need to run in background somehow?
 alias x import subprocess; subprocess.run(['xdg-open', str(%1)])
+# TODO test this works (should open parent directory of input)
+alias xd import subprocess; subprocess.run(['xdg-open', str(Path(%1).parent)])
 
 # this is to go to line in vim, which is assumed to be in neighboring window.
 # also assumes linux with xdotool installed.
@@ -64,4 +114,18 @@ alias x import subprocess; subprocess.run(['xdg-open', str(%1)])
 #
 # TODO possible to refactor to use a predefined fn or something (rather than this huge
 # ugly one-liner)?
-alias g import inspect,subprocess,time; subprocess.run(f'xdotool key alt+grave; xdotool key Escape; sleep 0.05; xdotool type ":{inspect.stack()[[x.function for x in inspect.stack()].index("trace_dispatch") + 1].lineno}"; sleep 0.05; xdotool key Return', shell=True)
+# TODO TODO update to work i've stepped up levels since starting debugging (should go to
+# current line, not line initially entered when debugging started)
+#
+# final `; None` is just to try to not get an extra line with the
+# `CompletedProcess(...)` output of the subprocess call
+alias g import inspect,subprocess,time; subprocess.run(f'xdotool key alt+grave; xdotool key Escape; sleep 0.05; xdotool type ":{inspect.stack()[[x.function for x in inspect.stack()].index("trace_dispatch") + 1].lineno}"; sleep 0.05; xdotool key Return; xdotool type "zz"', shell=True); None
+
+# TODO TODO something similar to copy previous command run to clipboard (maybe w/
+# 'assert ' prefix, or an option for that?)
+# TODO adapt to just print command if pyperclip not available (might now, just w/
+# error shown? want silent tho)
+#
+# requires pyperclip installed to work
+# https://stackoverflow.com/questions/37658154/get-command-line-arguments-as-string
+alias cmd import sys,shlex; cstr = ' '.join(map(shlex.quote, sys.argv)); print(cstr); import pyperclip; pyperclip.copy(cstr)

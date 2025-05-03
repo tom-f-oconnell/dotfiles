@@ -1,0 +1,18 @@
+#! /bin/sh
+
+# TODO assert input ends with .pdf? use a utility that works regardless of input file
+# extension? or switch appropriately?
+# (maybe at least also work w/ png inputs, just skipping first step there?)
+
+# TODO which package provides pdftoppm? xclip?
+
+png_dir_and_stem=/tmp/image2clip
+# TODO delete this first, then assert it exists after first step?
+png_path="${png_dir_and_stem}.png"
+
+# doesn't matter if /tmp/image2clip.png already exists. will just be overwritten.
+# without -singlefile, name will be like /tmp/image2clip-1.png. assumes input only has
+# one page though.
+pdftoppm $1 ${png_dir_and_stem} -png -singlefile
+
+xclip -selection clipboard -target image/png -i ${png_path}
