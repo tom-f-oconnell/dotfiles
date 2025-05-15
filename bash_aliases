@@ -2019,6 +2019,87 @@ alias lh='ls -lh'
 alias lrh='ls -ltrh'
 alias lhr='ls -ltrh'
 
+# TODO how to tell from manual / whatever that setaf 4 is blue tho?  (that + bold do
+# currently seem to have same effect as from ls, where that color code can be seen from
+# either LS_COLORS or dircolors)
+#
+# https://stackoverflow.com/questions/4332478
+BLACK=$(tput setaf 0)
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+LIME_YELLOW=$(tput setaf 190)
+POWDER_BLUE=$(tput setaf 153)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
+BOLD=$(tput bold)
+NORMAL=$(tput sgr0)
+BLINK=$(tput blink)
+REVERSE=$(tput smso)
+UNDERLINE=$(tput smul)
+
+# NOTE: intentionally NOT recursive, at the moment
+# TODO also implement a recursive version?
+function print_newest_child_file_mtime() {
+    local dir_root
+    local most_recent_file_mtime_str
+
+    if [ "$#" -eq 0 ]; then
+        dir_root="."
+    elif [ "$#" -eq 1 ]; then
+        # TODO assert it is a directory?
+        dir_root=$1
+    else
+        echo "must only pass at most one directory (default=.)"
+        return 1
+    fi
+
+    # TODO option to also have a column to show which file was the most recent?
+
+    # TODO need/want any of these options here?
+    # (would want to make sure their scope is only this fn, if so)
+    # shopt -s globstar
+    # shopt -s nullglob
+    # shopt -s dotglob
+    for curr_dir in ${dir_root}/*/; do
+        # NOTE: `stat --format='%y' <file>` produces mtime in format like:
+        # 2025-03-17 16:59:16.650714380 -0700
+        # the part preceding the offset is consistent w/ `ls -ltr` output (tho in a diff
+        # format)
+
+        # TODO just remove `-maxdepth 1` to make recursive?
+        # TODO factor out inner part to own fn? or at least format better...
+        #
+        # awk '{print $1 " " $2}': strips out ' -0700' offset part at end of stat output
+        most_recent_file_mtime_str=$(find ${curr_dir} -maxdepth 1 -not -type d -exec stat --format='%y' "{}" \; | sort | tail -n 1 | awk '{print $1 " " $2}')
+
+        # skip if we don't have any files under subdir
+        if [ -z "${most_recent_file_mtime_str}" ]; then
+            continue
+        fi
+
+        # ${most_recent_file_mtime_str:0:-6} to strip the last 6 (of 9) sigfigs that are
+        # all fractions of seconds. requires that we have stripped offset part above.
+        #
+        # ${curr_dir:2:-1} to exclude the leading './' and trailing '/' of each. will
+        # err if input too short (but that shouldn't happen).
+        #
+        # TODO TODO need to change curr_dir stripping to only strip leading two chars if
+        # they are './' (which will be case if dir_root=".", but not if a dir passed w/o
+        # that)
+        #printf '%s\t%s\n' "${most_recent_file_mtime_str:0:-6}" "${BOLD}${BLUE}${curr_dir:2:-1}${NORMAL}"
+        printf '%s\t%s\n' "${most_recent_file_mtime_str:0:-6}" "${BOLD}${BLUE}${curr_dir:0:-1}${NORMAL}"
+
+    # sorting by timestamps (second column, with both `column` and `sort` using tab
+    # character '\t' as delimiter) (not sure why after changing some of the string
+    # processing above, and moving timestamps from 2nd to 1st column, now I get most
+    # recent at bottom WITHOUT -r arg to sort)
+    done | column -t -s $'\t' | sort -t\t -k1
+}
+alias newest_child='print_newest_child_file_mtime'
+
 # Since I already have muscle memory for typing 'df -h'
 # The goal is just to include the lines for real storage devices (the things I generally
 # care about).
