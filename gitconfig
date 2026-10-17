@@ -27,10 +27,28 @@
 [alias]
 	root = !pwd
 	permission-reset = !git diff -p -R --no-ext-diff --no-color | grep -E \"^(diff|(old|new) mode)\" --color=never | git apply
+    # adapted from https://gist.github.com/pksunkara/988716
+    # may want to pull in some other aliases from there
+    bl = blame -C -C -w
+	bll = blame -C -C -w -L
+    blf = blame -w
+	blfl = blame -w -L
+    # TODO default to this one tho? it can be much slower. `-C -C` much faster than
+    # `-C -C -C`, but may often have same output.
+	blm = blame -w -C -C -C
+	blml = blame -w -C -C -C -L
 [diff]
 	wsErrorHighlight = all
 	colorMoved = true
+[blame]
+    date = short
+    coloring = highlightRecent
+[color "blame"]
+	highlightRecent = blue,24 month ago,cyan,12 month ago,white,1 month ago,yellow,7 day ago,red
 [init]
 	defaultBranch = main
 [credential]
 	helper = cache
+[safe]
+	directory = /mnt/tensor-nightly/Tom/2025-04-16_mushroomBody
+	directory = /mnt/tensor-nightly/Remy/002_PycharmProjects/xRSA

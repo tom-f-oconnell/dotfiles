@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/*.tif)",
+      "Read(**/*.p)",
+      "Read(**/*.pickle)",
+      "Read(**/*.nc)",
+      "Read(**/*.parquet)",
+      "Read(**/*.a)",
+      "Read(**/*.o)",
+      "Read(**/*.so)",
+      "Read(venv/**)",
+      "Read(tmp/**)",
+      "Read(.venv/**)",
+      "Read(*.egg-info/**)",
+      "Read(.git/**)"
+    ]
+  },
+  "model": "opus",
+  "effortLevel": "medium",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "medium"
+    },
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    },
+    "claude-fable-5-1": {
+      "effortLevel": "xhigh"
+    }
+  },
+  "tui": "fullscreen",
+  "theme": "dark"
+}

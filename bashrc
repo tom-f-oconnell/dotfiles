@@ -329,6 +329,11 @@ unset __conda_setup
 # This is not working to avoid reaching lack-of-excepthook-error in 20.04
 #PYMISTAKE_DISABLE="1"
 
+# TODO move this to custom user site python config, so i can only do it conditional on
+# ipdb being available? what is current behavior if ipdb not available?
+# doesn't seem to be a built in way to fail back to default (as of 2025)
+export PYTHONBREAKPOINT=ipdb.set_trace
+
 ## TODO also test case going from having direnv_dir to it being empty/unset
 #show_virtual_env() {
 #  if [[ -n "$DIRENV_DIR" ]]; then

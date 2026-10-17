@@ -56,6 +56,10 @@ set rtp+=~/.vim/bundle/Vundle.vim
 " TODO test that the below still removes audible bell on windows
 set belloff=all
 
+" Custom functions on the 'Leader' keyboard
+" TODO still work now that i moved this up above plugin loading?
+let mapleader = ","
+
 " TODO TODO vundle hasn't been updated in several years... maybe i should use
 " some other VIM package manager
 
@@ -132,7 +136,8 @@ Plugin 'VundleVim/Vundle.vim'
 
 " TODO test vundle can always compile this (ideally on WSL too)
 " if it can't, may want to handle this one manually.
-Plugin 'Valloric/YouCompleteMe'
+" TODO TODO TODO figure out how to install this on 26.04 (install older python? 3.10?)
+"Plugin 'Valloric/YouCompleteMe'
 
 Plugin 'dense-analysis/ale'
 
@@ -284,6 +289,7 @@ endif
 " file that shares a prefix with another), rather than checking for
 " modification, if that ends up being too disruptive to macro recording (if i
 " ever use...)
+" TODO TODO fix. Q currently seems to open ex mode. don't think i want that.
 " Below I remap (normal mode) q to this, and Q to q as in:
 " https://stackoverflow.com/questions/10956261
 " Q does already enter 'Ex' mode, but I'm pretty sure I didn't want that anyway.
@@ -305,6 +311,16 @@ function SaveAndQuit()
     quit
 
 endfunction
+
+" more comfortable to type <leader>q than Q. may want to swap back to default q and have
+" <leader>q call SaveAndQuit(), if I end up using macros more
+" TODO TODO switch back to just q to record macro, and just use ZZ to exit (and maybe Q
+" to execute macro. @ is annoying to type).
+" Q doing anything now?
+nnoremap <leader>q q
+nnoremap q :call SaveAndQuit()<CR>
+" actually want Ex mode? only ever entered it by accident
+nnoremap Q <Nop>
 
 " To settle the confusion I've had as to how to tell whether lines will
 " hard-wrap (with appropriate EOL characters inserted).
@@ -733,8 +749,6 @@ set laststatus=2
 " enables mouse (just scrolling? selection, etc?) in [a]ll modes
 set mouse=a
 
-nnoremap q :call SaveAndQuit()<CR>
-
 " To list all <F*> mappings (https://vi.stackexchange.com/questions/20192):
 function FKeyMaps()
     for i in range(1, 12)
@@ -820,13 +834,16 @@ function PyInsertAtCurrIndent()
 
 endfunction
 
-" Custom functions on the 'Leader' keyboard
-let mapleader = ","
 " TODO are these spaces after <leader>[some char] functional (seems equiv to l
 " interactively) or are the ignored here?
-nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>k<CR>
+" TODO delete (if i'm happy w/ `breakpoint()` replacing this)
+"nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>k<CR>
 "nnoremap <leader>b oimport ipdb; ipdb.set_trace()<Esc>kA<CR>
-nnoremap <leader>B o# TODO delete<CR>import ipdb; ipdb.set_trace()<CR>#<Esc>kA<CR>
+nnoremap <leader>b obreakpoint()<Esc>k<CR>
+" TODO delete? ever even use this one?
+nnoremap <leader>B o# TODO delete<CR>breakpoint()<CR>#<Esc>kA<CR>
+"nnoremap <leader>B o# TODO delete<CR>import ipdb; ipdb.set_trace()<CR>#<Esc>kA<CR>
+"
 "nnoremap <leader>D o#TODO delete<CR>#<Esc>kA<CR>
 nnoremap <leader>D o# TODO delete<Esc>k<CR>
 "nnoremap <leader>b :call PyInsertAtCurrIndent()<CR>import ipdb; ipdb.set_trace()<Esc>

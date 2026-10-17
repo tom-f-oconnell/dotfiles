@@ -780,6 +780,9 @@ alias pfg="pip freeze | grep -i"
 # 'ab' ([b]are) to map to it, to not always require another prompt at startup.)
 # TODO TODO TODO recursively search above if none not found echoing which it finds? or
 # prompt?
+# TODO TODO modify this to print specific python version (and maybe exe path) for the
+# python3 it's using, in the "Making virtual env with 'python3 -m venv venv'" line, or
+# nearby it
 alias a='activate'
 alias d="diff_or_deactivate"
 
@@ -1000,6 +1003,9 @@ alias w="which"
 # (for checking aliases interactively)
 alias al="alias"
 
+# prints date as "2026-02-12 12:44:49"
+alias now="date '+%F %H:%M:%S'"
+
 # TODO TODO make some command (some tool exist for this?) that prints all
 # aliases i have defined (maybe just those in this file) IF they contain
 # some substring (e.g. "git"). maybe also want to expand aliases (if that
@@ -1138,6 +1144,53 @@ alias gdh1='git diff HEAD~1'
 complete -F _complete_alias gdh
 
 alias gls='git ls-files'
+
+# TODO delete. this doesn't make it as easy to see when an entire directory is
+# untracked, since it will show a line for each file in all subdirectories (so output is
+# also more verbose than i want). does NOT print ignored files w/ --exclude-standard
+# --exclude-standard:
+# "Add the standard Git exclusions: .git/info/exclude, .gitignore in each directory, and
+#  the user’s global exclusion file."
+#alias glsu='git ls-files --others --exclude-standard'
+# `git status -u --ignored` (u to include untracked files) was also overly verbose
+#
+
+# TODO add version that also totals up size of all (space savings if deleted)?
+# maybe sorting each line by size too?
+# TODO modify this to strip off the 'Would remove ' prefix from the dry run? will every
+# line always start with that (make python script wrapper that asserts it?)?
+# TODO any circumstances where we actually need the -f? one quick check didn't seem to
+# indicate so, but leaving shouldn't hurt, as long as -n (dry-run) stays there
+#
+# https://stackoverflow.com/questions/3801321
+# x=include ignored files, n=dry-run, f=force (needed?), d=recursve
+alias glsu='git clean -dxnf'
+
+# TODO other approaches?
+#
+# https://stackoverflow.com/questions/23350139
+# NOTE: "This approach is only able to register content being added to a file, though,
+# not content being removed from the file"
+function last-modified() {
+    git blame -p "$1" | awk '
+        BEGIN {
+            print 0;
+        }
+        $1 == "author-time" {
+            print $2;
+        }' | sort -n | tail -n 1
+}
+
+function list-files() {
+    for file in $(git ls-files); do
+        # TODO TODO format date better. currently lines look like:
+        # 1740012133 file.pdf
+        # (may need todo in last-modified above, but also change how sorting is done
+        # there / below alongside)
+        echo "$(last-modified $file) $file"
+    done
+}
+alias glsr='list-files | sort -n'
 
 alias grv='git remote -v'
 
@@ -1500,10 +1553,14 @@ alias tm='tmux'
 # in to tmux?)? (like w/ no args)
 # TODO TODO convenience wrapper to open a terminal, ssh, and tmux attach to each session
 # in tmux list-sessions output?
+# TODO also have this cd to the dir first (also in tls output), to have tab of terminal
+# reflect (at least initial) path correctly
 alias ta='tmux attach -t'
 # among my scripts repo. runs `tmux list-sessions` (with it's own -F option), and also
 # checks for files open in child editor processes, and appends that info to end of each
 # session line
+# TODO another version that only lists those with directories sharing prefix w/ current
+# dir?
 alias tls='list_files_being_edited_under_tmux_sessions.py'
 
 # Just obfuscating a bit, in case somebody is scraping Github for SSH aliases...
@@ -1858,6 +1915,7 @@ alias pylintv='pylint --output-format=colorized --disable=fixme,invalid-name'
 alias pylint='pylint --output-format=colorized --disable=fixme,invalid-name,missing-function-docstring,missing-module-docstring'
 
 alias missing-imports='pylint --disable=all --enable=undefined-variable'
+alias missing-vars='pylint --disable=all --enable=undefined-variable'
 alias unused-imports='pylint --disable=all --enable=unused-import'
 
 # If we make watch an alias to itself, it then we can use aliases after it.
@@ -1996,7 +2054,7 @@ alias grr="grep -R"
 # colors... (can i repro?)
 # e.g. `grepy --color=always lam | grep -v lambda | wc -l` had the same number of lines
 # as without the `| grep -v lambda` part...
-alias grepy="grep -R --color=always --include=\*.py --exclude-dir=site-packages --exclude-dir=.eggs --exclude-dir=venv"
+alias grepy="grep -R --color=always --include=\*.py --exclude-dir=site-packages --exclude-dir=.eggs --exclude-dir=venv --exclude-dir=build"
 alias gpy="grepy"
 # This will lookup and use the alias definition above at runtime.
 alias grepym="grep_py_in_my_repos.py"
@@ -2104,6 +2162,13 @@ alias newest_child='print_newest_child_file_mtime'
 # The goal is just to include the lines for real storage devices (the things I generally
 # care about).
 alias dfh="df -h | grep -v '/dev/loop' | grep -v 'tmpfs' | grep -v 'udev'"
+
+alias duh="du -h -d 1"
+alias duhs="du -h -d 1 | sort -h"
+# TODO just change above to functions, and have args threaded thru to `du` (pre pipe to
+# `sort -h`), then remove the ones that add `--apparent-size`?
+alias duha="du -h -d 1 --apparent-size"
+alias duhsa="du -h -d 1 --apparent-size | sort -h"
 
 alias brc="vi ~/.bashrc"
 alias br="vi ~/.bashrc"
@@ -2491,10 +2556,11 @@ alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~
 alias pg='cd ~/src/al_analysis; git status'
 alias pga="pg; conda activate ${AL_ANALYSIS_CONDA_ENV}"
 
-
+# using inkscape-trunk now (on 20.04), which is not a snap. snap version sucks
+#
 # snap install only one i found that could load .dxf files on 18.04
 # install via `sudo snap install inkscape`
-alias inkscape='snap run inkscape'
+#alias inkscape='snap run inkscape'
 
 # TODO TODO factor into a fn that does this (w/ deletion behind a prompt) before opening
 # the file in vim as normal
@@ -2606,3 +2672,12 @@ complete -F _complete_alias jq
 
 # TODO add alias for recursively (or not) finding oldest / newest file in a directory
 # (by mtime at least, maybe also ctime versions?)
+
+# https://unix.stackexchange.com/questions/111899
+# to strip color characters when redirecting output a command to a file
+# (e.g. `git blame > out`, when blame.coloring = repeatedLines)
+alias stripcolors='sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g"'
+
+alias pdb='python -m ipdb -c continue'
+
+alias minus='printf "−" | xclip -sel clip; echo "put − character in clipboard"'

@@ -4,10 +4,14 @@
 # (if not obvious enough from their usual purpose...)
 
 # used by some of my data acquisition / analysis tools
-export HONG_NAS="/mnt/nas"
+#export HONG_NAS="/mnt/nas"
 
 # Used this in place of HONG_NAS on my home computer
 #export HONG2P_DATA="$HOME/2p_data"
+
+# using this on atlas now that i have it home and not on the vpn (copied
+# /mnt/nas/mb_team/stimulus_data_files [from tensor:/mnt/tank0/storage] to under here)
+export HONG2P_DATA="/mnt/d1/2p_data"
 
 # Checked before path derived from above when determining where a fly directory is.
 # All data in fly directory must be copied here because there is currently no more
@@ -28,5 +32,7 @@ export OLFACTOMETER_DEBUG=1
 ##export AL_ANALYSIS_CONDA_ENV="al_analysis"
 #export AL_ANALYSIS_CONDA_ENV="suite2p"
 
-# Used by al_analysis/backup_ijrois.py
-export AL_IJROI_BACKUP_DIR="/mnt/nas/Tom/backups"
+# Used by al_analysis/backup_ijrois.py. When script is run, it will create a subdir
+# (currently, `ijroi_backups`) under this path.
+# (was previously /mnt/nas/Tom/backups)
+export AL_IJROI_BACKUP_DIR="/mnt/tensor-archive/Tom/2p_data"

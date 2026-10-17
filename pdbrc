@@ -119,7 +119,9 @@ alias xd import subprocess; subprocess.run(['xdg-open', str(Path(%1).parent)])
 #
 # final `; None` is just to try to not get an extra line with the
 # `CompletedProcess(...)` output of the subprocess call
-alias g import inspect,subprocess,time; subprocess.run(f'xdotool key alt+grave; xdotool key Escape; sleep 0.05; xdotool type ":{inspect.stack()[[x.function for x in inspect.stack()].index("trace_dispatch") + 1].lineno}"; sleep 0.05; xdotool key Return; xdotool type "zz"', shell=True); None
+# TODO TODO fix ValueError: 'trace_dispatch' is not in list (when called from w/in
+# pytest i think?)
+alias g import inspect,subprocess; subprocess.run(f'xdotool key alt+grave; xdotool key Escape; sleep 0.05; xdotool type ":{inspect.stack()[[x.function for x in inspect.stack()].index("trace_dispatch") + 1].lineno}"; sleep 0.05; xdotool key Return; xdotool type "zz"', shell=True); None
 
 # TODO TODO something similar to copy previous command run to clipboard (maybe w/
 # 'assert ' prefix, or an option for that?)
