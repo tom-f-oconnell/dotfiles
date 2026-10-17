@@ -34,9 +34,20 @@ vim +PluginInstall +"mkdp#util#install" +"doge#install" +qall
 # Just assuming script called from `dotfiles` root directory for now.
 cd vim/bundle/YouCompleteMe
 
+# :PluginInstall does not update existing checkouts, and old YCM versions may not support
+# newer Python (e.g. a 2021 checkout vs Python 3.14 on 26.04).
+# sync is needed since ycmd has renamed/moved some of its submodules.
+git pull --ff-only
+git submodule sync --recursive
+git submodule update --init --recursive
+
 # Using this option rather than --all b/c not interested in other languages
 # explicitly mentioned in --help output, and some can cause compilation to fail,
 # like C#. Python support still works for me in WSL w/ these options.
 # Maybe just call with no options?
-./install.py --clang-completer --quiet
+#
+# YCM remembers the Python used to run install.py, and uses it to run the server, so use
+# system Python explicitly (rather than whatever python3 is first in PATH, which might be
+# from a conda env, which YCM does not support).
+/usr/bin/python3 install.py --clang-completer --quiet
 

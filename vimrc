@@ -136,8 +136,10 @@ Plugin 'VundleVim/Vundle.vim'
 
 " TODO test vundle can always compile this (ideally on WSL too)
 " if it can't, may want to handle this one manually.
-" TODO TODO TODO figure out how to install this on 26.04 (install older python? 3.10?)
-"Plugin 'Valloric/YouCompleteMe'
+" Current YCM needs Vim >= 9.1.0016 and Python >= 3.12. Old checkouts (mine was from
+" 2021, built for Python 3.8) don't work w/ 26.04's Python 3.14, and `:PluginInstall`
+" won't update an existing checkout, so install_vim_extensions.sh updates it first.
+Plugin 'ycm-core/YouCompleteMe'
 
 Plugin 'dense-analysis/ale'
 
