@@ -43,7 +43,9 @@ fi
 cd "${BASEDIR}"
 git submodule update --init --recursive
 
-"${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" -c "${CONFIG}"
+# -v to keep pre-1.23 default output (which also listed links that already exist, and
+# printed a final success message)
+"${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -v -d "${BASEDIR}" -c "${CONFIG}"
 
 # No longer passing remaining args through because I'm relying on one positional
 # arg to indicate config path, so would need to change how that's handled and

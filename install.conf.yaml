@@ -74,7 +74,9 @@
     # This file defines hotkeys to trigger scripts under the directory below.
     ~/.config/nautilus/scripts-accels: nautilus/config_nautilus_scripts-accels
     # Directory containing scripts to be triggered by hotkeys in config file above.
-    ~/.local/share/nautilus/scripts/: nautilus/local-share-nautilus-scripts/
+    # No trailing slashes: dotbot >=1.22 resolves `scripts/` through an existing link to
+    # the source dir, and then refuses to relink it (failing on every re-run).
+    ~/.local/share/nautilus/scripts: nautilus/local-share-nautilus-scripts
 
     # Claude Code user-level instructions and settings
     ~/.claude/CLAUDE.md: claude_CLAUDE.md
