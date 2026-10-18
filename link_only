@@ -1,8 +1,20 @@
 #!/usr/bin/env bash
 
-temp_config=$(mktemp)
-echo "Writing temp dotbot config to ${temp_config}, with shell directives removed"
-echo ""
-./write_link_only_dotbot_config.py $temp_config
-./install $temp_config
+# Same as ./install, but skipping all shell directives, to not invoke expensive scripts
+# after just adding a new config file to link.
 
+# See comments in ./install
+if grep -q Microsoft /proc/version; then
+    echo "Do not run link_only from a WSL shell. Use Git Bash or similar."
+    echo "Exiting."
+    exit 1
+fi
+
+set -e
+
+BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${BASEDIR}"
+git submodule update --init --recursive
+
+# -v for same output as ./install
+"${BASEDIR}/dotbot/bin/dotbot" -v -d "${BASEDIR}" -c install.conf.yaml --except shell
