@@ -39,7 +39,7 @@ def write_modified_config(path):
     with open(config_fname, 'r') as f:
         # Will be a list of dicts, where the keys are one of those in
         # `expected_keys` below.
-        data = yaml.load(f)
+        data = yaml.safe_load(f)
 
     expected_keys = {'defaults', 'clean', 'shell', 'link' }
     new_data = []
