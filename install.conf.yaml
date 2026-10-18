@@ -76,6 +76,10 @@
     # Directory containing scripts to be triggered by hotkeys in config file above.
     ~/.local/share/nautilus/scripts/: nautilus/local-share-nautilus-scripts/
 
+    # Claude Code user-level instructions and settings
+    ~/.claude/CLAUDE.md: claude_CLAUDE.md
+    ~/.claude/settings.json: claude_settings.json
+
 # TODO print output of these commands
 # TODO do i want submodule update to be recursive? manually specify?
 # TODO if already running w/ root permissions, maybe don't do user on last pip
