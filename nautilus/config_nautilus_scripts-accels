@@ -14,6 +14,7 @@ u UndoPrependParentName
 ; Didn't work:
 ; <Alt>t Terminal
 t Terminal
+c ImageToClipboard
 ; To open currently selected this. Maybe just do xdg-open?
 ; TODO looks like selected files[/dirs?] are in argv[1:] (wrap in script to check it's
 ; just len 1? xdg-open work w/ multiple?) delete one of these scripts and merge them?
