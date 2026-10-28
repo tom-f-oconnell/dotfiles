@@ -12,6 +12,9 @@ confusing.
 
 Make all commits to the default branch.
 
+Commit finished changes without asking me first (once tests pass), rather than waiting
+for me to say "commit". This doesn't extend to pushing.
+
 venv environments should be expected to be in ./venv per-project, instead of ./.venv.
 Any commands creating them should also place them there.
 
