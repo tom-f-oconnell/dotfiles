@@ -1031,10 +1031,13 @@ complete -F _complete_alias grm
 alias g='git_fn'
 
 # https://unix.stackexchange.com/questions/216748
-_completion_loader git
-# The sed part just replaces the command name 'git' at end of the printed completion
-# definition with 'g' (my alias for `git_fn`)
-eval $(complete -p git | sed 's/git$/g/')
+# (bash-completion isn't loaded in non-interactive shells, e.g. Claude Code's)
+if declare -F _completion_loader >/dev/null; then
+    _completion_loader git
+    # The sed part just replaces the command name 'git' at end of the printed completion
+    # definition with 'g' (my alias for `git_fn`)
+    eval $(complete -p git | sed 's/git$/g/')
+fi
 
 # TODO git init before both of these adds? init idempotent, or need to check?
 alias ga='git add'

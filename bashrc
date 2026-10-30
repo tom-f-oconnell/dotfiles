@@ -3,7 +3,10 @@
 # for examples
 
 # Claude Code's shell is non-interactive; still give it my aliases/functions
-if [ -n "$CLAUDECODE" ] && [ -f ~/.bash_aliases ]; then . ~/.bash_aliases; fi
+# (interactive shells source them below, after bash-completion is loaded)
+if [ -n "$CLAUDECODE" ] && [[ $- != *i* ]] && [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
 
 # If not running interactively, don't do anything
 case $- in
