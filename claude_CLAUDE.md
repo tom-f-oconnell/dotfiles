@@ -22,6 +22,15 @@ Do not show me diffs of HTML from regenerating HTML docs with sphinx. Do not sho
 diffs of any similar auto-generated output, especially if neither of us ever tweak the
 generated output.
 
+Do not add `-y` to any `sudo apt install` commands in any instructions you write, or any
+similar flags to force no user interaction for commands that can fundamentally change
+system behavior.
+
+When making new projects that use ports, pick a random port across all acceptable
+general purpose unreserved ports, but also avoid known ports of popular existing
+services, to avoid clashes. Currently you seen to pick 8000 or 8080 for just about
+everything.
+
 
 ### READMEs
 

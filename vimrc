@@ -1123,7 +1123,7 @@ set display+=lastline
 " but there is not the 't' formatoption (currently shows red for me in a cpp
 " file, but i can't switch off w/o enabling that formatoption b/c my check)
 " At end to ensure it happens after any filetypes are redefined at load.
-call ToggleH()
+"call ToggleH()
 
 " TODO fix so there is never any of the highlighting associated with this for CSV files
 "au Filetype csv call ToggleH()
