@@ -2,6 +2,9 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+# Claude Code's shell is non-interactive; still give it my aliases/functions
+if [ -n "$CLAUDECODE" ] && [ -f ~/.bash_aliases ]; then . ~/.bash_aliases; fi
+
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
