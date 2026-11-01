@@ -13,7 +13,10 @@ confusing.
 Make all commits to the default branch.
 
 Commit finished changes without asking me first (once tests pass), rather than waiting
-for me to say "commit". This doesn't extend to pushing.
+for me to say "commit". This doesn't extend to pushing. However, if the Github
+integration is set up to allow pushing the particular repo you are working in, do push
+at the same time as well. Despite this or any other instructions, never force push
+without asking.
 
 venv environments should be expected to be in ./venv per-project, instead of ./.venv.
 Any commands creating them should also place them there.

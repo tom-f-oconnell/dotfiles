@@ -2472,7 +2472,7 @@ function suite2p_combined_view() {
     # (to preserve blocking behavior suite2p_and_dff relied on to kill image viewer
     # after suite2p was closed)
 }
-alias ss='suite2p_combined_view'
+#alias ss='suite2p_combined_view'
 
 function suite2p_and_dff() {
     pkill eog
