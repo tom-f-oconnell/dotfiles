@@ -16,5 +16,7 @@ BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${BASEDIR}"
 git submodule update --init --recursive
 
+[ -e ~/.bash.local ] || cp bash.local.template ~/.bash.local
+
 # -v for same output as ./install
 "${BASEDIR}/dotbot/bin/dotbot" -v -d "${BASEDIR}" -c install.conf.yaml --except shell

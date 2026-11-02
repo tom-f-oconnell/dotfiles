@@ -15,6 +15,18 @@ Current steps to deploy only config links + VIM extensions on WSL:
 
 [Upstream for this fork.](https://github.com/anishathalye/dotbot)
 
+#### Machine-specific config
+
+Anything specific to one machine (mount points, hardware names, etc) goes in
+`~/.bash.local`, which is untracked and sourced by `~/.bashrc` in interactive shells.
+`install` and `link_only` create it by copying `bash.local.template`, where everything
+is commented out. The `vars` alias opens it for editing.
+
+`./sync_bash_local.py` appends anything new in `~/.bash.local` to the template (commented
+out, and not committed), and warns about anything in the template but not in
+`~/.bash.local`, offering to add it there (also commented out). Commented-out code should
+have no space after the `#`, and prose should have one, so the script can tell them apart.
+
 #### Vundle
 
 To remove all directories Vundle adds to `vim/bundle`:

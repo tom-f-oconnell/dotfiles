@@ -447,8 +447,8 @@ fi
 # standalone scripts. Not used by FreeCAD itself.
 export FREECAD_EXECUTABLE=$HOME/src/FreeCAD/build/bin/FreeCAD
 
-if [ -f "$HOME/.variables" ]; then
-    . "$HOME/.variables"
+if [ -f "$HOME/.bash.local" ]; then
+    . "$HOME/.bash.local"
 fi
 
 # Alias definitions.

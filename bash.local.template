@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# TODO set dotfiles up to copy this rather than link, and rename
-# to indicate it is for *deployment-specific* environment variables
-# (if not obvious enough from their usual purpose...)
+# Machine-specific shell config. ./install and ./link_only copy this template to
+# ~/.bash.local (untracked) if that doesn't exist yet, and ~/.bashrc sources that in
+# interactive shells. Uncomment and edit whatever applies to the machine.
+#
+# ./sync_bash_local.py syncs this template with ~/.bash.local. So that it can tell them
+# apart, write commented-out code with no space after the '#', and prose with one.
 
 # used by some of my data acquisition / analysis tools
 #export HONG_NAS="/mnt/nas"
@@ -11,18 +14,18 @@
 
 # using this on atlas now that i have it home and not on the vpn (copied
 # /mnt/nas/mb_team/stimulus_data_files [from tensor:/mnt/tank0/storage] to under here)
-export HONG2P_DATA="/mnt/d1/2p_data"
+#export HONG2P_DATA="/mnt/d1/2p_data"
 
 # Checked before path derived from above when determining where a fly directory is.
 # All data in fly directory must be copied here because there is currently no more
 # granularity.
-export HONG2P_FAST_DATA="/mnt/d1/2p_data"
+#export HONG2P_FAST_DATA="/mnt/d1/2p_data"
 
-export OLFACTOMETER_HARDWARE_DIR="$HOME/src/tom_olfactometer_configs/hardware"
+#export OLFACTOMETER_HARDWARE_DIR="$HOME/src/tom_olfactometer_configs/hardware"
 #export OLFACTOMETER_DEFAULT_HARDWARE="single_manifold2"
-export OLFACTOMETER_DEFAULT_HARDWARE="dual_manifold2"
+#export OLFACTOMETER_DEFAULT_HARDWARE="dual_manifold2"
 #export OLFACTOMETER_DEFAULT_HARDWARE="dual_config_yang"
-export OLFACTOMETER_DEBUG=1
+#export OLFACTOMETER_DEBUG=1
 
 # If this is unset, imagej_macros/overlay_rois_in_curr_z.py should default to trying to
 # use a venv/.venv in plot_scripot_dir (probably ~/src/al_analysis)
@@ -35,4 +38,11 @@ export OLFACTOMETER_DEBUG=1
 # Used by al_analysis/backup_ijrois.py. When script is run, it will create a subdir
 # (currently, `ijroi_backups`) under this path.
 # (was previously /mnt/nas/Tom/backups)
-export AL_IJROI_BACKUP_DIR="/mnt/tensor-archive/Tom/2p_data"
+#export AL_IJROI_BACKUP_DIR="/mnt/tensor-archive/Tom/2p_data"
+
+# Where Claude Code puts its temporary files
+#export CLAUDE_CODE_TMPDIR=/mnt/d0/claude-tmp
+
+# This is the drive I have mounted at /home/tom/shared
+#export FOUNDRY_VTT_DATA="/home/tom/shared/FoundryVTT"
+#export FOUNDRY_SOUNDS="$FOUNDRY_VTT_DATA/Data/sounds"

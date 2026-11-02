@@ -91,11 +91,6 @@ at least overwrites local version with bare git version when necessary, but
 otherwise doesn't track local changes (possible?) (may require manually
 entering local changes into git..., by copying files or something)
 
-probably delete storage and linking of .variables here (maybe rename it too)
-b/c it seems like it's all deployment specific stuff. and if it isn't, maybe
-it should be. probably want some file for that. maybe copy a commented
-template?
-
 script to set up these things (as much as possible?) within WSL bash
 (different paths for configs at a minimum. some other things need set.)
   (see some of my chrome bookmarks under music_production folder)

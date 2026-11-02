@@ -2183,7 +2183,7 @@ alias ba="vi ~/.bash_aliases"
 
 alias mi="vi ~/src/scripts/movein.sh"
 
-alias vars='vi ~/.variables'
+alias vars='vi ~/.bash.local'
 
 # [d]isable [c]ustom [e]xcepthook
 alias dce="PYMISTAKE_DISABLE=1"
@@ -2216,15 +2216,11 @@ alias pubip="dig +short myip.opendns.com @resolver1.opendns.com"
 # https://stackoverflow.com/questions/4996090
 alias R='R --no-save'
 
-# This is the drive I have mounted at /home/tom/shared
-export FOUNDRY_VTT_DATA="/home/tom/shared/FoundryVTT"
-export FOUNDRY_SOUNDS="$FOUNDRY_VTT_DATA/Data/sounds"
-
-alias fvd="cd $FOUNDRY_VTT_DATA/Data"
+alias fvd='cd "${FOUNDRY_VTT_DATA:?}"/Data'
 
 # since generate normalize-audio didn't seem to work on .ogg despite saying it
 # should...
-alias normalize_foundry_oggs="find $FOUNDRY_SOUNDS -name '*.ogg' -type f -exec normalize-ogg {} \;"
+alias normalize_foundry_oggs='find "${FOUNDRY_SOUNDS:?}" -name "*.ogg" -type f -exec normalize-ogg {} \;'
 
 # Just to quickly check if internet is working by pinging one of the Google DNS
 # servers.
@@ -2545,9 +2541,9 @@ alias sl="2pa; ls -ltr */*/*/suite2p/combined/iscell.npy | awk '{print \$6, \$7,
 # Going w/ --delete-after for now b/c presumably I have more time to Ctrl-C it if I
 # notice something wrong...
 # [t]ransfer [d]ata [h]al
-alias tdh='rs --delete-after /mnt/d1/2p_data/raw_data/ hal:~/2p_data/raw_data'
+alias tdh='rs --delete-after "${HONG2P_DATA:?}"/raw_data/ hal:~/2p_data/raw_data'
 # [t]ransfer [d]ata [h]al, [a]ll
-alias tdha='tdh; rs --delete-after /mnt/d1/2p_data/analysis_intermediates/ hal:~/2p_data/analysis_intermediates'
+alias tdha='tdh; rs --delete-after "${HONG2P_DATA:?}"/analysis_intermediates/ hal:~/2p_data/analysis_intermediates'
 
 # TODO equivalent aliases to above but for transfering to/from USB stick (including
 # stimulus files to corresponding directory on NAS) + to dropbox backup folder
@@ -2658,7 +2654,7 @@ color_errs()(set -o pipefail;"$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2))
 # hacky hardcoded versions of similar fns/aliases i intended to have completion for an
 # optional arg (but which i think are currently broken) (b/c currently goes to one on
 # NAS. need to fix logic in hong2p.util. analysis_intermediates one works)
-alias raw_data='cd /mnt/d1/2p_data/raw_data'
+alias raw_data='cd "${HONG2P_DATA:?}"/raw_data'
 
 # https://unix.stackexchange.com/questions/34248
 alias broken-symlinks='find . -xtype l'
