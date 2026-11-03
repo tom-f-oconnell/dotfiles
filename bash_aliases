@@ -205,6 +205,9 @@ function in_virtual_env() {
 # TODO maybe i want to change this to ".venv" or (if one exists)
 # a widely accepted convention here
 export DEFAULT_VENV_NAME="venv"
+# So uv projects also use ./venv rather than ./.venv (relative paths are resolved
+# against the project root). uv has no pyproject.toml/uv.toml setting for this.
+export UV_PROJECT_ENVIRONMENT="$DEFAULT_VENV_NAME"
 
 # This SO post explains using parens rather than curly braces to enclose
 # function body, so function will be evaluated in subshell, and I can use
@@ -279,6 +282,14 @@ function activate() {
                 printf "Would have made virtual env at $DEFAULT_VENV_NAME, "
                 printf "but it already exists!\n"
                 return 4
+            fi
+            # uv picks a Python satisfying the project's requires-python /
+            # .python-version (downloading it if needed), which system python3 might
+            # not.
+            if [ -f uv.lock ] && [ -x "$(command -v uv)" ]; then
+                echo "Making virtual env with 'uv sync'"
+                uv sync && activate
+                return
             fi
             # TODO make allow an env var to force one way or the other, without
             # prompting
