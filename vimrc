@@ -1096,8 +1096,11 @@ if has('clipboard_provider')
     if has_key(v:clipproviders, 'osc52')
         set clipmethod+=osc52
         " Its autodetection (from the terminal's DA1 reply) fails in tmux and most
-        " terminals.
-        let g:osc52_force_avail = 1
+        " terminals, so uncomment this if using a terminal that supports OSC 52. Not on by
+        " default, because in one that doesn't (e.g. GNOME Terminal on my laptop), ,y would
+        " then copy to nowhere and ,v paste nothing, rather than ,y/,v at least working
+        " within Vim (as a normal register) when there's no clipboard.
+        "let g:osc52_force_avail = 1
         " Otherwise "+p would hang waiting for a reply most terminals never send.
         let g:osc52_disable_paste = 1
     endif
