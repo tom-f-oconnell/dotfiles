@@ -2715,3 +2715,6 @@ function claude() {
         command claude "$@"
     fi
 }
+
+# TODO need anything to preserve completion here (if there even was any)?
+alias cconv='claude-conversation'
