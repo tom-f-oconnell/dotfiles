@@ -2695,3 +2695,23 @@ alias stripcolors='sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g"'
 alias pdb='python -m ipdb -c continue'
 
 alias minus='printf "−" | xclip -sel clip; echo "put − character in clipboard"'
+
+# Claude Code deliberately never saves trust for the home directory itself (saved trust
+# would apply to everything under it), so plain `claude` run from ~ asks the trust
+# question every launch. For quick general-purpose sessions, start it in ~/claude instead
+# (made if needed). Everything else runs the real binary unchanged: any other directory,
+# non-interactive use (stdin not a terminal), and calls made from inside a Claude Code
+# session (its shell has CLAUDECODE set, and loads this function from a shell snapshot).
+# Arguments pass through. `claude` has no completion spec, so none is lost by shadowing.
+function claude() {
+    if [ -z "$CLAUDECODE" ] && [ -t 0 ] && [ "$PWD" -ef "$HOME" ]; then
+        if [ ! -d "$HOME/claude" ]; then
+            mkdir "$HOME/claude" || return
+            echo "Made ~/claude (where \`claude\` runs when started from ~)"
+        fi
+        # Subshell + exec: claude runs in ~/claude, but this shell stays in ~ afterwards.
+        (cd "$HOME/claude" && exec claude "$@")
+    else
+        command claude "$@"
+    fi
+}
