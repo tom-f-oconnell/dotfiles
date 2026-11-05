@@ -27,6 +27,30 @@ out, and not committed), and warns about anything in the template but not in
 `~/.bash.local`, offering to add it there (also commented out). Commented-out code should
 have no space after the `#`, and prose should have one, so the script can tell them apart.
 
+#### Vim clipboard
+
+In Vim, `,y` copies a Visual selection (or a motion) to the system clipboard, and `,v`
+pastes from it. To copy w/ the terminal's Shift+drag selection instead, `,C` first
+hides the fold/sign/number columns, so they aren't included.
+
+Over SSH w/o X forwarding, Vim can still copy via OSC 52 (an escape sequence asking your
+local terminal to set the clipboard), but only in terminals that support it (e.g. kitty,
+WezTerm, foot, Alacritty, Ghostty, Windows Terminal), and NOT GNOME Terminal, Ptyxis, or
+other VTE-based terminals. Vim's detection of this usually fails (incl. in tmux), so if
+switching to such a terminal, uncomment `let g:osc52_force_avail = 1` in `vimrc`.
+
+If `,y` doesn't reach the clipboard, check `:echo v:clipmethod` in Vim:
+- `x11` or `wayland`: should work.
+- `osc52`: only works if the terminal supports OSC 52 (see above). Also, `,v` can't
+  paste from it (use the terminal's paste).
+- `none`: Vim can't reach any clipboard (`,y` / `,v` only work within Vim). Check:
+  - `vim --version | grep clipboard` shows `+clipboard`. On Ubuntu, install `vim-gtk3`
+    (the `vim` and `vim-nox` packages lack it).
+  - `echo $DISPLAY` is non-empty. Over SSH, connect w/ `ssh -Y` (the server needs
+    `X11Forwarding yes` in `/etc/ssh/sshd_config`, and `xauth` installed).
+  - In tmux, shells started before your latest attach can have a stale `DISPLAY`. Fix w/
+    `eval "$(tmux show-env -s DISPLAY)"`, or open a new tmux window.
+
 #### Vundle
 
 To remove all directories Vundle adds to `vim/bundle`:
