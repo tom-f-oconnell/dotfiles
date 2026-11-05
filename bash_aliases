@@ -2672,13 +2672,17 @@ alias broken-symlinks='find . -xtype l'
 
 # Since I have not so far used any filters other than the default '.', which just
 # prints input.
-alias jq='jq .'
+#
+# Disabled: this alias breaks any jq call that passes a filter (e.g. `jq -r '.x' f`
+# becomes `jq . -r '.x' f`, which treats the filter as a filename). Not currently used.
+#alias jq='jq .'
 # The 'command' prefix is just to prevent it from using the jq alias above, but also
 # unclear on why this seemed needed even with jql defined first, and not sure I've
 # always needed stuff like this in similar contexts...
 alias jql='command jq length'
 
-complete -F _complete_alias jq
+# (alias completion only makes sense with the jq alias above enabled)
+#complete -F _complete_alias jq
 
 # TODO add alias for recursively (or not) finding oldest / newest file in a directory
 # (by mtime at least, maybe also ctime versions?)
