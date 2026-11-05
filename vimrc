@@ -408,13 +408,12 @@ set linebreak
 
 " TODO maybe remap gj and gk to j / k (works within single lines, I think?)
 
-" Allows yanking and pasting between terminals on the same host.
-" (depends on :version having +xterm_clipboard)
-" TODO looks like i need to compile my own vim if I want this feature
-" see https://stackoverflow.com/questions/37079424/\
-" ubuntu-16-04-lts-cant-enable-xterm-clipboard-in-vim
-" TODO could this be done using other registers *(?) w/o compile flag?
-set clipboard+=unnamed
+" NOTE: this used to be `set clipboard+=unnamed`, which never did anything, because the
+" default 'clipboard' ends with exclude:{pattern}, which swallows anything appended after
+" it (^= would work). Leaving it off, since it makes plain y/d/p use the "* register (X
+" primary selection), so p would paste whatever was last highlighted in any app, and
+" with the OSC 52 fallback below (which can't read the clipboard) p would paste nothing.
+" Use ,y / ,v (defined further down) for the system clipboard instead.
 
 " TODO i think i might want to prevent 'x' from going in to buffer? way to
 " prevent? maybe i actually would want to keep it, in case i get more
@@ -876,15 +875,27 @@ nnoremap <leader>4 o# TODO TODO TODO TODO
 " To not fold inner stuff
 "set foldnestmax=2
 
-" TODO test this doesn't conflict w/ existing gutter stuff (the git plugin)
-" + resolve/find a plugin for this if it does
+" NOTE: this 1-wide column is the one that is always shown. gitgutter/ALE signs go in the
+" separate (2-wide) 'signcolumn', which (w/ default signcolumn=auto) is only shown when
+" the buffer has any signs. ,C (below) hides both, e.g. for terminal (Shift+drag) copying.
 " TODO TODO or could i condense the amount of horizontal space the two take up somehow?
 " i just need a small fold indicator, and the git stuff could just color/draw on top of
 " any fold indicator as appropriate?
 " TODO TODO how to get this to not show when all folds are closed?
-" TODO TODO likewise, make sure git gutter thing isn't taking up that column unless file
-" is actually changed
 set foldcolumn=1
+
+" Toggles all left-hand columns (folds, signs, line numbers) in the current window, so a
+" terminal (Shift+drag) selection doesn't include them.
+function! ToggleGutters()
+    if exists('w:saved_gutters')
+        let [&l:foldcolumn, &l:signcolumn, &l:number, &l:relativenumber] = w:saved_gutters
+        unlet w:saved_gutters
+    else
+        let w:saved_gutters = [&l:foldcolumn, &l:signcolumn, &l:number, &l:relativenumber]
+        setlocal foldcolumn=0 signcolumn=no nonumber norelativenumber
+    endif
+endfunction
+nnoremap <silent> <leader>C :call ToggleGutters()<CR>
 
 " TODO TODO TODO how to maintain syntax highlighting and make fold text shorter?
 " re: better folded line summaries, see:
@@ -1052,38 +1063,45 @@ nnoremap <leader>e o>&2<Esc>
 " TODO maybe simplest way would just be to try to get vim to save and reopen at
 " current position?
 
-" TODO work? trying to get easy copy paste.
-" adapted from: https://vi.stackexchange.com/questions/36781
-" see also: https://vim.fandom.com/wiki/Accessing_the_system_clipboard
+" System clipboard: Visual-select (incl. by dragging w/o Shift, since mouse=a), then ,y
+" copies to "+ (the clipboard Ctrl+V pastes from). ,Y / ,V use "* (the X primary
+" selection, which middle-click pastes, and which any Visual selection is also copied to,
+" via the default 'clipboard' autoselect). Unlike a terminal (Shift+drag) selection, this
+" copies the exact text: no gutters, tabs kept, wrapped lines not split, and not limited
+" to what's on screen.
 "
-" mabye really isn't gonna work w/ just Ctrl prefix? despite one guy in comments somehow
-" having it work for him? wasn't working for me when testing w/ vim inside tmux.
-" does seem like it could be a tmux display/terminal issue. bit unclear.
-" see:
-" https://gist.github.com/mikeboiko/b6e50210b4fb351b036f1103ea3c18a9
+" Needs a +clipboard Vim (Ubuntu: vim-gtk3, not vim/vim-nox) w/ a display (local, or ssh
+" -X/-Y; `:echo v:clipmethod` shows what is used). Over ssh -X, the X connection adds
+" ~0.5s to startup. In tmux, DISPLAY can be stale in shells started before the latest
+" attach (tmux only updates it for new windows/panes), e.g. after re-attaching from a
+" different SSH session. See:
 " https://unix.stackexchange.com/questions/591293/how-do-i-correctly-reset-display
 " https://goosebearingbashshell.github.io/2017/12/07/reset-display-variable-in-tmux.html
-" https://superuser.com/questions/1742713/how-to-pipe-vim-clipboard-through-tmux
-" yea, it works in a fresh tmux session, where DISPLAY is still :0
-" i must have [connected (this alone change it?) / started] via ssh the other tmux
-" session, which seems to have changed DISPLAY to something else.
-" so far i could only get DISPLAY to be non-:0 if starting tmux from ssh
-"nnoremap <C-c> "+y  " Normal (must follow with an operator)
-"xnoremap <C-c> "+y  " Visual
-" M=meta (alt key). S=shift?
-" not working? i have clipboard and x11 support...
-nnoremap <M-S-c> "+y  " Normal (must follow with an operator)
-xnoremap <M-S-c> "+y  " Visual
-" TODO do for Ctrl[-Shift]-v too, thought that seems to maybe already work? at least in
-" some modes
-
-" <leader>c might be used by some nerd commenter stuff, but not sure i actually want to
-" try using that extension...
+"
+" (Alt mappings like the <M-S-c> ones I used to have here don't work in terminal Vim,
+" because Alt+Shift+C arrives as Esc,C, so Vim leaves Visual mode and runs C.)
 noremap <leader>y "+y
 noremap <leader>v "+p
-" TODO delete these ones? useful? * is x11 selection buffer, right?
 noremap <leader>Y "*y
 noremap <leader>V "*p
+
+" Falls back to OSC 52 (an escape sequence asking the terminal to set the clipboard) for
+" ,y when X11/Wayland aren't available, e.g. over SSH w/o -X. Copy only: ,v won't paste
+" from it, so use the terminal's paste instead. Needs a terminal that supports it (e.g.
+" kitty, WezTerm, foot, Alacritty, Ghostty, Windows Terminal), NOT VTE-based ones (GNOME
+" Terminal, Ptyxis, Terminator, Tilix), which ignore it. In tmux, it needs
+" `set -g set-clipboard on` (in my tmux.conf). See `:h osc52`.
+if has('clipboard_provider')
+    silent! packadd osc52
+    if has_key(v:clipproviders, 'osc52')
+        set clipmethod+=osc52
+        " Its autodetection (from the terminal's DA1 reply) fails in tmux and most
+        " terminals.
+        let g:osc52_force_avail = 1
+        " Otherwise "+p would hang waiting for a reply most terminals never send.
+        let g:osc52_disable_paste = 1
+    endif
+endif
 
 
 noremap <F12> <Esc>:syntax sync fromstart<CR>
