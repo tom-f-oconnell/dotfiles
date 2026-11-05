@@ -18,6 +18,12 @@ integration is set up to allow pushing the particular repo you are working in, d
 at the same time as well. Despite this or any other instructions, never force push
 without asking.
 
+Pushing and pulling: use whatever GitHub access works (SSH, or HTTPS with the gh credential
+helper, e.g. `git -c 'credential.helper=!gh auth git-credential' push https://github.com/<owner>/<repo>.git HEAD:<branch>`)
+and do not mention which one you used, or the state of the SSH agent, as long as it worked.
+Only if every option fails, tell me that I should fix my GitHub credentials and list the
+options (SSH keys / ssh-agent, and gh auth with its credential helper).
+
 venv environments should be expected to be in ./venv per-project, instead of ./.venv.
 Any commands creating them should also place them there.
 
