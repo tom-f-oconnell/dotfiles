@@ -30,5 +30,6 @@
     }
   },
   "tui": "fullscreen",
-  "theme": "dark"
+  "theme": "dark",
+  "switchModelsOnFlag": true
 }
