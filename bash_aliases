@@ -3150,12 +3150,14 @@ alias cconv='claude-conversation'
 # then name): what `claude-prune-stale` removes, which a systemd user timer runs daily.
 alias claude-stale='claude-prune-stale --dry-run'
 
-# Background Claude Code sessions (id, status, name), the ids `claude stop` / `claude rm`
-# take. Plain `claude agents` opens the interactive agent view instead of printing them.
+# Active Claude Code sessions, interactive and background (id, whether background, status,
+# name). Only background sessions have an id (what `claude stop` / `claude rm` take);
+# interactive ones show '-'. Plain `claude agents` opens the interactive agent view instead
+# of printing them.
 function claude-agents-list() {
     {
-        printf 'ID\tstatus\tname\n'
+        printf 'ID\tbackground\tstatus\tname\n'
         command claude agents --json |
-            jq -r '.[] | select(.kind=="background") | "\(.id)\t\(.state // .status)\t\(.name)"'
+            jq -r '.[] | "\(.id // "-")\t\(if .kind == "background" then "yes" else "no" end)\t\(.state // .status)\t\(.name // "-")"'
     } | column -t -s $'\t'
 }
