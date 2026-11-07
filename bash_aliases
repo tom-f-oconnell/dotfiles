@@ -1022,102 +1022,156 @@ alias now="date '+%F %H:%M:%S'"
 # some substring (e.g. "git"). maybe also want to expand aliases (if that
 # wouldn't be default behavior, so that "recursive" aliases still get listed)
 
-# `git status`, but with the "On branch X" and "Your branch is ..." lines joined into one
-# "branch: X (...)" line, followed by a line with the hash, date and subject of HEAD, and
-# without the blank line after them. git has no config for that part of the long format (it's
-# hardcoded in wt-status.c), so this post-processes git's output.
-function git_status_compact() {
-    local color=never
-    if [ -t 1 ] && [ "$(git config --get-colorbool color.status true)" = true ]; then
-        color=always
+# One-line summary of a commit, "<label>: <hash> <date> <subject>", with the subject cut
+# (ending in '...') to fit the terminal.
+#
+# Args:
+#   $1: 'always' or 'never', for whether to use color.
+#   $2: terminal width to fit the line to, or 0 to never cut the subject.
+#   $3: the commit (e.g. HEAD).
+#   $4: the label.
+#   $5: optional SGR color code (e.g. 31 for red) for the label and subject.
+function _git_commit_line() {
+    local color=$1 cols=$2 rev=$3 label=$4 sgr=$5
+    local hash colored_hash date subject
+    IFS=$'\x1f' read -r hash colored_hash date subject < <(git --no-pager log -1 \
+        --color="$color" --format='%h%x1f%C(auto)%h%C(reset)%x1f%ad%x1f%s' \
+        --date=format-local:'%Y-%m-%d %H:%M' "$rev" -- 2>/dev/null) || return 1
+
+    local prefix="$label: $hash $date "
+    local room=$(( cols - ${#prefix} ))
+    if [ "$cols" -gt 0 ] && [ "${#subject}" -gt "$room" ]; then
+        if [ "$room" -gt 3 ]; then
+            subject=${subject:0:room-3}
+            # (stripping trailing whitespace before the '...')
+            subject="${subject%"${subject##*[![:space:]]}"}..."
+        else
+            subject=
+        fi
     fi
-    # HEAD's hash, date and as much of its subject as fits in the terminal (all of it if
-    # stdout isn't one)
-    local commit_line hash colored_hash date subject
-    if IFS=$'\x1f' read -r hash colored_hash date subject < <(git --no-pager log -1 \
-            --color="$color" --format='%h%x1f%C(auto)%h%C(reset)%x1f%ad%x1f%s' \
-            --date=format-local:'%Y-%m-%d %H:%M' 2>/dev/null); then
-        local cols=0
-        if [ -t 1 ]; then
-            cols=${COLUMNS:-$(tput cols 2>/dev/null || echo 0)}
+    local label_color= date_color= reset=
+    if [ "$color" = always ]; then
+        reset=$'\e[m'
+        date_color=$'\e[34m'
+        if [ -n "$sgr" ]; then
+            label_color=$'\e['"${sgr}m"
         fi
-        local prefix="commit: $hash $date "
-        local room=$(( cols - ${#prefix} ))
-        if [ "$cols" -gt 0 ] && [ "${#subject}" -gt "$room" ]; then
-            if [ "$room" -gt 3 ]; then
-                subject=${subject:0:room-3}
-                # (stripping trailing whitespace before the '...')
-                subject="${subject%"${subject##*[![:space:]]}"}..."
-            else
-                subject=
-            fi
+    fi
+    local line="$label_color$label:$reset $colored_hash $date_color$date$reset"
+    if [ -n "$subject" ]; then
+        line+=" $label_color$subject$reset"
+    fi
+    printf '%s\n' "$line"
+}
+
+function _git_n_commits() {
+    if [ "$1" -eq 1 ]; then
+        echo "1 commit"
+    else
+        echo "$1 commits"
+    fi
+}
+
+# `git status`, but first fetching the current branch's upstream (so the comparison with it
+# is current), and with git's "On branch X" and "Your branch is ..." lines (and the blank
+# line after them) replaced by:
+#   branch: X, <up to date with / ahead of / behind / diverged from> <upstream> [...]
+#   <upstream>: <hash> <date> <subject>   (only if upstream has commits HEAD doesn't)
+#   commit: <hash> <date> <subject>       (for HEAD)
+# git has no config for that part of the long format (it's hardcoded in wt-status.c), so
+# this post-processes git's output.
+function git_status_compact() {
+    local color=never cols=0
+    if [ -t 1 ]; then
+        cols=${COLUMNS:-$(tput cols 2>/dev/null || echo 0)}
+        if [ "$(git config --get-colorbool color.status true)" = true ]; then
+            color=always
         fi
-        commit_line="commit: $colored_hash $date${subject:+ $subject}"
+    fi
+    local yellow= reset= nl=$'\n'
+    if [ "$color" = always ]; then
+        yellow=$'\e[33m'
+        reset=$'\e[m'
     fi
 
-    git -c color.status="$color" status "$@" | awk -v commit_line="$commit_line" '
+    local header= ref
+    # (fails if HEAD is detached, leaving git's "HEAD detached at X" line as is)
+    if ref=$(git symbolic-ref --quiet HEAD 2>/dev/null); then
+        local branch=${ref#refs/heads/}
+        local head_oid remote merge_ref
+        # (no output if the branch has no commits yet)
+        read -r head_oid remote merge_ref < <(git for-each-ref \
+            --format='%(objectname) %(upstream:remotename) %(upstream:remoteref)' "$ref")
+
+        local fetch_note=
+        if [ -n "$remote" ] && [ "$remote" != . ]; then
+            local ssh_cmd=${GIT_SSH_COMMAND:-$(git config core.sshCommand)}
+            local fetch_err
+            # Never prompting for passwords / passphrases, nor waiting long on a remote that
+            # isn't reachable
+            fetch_err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= \
+                GIT_SSH_COMMAND="${ssh_cmd:-ssh} -o BatchMode=yes -o ConnectTimeout=5" \
+                timeout 10 git fetch --quiet "$remote" "$merge_ref" 2>&1 >/dev/null)
+            case $? in
+                0) ;;
+                124) fetch_note="couldn't fetch $remote: timed out" ;;
+                *)
+                    fetch_err=${fetch_err%%"$nl"*}
+                    fetch_note="couldn't fetch $remote: ${fetch_err#fatal: }"
+                    ;;
+            esac
+        fi
+
+        local upstream track ahead=0 behind=0
+        read -r upstream track < <(git for-each-ref \
+            --format='%(upstream:short) %(upstream:track,nobracket)' "$ref")
+        [[ $track =~ ahead\ ([0-9]+) ]] && ahead=${BASH_REMATCH[1]}
+        [[ $track =~ behind\ ([0-9]+) ]] && behind=${BASH_REMATCH[1]}
+
+        header="branch: $branch"
+        if [ -z "$head_oid" ]; then
+            :
+        elif [ -z "$upstream" ]; then
+            header+=", no upstream"
+        elif [ "$track" = gone ]; then
+            header+=", upstream $upstream is gone"
+        elif [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ]; then
+            header+=", up to date with $upstream"
+        elif [ "$behind" -eq 0 ]; then
+            header+=", ahead of $upstream by $(_git_n_commits "$ahead")"
+        elif [ "$ahead" -eq 0 ]; then
+            header+=", behind $upstream by $(_git_n_commits "$behind")"
+        else
+            header+=", diverged from $upstream ($ahead ahead, $behind behind)"
+        fi
+        if [ -n "$fetch_note" ]; then
+            header+="$nl$yellow($fetch_note)$reset"
+        fi
+        if [ "$behind" -gt 0 ]; then
+            header+="$nl$(_git_commit_line "$color" "$cols" '@{upstream}' "$upstream" 31)"
+        fi
+    fi
+    local commit_line
+    if commit_line=$(_git_commit_line "$color" "$cols" HEAD commit); then
+        header+="${header:+$nl}$commit_line"
+    fi
+
+    # (header passed via the environment, since awk -v would interpret any backslashes)
+    git -c color.status="$color" status --no-ahead-behind "$@" | \
+        GIT_STATUS_HEADER=$header awk '
         function plain(s) { gsub(/\033\[[0-9;]*m/, "", s); return s }
-        # Text in the same color as raw line s (git colors status lines as a whole)
-        function recolor(s, text) {
-            if (match(s, /^(\033\[[0-9;]*m)+/))
-                return substr(s, 1, RLENGTH) text "\033[m"
-            return text
-        }
-        function print_header(tracking) {
-            print header (tracking == "" ? "" : " " tracking)
-            if (commit_line != "") print commit_line
-        }
-        # Line 1 is always the branch / detached HEAD line
         NR == 1 {
-            header = $0
-            if (plain($0) ~ /^On branch /) sub(/On branch /, "branch: ", header)
-            state = "after_header"
+            # Replacing "On branch X", but keeping e.g. "HEAD detached at X"
+            if (plain($0) !~ /^On branch /) print
+            if (ENVIRON["GIT_STATUS_HEADER"] != "") print ENVIRON["GIT_STATUS_HEADER"]
             next
         }
-        state == "after_header" {
-            p = plain($0)
-            if (p ~ /^Your branch is .*\.$/) {
-                sub(/^Your branch is /, "", p)
-                print_header(recolor($0, "(" substr(p, 1, length(p) - 1) ")"))
-                state = "tracking"
-            } else if (p ~ /^Your branch and .* refer to different commits\.$/) {
-                sub(/^Your branch and /, "", p)
-                sub(/ refer to different commits\.$/, "", p)
-                print_header(recolor($0, "(differs from " p ")"))
-                state = "tracking"
-            } else if (p ~ /^Your branch and .* have diverged,$/) {
-                sub(/^Your branch and /, "", p)
-                sub(/ have diverged,$/, "", p)
-                upstream = p
-                diverged_line = $0
-                state = "diverged"
-            } else {
-                # No upstream. Only an initial commit has a blank line here.
-                print_header("")
-                state = "rest"
-                if (p != "") print
-            }
-            next
-        }
-        state == "diverged" {
-            p = plain($0)
-            if (p ~ /^and have [0-9]+ and [0-9]+ different commits each/) {
-                split(p, w, " ")
-                print_header(recolor($0, "(diverged from " upstream ": " w[3] \
-                    " ahead, " w[5] " behind)"))
-            } else {
-                print_header("")
-                print diverged_line
-                print
-            }
-            state = "tracking"
-            next
-        }
-        # Keeps hint lines like "  (use \"git push\" ...)" and drops the blank line
-        # ending the tracking info
-        state == "tracking" && plain($0) == "" { state = "rest"; next }
+        # Drops the "Your branch ..." lines (and any hints after them), through the blank
+        # line ending them. Only an initial commit has a blank line right after line 1.
+        NR == 2 && plain($0) ~ /^Your branch / { skip = 1; next }
+        NR == 2 && plain($0) == "" { next }
+        skip { if (plain($0) == "") skip = 0; next }
         { print }
-        END { if (NR == 1) print_header("") }
     '
     return "${PIPESTATUS[0]}"
 }
