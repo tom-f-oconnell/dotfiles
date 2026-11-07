@@ -1631,7 +1631,9 @@ alias grau='git remote add upstream'
 # TODO maybe just use hub here? it have something like this?
 # TODO how to deal w/ origin + upstream? just pick origin?
 # (probably prompt and have then enter a number selecting which / both)
-function open_repo_in_browser() {
+# Prints https URL of a remote's web page.
+# Args (both optional): <remote> (default "origin"), <url-suffix> (default "#readme")
+function print_repo_url() {
 
     local remote
     # Assuming if $1 is empty $2 must also be. ...maaaybe not true?
@@ -1650,29 +1652,37 @@ function open_repo_in_browser() {
 
     # TODO TODO check some lines contain remote before proceeding. fail w/ msg.
     #
-    # Getting https link, no matter auth in 'git remote -v'
-    local url="$(git remote -v | grep "$remote" | change_git_auth.py h)${url_suffix}"
-
-    # TODO break out above so `git remote -v` is separate or otherwise figure out how
+    # TODO break out below so `git remote -v` is separate or otherwise figure out how
     # to make this fail gracefully w/ reminder about what it does if used not in a git
     # repo (as part of pipe, ext code seems to be 0 regardless of failure in first
     # step? though there is still stderr output)
+    #
+    # Getting https link, no matter auth in 'git remote -v'
+    echo "$(git remote -v | grep "$remote" | change_git_auth.py h)${url_suffix}"
+}
+
+# Same args as print_repo_url, but also opens the URL in the default browser.
+function open_repo_in_browser() {
+    local url
+    url="$(print_repo_url "$@")"
+
     local browser="$(xdg-settings get default-web-browser)"
     echo "opening $url in $browser"
-    xdg-open $url
+    xdg-open "$url"
 }
 
 # TODO just go to my own gh page if not in a git repo?
 # TODO TODO update open_repo_in_browser to make a new window (so as to not often need to
 # switch to the last-used firefox window in another workspace)
-# TODO TODO update open_repo_in_browser to also take a path in repo, and open the code
-# there in github when passed
-alias gw='open_repo_in_browser origin'
-alias gwu='open_repo_in_browser upstream'
+# TODO TODO update print_repo_url/open_repo_in_browser to also take a path in repo, and
+# link to the code there in github when passed
+alias gw='print_repo_url origin'
+alias gwo='open_repo_in_browser origin'
+alias gwu='print_repo_url upstream'
 
 # /commits seems to use default branch, which is what I want.
-alias gwl='open_repo_in_browser origin /commits'
-alias gwul='open_repo_in_browser upstream /commits'
+alias gwl='print_repo_url origin /commits'
+alias gwul='print_repo_url upstream /commits'
 
 alias gb='git branch'
 complete -F _complete_alias gb
