@@ -1,1 +1,12 @@
 AddKeysToAgent yes
+
+# Shares one connection to GitHub between git commands (e.g. the fetch `g` runs), kept open
+# for 10 minutes after the last one finishes, so most skip the ~1s connection setup
+Host github.com
+    ControlMaster auto
+    ControlPath ~/.ssh/control-%C
+    ControlPersist 10m
+    # So a shared connection dropped by the network gets closed, rather than leaving later
+    # git commands to hang on it
+    ServerAliveInterval 15
+    ServerAliveCountMax 3
