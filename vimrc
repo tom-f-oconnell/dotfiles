@@ -555,15 +555,30 @@ au Filetype markdown setlocal nospell spelllang=en_us
 " Requires 'iamcco/markdown-preview.nvim' plugin
 au Filetype markdown nmap <buffer> <F5> <Plug>MarkdownPreviewToggle
 
-" Show markdown rendered (markup concealed by vim-markdown's syntax, plus bullets and
-" checkboxes from ~/.vim/after/syntax/markdown.vim), except in insert/replace mode.
+" Show markdown rendered, except in insert/replace mode (incl. its Ctrl-O commands):
+" markup concealed by vim-markdown's syntax, plus bullets and checkboxes from
+" ~/.vim/after/syntax/markdown.vim, and table columns aligned by ~/.vim/autoload/mdtable.vim.
 " concealcursor=nc keeps the cursor line rendered too, except in visual mode.
 " ModeChanged (rather than InsertLeave) so leaving insert mode with Ctrl-C also counts.
+function! s:MarkdownModeChanged() abort
+  let raw = v:event.new_mode =~# '^\%([iR]\|ni\)'
+  if raw == (&l:conceallevel == 0)
+    return
+  endif
+  let &l:conceallevel = raw ? 0 : 2
+  if raw
+    call mdtable#Clear()
+  else
+    call mdtable#Render()
+  endif
+endfunction
+
 augroup markdown_render
   au!
-  au FileType markdown setlocal conceallevel=2 concealcursor=nc
-  au ModeChanged * if &filetype ==# 'markdown'
-    \ | let &l:conceallevel = v:event.new_mode =~# '^[iR]' ? 0 : 2 | endif
+  au FileType markdown setlocal conceallevel=2 concealcursor=nc | call mdtable#Render()
+  au ModeChanged * if &filetype ==# 'markdown' | call s:MarkdownModeChanged() | endif
+  au TextChanged * if &filetype ==# 'markdown' && &l:conceallevel
+    \ | call mdtable#Render() | endif
 augroup END
 
 " To exclude spellcheck from certain .txt files
