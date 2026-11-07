@@ -101,12 +101,14 @@
     stdout: True
     stderr: True
     stdin: True
-  -
-    description: "Running ~/src/scripts/movein.sh"
-    command: "sudo ~/src/scripts/movein.sh"
-    stdout: True
-    stderr: True
-    stdin: True
+  # TODO delete (or fix script and re-enable. currently many package versions / names
+  # will probably not work after having updated from (20.04?) to 26.04
+  #-
+  #  description: "Running ~/src/scripts/movein.sh"
+  #  command: "sudo ~/src/scripts/movein.sh"
+  #  stdout: True
+  #  stderr: True
+  #  stdin: True
   -
     description: "Installing VIM extensions"
     command: "./install_vim_extensions.sh"
