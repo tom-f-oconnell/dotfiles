@@ -1022,8 +1022,9 @@ alias now="date '+%F %H:%M:%S'"
 # some substring (e.g. "git"). maybe also want to expand aliases (if that
 # wouldn't be default behavior, so that "recursive" aliases still get listed)
 
-# One-line summary of a commit, "<label>: <hash> <date> <subject>", with the subject cut
-# (ending in '...') to fit the terminal.
+# One-line summary of a commit, "<label>: <hash> <date> <subject>". The subject is cut to
+# fit the terminal, and ends with " ..." if it was cut or the message has more than it
+# (ignoring any final Co-Authored-By lines, which are never shown).
 #
 # Args:
 #   $1: 'always' or 'never', for whether to use color.
@@ -1033,35 +1034,74 @@ alias now="date '+%F %H:%M:%S'"
 #   $5: optional SGR color code (e.g. 31 for red) for the label and subject.
 function _git_commit_line() {
     local color=$1 cols=$2 rev=$3 label=$4 sgr=$5
-    local hash colored_hash date subject
-    IFS=$'\x1f' read -r hash colored_hash date subject < <(git --no-pager log -1 \
-        --color="$color" --format='%h%x1f%C(auto)%h%C(reset)%x1f%ad%x1f%s' \
-        --date=format-local:'%Y-%m-%d %H:%M' "$rev" -- 2>/dev/null) || return 1
+    local -a fields=()
+    local field
+    while IFS= read -r -d '' field; do
+        fields+=("$field")
+    done < <(git --no-pager log -1 -z --color="$color" \
+        --format='%h%x00%C(auto)%h%C(reset)%x00%ad%x00%B' \
+        --date=format-local:'%Y-%m-%d %H:%M' "$rev" -- 2>/dev/null)
+    [ "${#fields[@]}" -eq 4 ] || return 1
+    local hash=${fields[0]} colored_hash=${fields[1]} date=${fields[2]}
+
+    local -a lines
+    mapfile -t lines <<< "${fields[3]}"
+    # Ignoring trailing blank and Co-Authored-By lines
+    local n=${#lines[@]}
+    while [ "$n" -gt 0 ] && [[ ${lines[n-1]} =~ ^[[:space:]]*$ || \
+            ${lines[n-1],,} == co-authored-by:* ]]; do
+        n=$((n - 1))
+    done
+    # Subject as in git's %s: the first paragraph, with its lines joined by spaces
+    local subject= line i=0
+    while [ "$i" -lt "$n" ] && [[ ${lines[i]} =~ ^[[:space:]]*$ ]]; do
+        i=$((i + 1))
+    done
+    while [ "$i" -lt "$n" ] && [[ ! ${lines[i]} =~ ^[[:space:]]*$ ]]; do
+        line=${lines[i]}
+        subject+="${subject:+ }${line%"${line##*[![:space:]]}"}"
+        i=$((i + 1))
+    done
+    # (any line left is followed by a non-blank one, by how n was found)
+    local more=0
+    if [ "$i" -lt "$n" ]; then
+        more=1
+    fi
 
     local prefix="$label: $hash $date "
     local room=$(( cols - ${#prefix} ))
     if [ "$cols" -gt 0 ] && [ "${#subject}" -gt "$room" ]; then
-        if [ "$room" -gt 3 ]; then
-            subject=${subject:0:room-3}
-            # (stripping trailing whitespace before the '...')
-            subject="${subject%"${subject##*[![:space:]]}"}..."
-        else
+        more=1
+    fi
+    if [ "$more" -eq 1 ]; then
+        if [ "$cols" -gt 0 ] && [ $(( ${#subject} + 4 )) -gt "$room" ]; then
+            local keep=$(( room - 4 ))
+            if [ "$keep" -lt 0 ]; then
+                keep=0
+            fi
+            subject=${subject:0:keep}
+        fi
+        subject=${subject%"${subject##*[![:space:]]}"}
+        subject+="${subject:+ }..."
+        # (terminal too narrow for even the '...')
+        if [ "$cols" -gt 0 ] && [ "${#subject}" -gt "$room" ]; then
             subject=
         fi
     fi
+
     local label_color= date_color= reset=
     if [ "$color" = always ]; then
         reset=$'\e[m'
-        date_color=$'\e[34m'
+        date_color=$'\e[36m'
         if [ -n "$sgr" ]; then
             label_color=$'\e['"${sgr}m"
         fi
     fi
-    local line="$label_color$label:$reset $colored_hash $date_color$date$reset"
+    local out="$label_color$label:$reset $colored_hash $date_color$date$reset"
     if [ -n "$subject" ]; then
-        line+=" $label_color$subject$reset"
+        out+=" $label_color$subject$reset"
     fi
-    printf '%s\n' "$line"
+    printf '%s\n' "$out"
 }
 
 function _git_n_commits() {
@@ -1159,6 +1199,12 @@ function git_status_compact() {
     # (header passed via the environment, since awk -v would interpret any backslashes)
     git -c color.status="$color" status --no-ahead-behind "$@" | \
         GIT_STATUS_HEADER=$header awk '
+        BEGIN {
+            headers = "^(Changes to be committed|Changes not staged for commit|" \
+                "Unmerged paths|Untracked files|Ignored files):$"
+            final_lines = "^(no changes added to commit|" \
+                "nothing added to commit but untracked files present)"
+        }
         function plain(s) { gsub(/\033\[[0-9;]*m/, "", s); return s }
         NR == 1 {
             # Replacing "On branch X", but keeping e.g. "HEAD detached at X"
@@ -1171,12 +1217,15 @@ function git_status_compact() {
         NR == 2 && plain($0) ~ /^Your branch / { skip = 1; next }
         NR == 2 && plain($0) == "" { next }
         skip { if (plain($0) == "") skip = 0; next }
-        plain($0) == "Untracked files:" { sub(/Untracked files:/, "untracked files:") }
-        # Drops the final blank line + "nothing added to commit but untracked files present"
-        held_blank && plain($0) ~ /^nothing added to commit but untracked files present/ {
-            held_blank = 0
-            next
+        # Lowercasing section headers (SGR color codes have no uppercase letters)
+        plain($0) ~ headers {
+            match($0, /[A-Z]/)
+            $0 = substr($0, 1, RSTART - 1) tolower(substr($0, RSTART, 1)) \
+                substr($0, RSTART + 1)
         }
+        # Drops the final blank line + "no changes added to commit" or "nothing added to
+        # commit but untracked files present"
+        held_blank && plain($0) ~ final_lines { held_blank = 0; next }
         held_blank { print held; held_blank = 0 }
         plain($0) == "" { held = $0; held_blank = 1; next }
         { print }
