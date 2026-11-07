@@ -1023,18 +1023,37 @@ alias now="date '+%F %H:%M:%S'"
 # wouldn't be default behavior, so that "recursive" aliases still get listed)
 
 # `git status`, but with the "On branch X" and "Your branch is ..." lines joined into one
-# "branch: X (...)" line, followed by a line with the hash and date of HEAD, and without
-# the blank line after them. git has no config for that part of the long format (it's
+# "branch: X (...)" line, followed by a line with the hash, date and subject of HEAD, and
+# without the blank line after them. git has no config for that part of the long format (it's
 # hardcoded in wt-status.c), so this post-processes git's output.
 function git_status_compact() {
     local color=never
     if [ -t 1 ] && [ "$(git config --get-colorbool color.status true)" = true ]; then
         color=always
     fi
-    local commit_line
-    commit_line=$(git --no-pager log -1 --color="$color" \
-        --format='commit: %C(auto)%h%C(reset) %ad' \
-        --date=format-local:'%Y-%m-%d %H:%M' 2>/dev/null)
+    # HEAD's hash, date and as much of its subject as fits in the terminal (all of it if
+    # stdout isn't one)
+    local commit_line hash colored_hash date subject
+    if IFS=$'\x1f' read -r hash colored_hash date subject < <(git --no-pager log -1 \
+            --color="$color" --format='%h%x1f%C(auto)%h%C(reset)%x1f%ad%x1f%s' \
+            --date=format-local:'%Y-%m-%d %H:%M' 2>/dev/null); then
+        local cols=0
+        if [ -t 1 ]; then
+            cols=${COLUMNS:-$(tput cols 2>/dev/null || echo 0)}
+        fi
+        local prefix="commit: $hash $date "
+        local room=$(( cols - ${#prefix} ))
+        if [ "$cols" -gt 0 ] && [ "${#subject}" -gt "$room" ]; then
+            if [ "$room" -gt 3 ]; then
+                subject=${subject:0:room-3}
+                # (stripping trailing whitespace before the '...')
+                subject="${subject%"${subject##*[![:space:]]}"}..."
+            else
+                subject=
+            fi
+        fi
+        commit_line="commit: $colored_hash $date${subject:+ $subject}"
+    fi
 
     git -c color.status="$color" status "$@" | awk -v commit_line="$commit_line" '
         function plain(s) { gsub(/\033\[[0-9;]*m/, "", s); return s }
