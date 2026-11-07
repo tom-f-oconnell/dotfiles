@@ -3132,3 +3132,7 @@ function claude() {
 
 # TODO need anything to preserve completion here (if there even was any)?
 alias cconv='claude-conversation'
+
+# Background Claude Code sessions that are done, not running and untouched for 7+ days (id,
+# then name): what `claude-prune-stale` removes, which a systemd user timer runs daily.
+alias claude-stale='claude-prune-stale --dry-run'

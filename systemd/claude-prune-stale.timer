@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily removal of stale background Claude Code sessions
+
+[Timer]
+OnCalendar=daily
+# Run at the next start if the computer was off at the scheduled time
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

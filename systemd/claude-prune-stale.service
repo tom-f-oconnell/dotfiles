@@ -1,0 +1,6 @@
+[Unit]
+Description=Remove stale background Claude Code sessions (done, not running, untouched 7+ days)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/claude-prune-stale

@@ -77,6 +77,14 @@
     ~/.claude/CLAUDE.md: claude_CLAUDE.md
     ~/.claude/settings.json: claude_settings.json
 
+    # Removes stale background Claude Code sessions (`claude rm`), daily by the timer below
+    ~/.local/bin/claude-prune-stale: claude-prune-stale
+    # systemd user units (see README: scheduled jobs). The timers.target.wants link is what
+    # `systemctl --user enable` makes, so linking alone enables the timer (from next login).
+    ~/.config/systemd/user/claude-prune-stale.service: systemd/claude-prune-stale.service
+    ~/.config/systemd/user/claude-prune-stale.timer: systemd/claude-prune-stale.timer
+    ~/.config/systemd/user/timers.target.wants/claude-prune-stale.timer: systemd/claude-prune-stale.timer
+
 # TODO print output of these commands
 # TODO do i want submodule update to be recursive? manually specify?
 # TODO if already running w/ root permissions, maybe don't do user on last pip
@@ -84,6 +92,11 @@
 # TODO need to use git://? will that work w/ SSH key set later?
 # TODO i kind of want stdout/err/in for all things. way to make it default?
 - shell:
+  -
+    description: "Starting systemd user timers (now, rather than from next login)"
+    command: "systemctl --user daemon-reload && systemctl --user start claude-prune-stale.timer"
+    stdout: True
+    stderr: True
   -
     description: "Getting/updating accessory scripts repo"
     command: "./get_scripts.sh"

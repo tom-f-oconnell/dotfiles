@@ -27,6 +27,22 @@ out, and not committed), and warns about anything in the template but not in
 `~/.bash.local`, offering to add it there (also commented out). Commented-out code should
 have no space after the `#`, and prose should have one, so the script can tell them apart.
 
+#### Scheduled jobs
+
+These are systemd user timers rather than cron jobs: they need no root, and their unit
+files (in `systemd/`) are linked, and enabled, like any other config. They also run while
+logged out, as long as linger is on for the user (`loginctl show-user $USER -p Linger`;
+`loginctl enable-linger` turns it on, which may need an admin). `install` also starts them
+right away; after `link_only`, they start from the next login, or run
+`systemctl --user daemon-reload && systemctl --user start <name>.timer`.
+
+- `claude-prune-stale`: daily, `claude rm` for background Claude Code sessions that are
+  done, not running, and untouched for 7+ days (`$CLAUDE_PRUNE_DAYS` changes that).
+  `claude-stale` lists what it would remove.
+
+`systemctl --user list-timers` shows when each runs next, and `journalctl --user -u
+<name>` what it did.
+
 #### Vim clipboard
 
 In Vim, `,y` copies a Visual selection (or a motion) to the system clipboard, and `,v`

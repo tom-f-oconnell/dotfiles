@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Remove (`claude rm`) background Claude Code sessions that are done, not running, and
+untouched for a while (7 days by default), so the agent view (`claude agents`) lists
+only sessions still in use.
+
+A session counts as touched whenever its ~/.claude/jobs/<id>/state.json changes (it does
+on every step it takes), so one you came back to recently is kept. `claude rm` refuses
+sessions whose worktree has unpushed commits; those are reported and kept.
+
+Run daily by the systemd user timer claude-prune-stale.timer (see install.conf.yaml);
+`claude-stale` (bash_aliases) lists what it would remove.
+"""
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+def claude() -> str:
+    # systemd user services do not have ~/.local/bin on their PATH
+    return shutil.which("claude") or str(Path.home() / ".local/bin/claude")
+
+
+def stale(days: float):
+    """(id, name) of each background session done, not running, and untouched for `days`."""
+    out = subprocess.run([claude(), "agents", "--json", "--all"], capture_output=True, text=True, check=True).stdout
+    for s in json.loads(out):
+        sid = s.get("id")
+        state = Path.home() / ".claude" / "jobs" / str(sid) / "state.json"
+        if (s.get("kind") == "background" and s.get("state") == "done" and not s.get("pid")
+                and state.exists() and time.time() - state.stat().st_mtime > days * 86400):
+            yield sid, s.get("name") or ""
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    p.add_argument("-n", "--dry-run", action="store_true", help="only list them (id, then name)")
+    p.add_argument("--days", type=float, default=float(os.environ.get("CLAUDE_PRUNE_DAYS", 7)),
+                   help="untouched for at least this many days (default: $CLAUDE_PRUNE_DAYS, else 7)")
+    args = p.parse_args()
+    kept = 0
+    for sid, name in stale(args.days):
+        if args.dry_run:
+            print(f"{sid}\t{name}")
+            continue
+        r = subprocess.run([claude(), "rm", sid], capture_output=True, text=True)
+        if r.returncode:
+            kept += 1
+            print(f"kept {sid}\t{name}: {(r.stderr or r.stdout).strip()}", file=sys.stderr)
+        else:
+            print(f"removed {sid}\t{name}")
+    return 1 if kept else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
