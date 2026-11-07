@@ -1163,18 +1163,22 @@ complete -F _complete_alias ga
 # "stages modifications and deletions, without new files"
 # (generally what i would want)
 alias gau='git add -u'
+complete -F _complete_alias gau
 
 alias gaa='git add --all'
+complete -F _complete_alias gaa
 
 #alias gac='git commit -am'
 alias gac='git_commit_add'
 
 alias gca='git commit --amend'
+complete -F _complete_alias gca
 
 # TODO TODO change to work w/ multiple -m flags (or decide how else i want to write
 # commit messages to use new lines, or otherwise format them better than i'm doing now)
 # https://stackoverflow.com/questions/5064563
 alias gc='git commit -m'
+complete -F _complete_alias gc
 
 # TODO TODO either here or somewhere else, which maybe gets called here,
 # have wrap git push, so that if it fails b/c there are remote changes,
@@ -1188,6 +1192,7 @@ alias gc='git commit -m'
 # Using this for just git push until I can fix the above and get confidence in it.
 # TODO what was --follow-tags for again?
 alias gp='git push'
+complete -F _complete_alias gp
 
 # TODO make function gcp that passes all input ***WITHOUT MANGLING ANYTHING VIA SHELL
 # INTERFERENCE*** (test!) to `git commit -m <here>` and then pushes as well
@@ -1199,10 +1204,13 @@ alias gp='git push'
 # parts of my workflow
 #alias gu='git pull'
 alias gu='git pull --rebase'
+complete -F _complete_alias gu
 
 alias gur='git pull --rebase'
+complete -F _complete_alias gur
 # delete if there's push command starting with r i want to use?
 alias gpr='git pull --rebase'
+complete -F _complete_alias gpr
 
 # TODO would need some way to find default branch name of remote (e.g. main or master?).
 # new github CLI have anything useful here?
@@ -1221,8 +1229,10 @@ alias gra='git rebase --abort'
 
 # "[g]it [s]tash" ([a]dd)
 alias gsa='git stash'
+complete -F _complete_alias gsa
 # "[g]it [st]ash"
 alias gst='git stash'
+complete -F _complete_alias gst
 
 # TODO as long as `gs`=ghostscript isn't installed, alias to gs too?
 # TODO or just do it? is shadowing builtin stuff generally safe (i.e. are changes only
@@ -1230,23 +1240,29 @@ alias gst='git stash'
 
 # --date=short seems to just be the YYYY-MM-DD iso w/o time info, which is what I want.
 alias gsl='git stash list --date=short'
+complete -F _complete_alias gsl
 # NOTE: this will not drop if the stash has a conflict.
 # TODO may want to also echo a warning to drop after resolving conflict, assuming exit
 # code reflects whether there was one. exit code was 1 in one test where there were
 # conflicts, so this might work
 alias gsp="git stash pop || printf \"\e[1;33m\nYou must manually 'git stash drop' after resolving conflict\n\e[0m\""
 alias gsd='git stash drop'
+complete -F _complete_alias gsd
 
 # TODO maybe use whatever shell pointer to a text editor there is, rather than
 # hardcoding 'vi'?
 alias gi='vi .gitignore'
 
 alias gl='git log'
+complete -F _complete_alias gl
 alias glf='git log --follow'
+complete -F _complete_alias glf
 # TODO just glp?
 alias glfp='git log --follow --patch'
+complete -F _complete_alias glfp
 # [g]it [l]og [h]ead (just show the first entry)
 alias glh='git log -1'
+complete -F _complete_alias glh
 
 # TODO have this output git diff HEAD if argument is already added (though maybe with a
 # message also printed to notify that this is happening)
@@ -1260,9 +1276,10 @@ complete -F _complete_alias gds
 
 alias gdh='git diff HEAD'
 alias gdh1='git diff HEAD~1'
-complete -F _complete_alias gdh
+complete -F _complete_alias gdh gdh1
 
 alias gls='git ls-files'
+complete -F _complete_alias gls
 
 # TODO delete. this doesn't make it as easy to see when an entire directory is
 # untracked, since it will show a line for each file in all subdirectories (so output is
@@ -1284,6 +1301,7 @@ alias gls='git ls-files'
 # https://stackoverflow.com/questions/3801321
 # x=include ignored files, n=dry-run, f=force (needed?), d=recursve
 alias glsu='git clean -dxnf'
+complete -F _complete_alias glsu
 
 # TODO other approaches?
 #
@@ -1314,6 +1332,7 @@ alias glsr='list-files | sort -n'
 alias grv='git remote -v'
 
 alias grs='git remote set-url'
+complete -F _complete_alias grs
 # TODO though make a function / script to just automatically switch it to my account,
 # cause that's what i'm using this for... and i currently still have to type the
 # git@github.com:tom-f-oconnell/ part
@@ -1367,6 +1386,7 @@ alias gwl='open_repo_in_browser origin /commits'
 alias gwul='open_repo_in_browser upstream /commits'
 
 alias gb='git branch'
+complete -F _complete_alias gb
 
 # Requires grip, installable via `pip install grip` (on 20.04 at least)
 function render_and_display_markdown() {
