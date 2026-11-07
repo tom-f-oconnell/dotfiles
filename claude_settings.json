@@ -20,6 +20,7 @@
     "UV_PROJECT_ENVIRONMENT": "venv"
   },
   "model": "opus",
+  "respondToBashCommands": false,
   "effortLevel": "medium",
   "modelSettings": {
     "claude-opus-5": {
