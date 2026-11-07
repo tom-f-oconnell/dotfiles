@@ -555,6 +555,17 @@ au Filetype markdown setlocal nospell spelllang=en_us
 " Requires 'iamcco/markdown-preview.nvim' plugin
 au Filetype markdown nmap <buffer> <F5> <Plug>MarkdownPreviewToggle
 
+" Show markdown rendered (markup concealed by vim-markdown's syntax, plus bullets and
+" checkboxes from ~/.vim/after/syntax/markdown.vim), except in insert/replace mode.
+" concealcursor=nc keeps the cursor line rendered too, except in visual mode.
+" ModeChanged (rather than InsertLeave) so leaving insert mode with Ctrl-C also counts.
+augroup markdown_render
+  au!
+  au FileType markdown setlocal conceallevel=2 concealcursor=nc
+  au ModeChanged * if &filetype ==# 'markdown'
+    \ | let &l:conceallevel = v:event.new_mode =~# '^[iR]' ? 0 : 2 | endif
+augroup END
+
 " To exclude spellcheck from certain .txt files
 " TODO TODO TODO revert change that deleted the "Filetype special_txt..." line
 au! BufNewFile,BufRead requirements.txt setlocal ft=special_txt
