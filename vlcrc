@@ -1562,7 +1562,7 @@ qt-system-tray=0
 #qt-recentplay-filter=
 
 # Continue playback? (integer)
-#qt-continue=1
+qt-continue=0
 
 # Embed the file browser in open dialog (boolean)
 #qt-embedded-open=0
@@ -4295,7 +4295,7 @@ loop=1
 #play-and-stop=0
 
 # Play and pause (boolean)
-#play-and-pause=0
+play-and-pause=1
 
 # Start paused (boolean)
 #start-paused=0
