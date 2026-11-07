@@ -61,3 +61,54 @@ usage of the software, split this off into a separate `usage.md`, and link towar
 top of the power user section of the docs. However, try to keep usage instructions
 concise and just in the README.
 
+
+### Cleaning up TODOs
+
+A lot of my old code is littered with TODO comments. I sometimes repeat the "TODO" part
+multiple times (all together, space separated, at the start of the comment) to indicate
+items of increasing urgency (with e.g. "# TODO TODO TODO") typically being something
+like a critical bug, and if the same file has TODOs without the TODO repeated, I would
+expect those to be lower priority.
+
+When I ask you to clean up TODOs in my code, start with the any that have more TODO
+repeats (higher priority), and go from there. Also categorize them into [likely-]bugs
+or wishlist features (and other categories as you see fit, but i think this should cover
+most). For all comments, but particularly if they are saying to fix some bug or
+questioning whether a bug exists, evaluate whether they are still relevant (does it seem
+like that bug has been fixed, or is a real concern? has that feature been implemented or
+superceded by something else?), and categorize them as such.
+
+Make a summary HTML in current directory ('before-todo-cleanup.html', incrementing a
+numeric suffix before extension if necessary) file that lists how many TODO comments
+there were at the start of your cleanup, grouped by category and severity within
+category, and then the same grouping repeated at the bottom for all of the comments you
+decided were no longer relevant. Write this HTML and tell me its full path, so I
+remember I can open it and how.
+
+As you work through all the comments, process them one by one, keeping track of which
+ones you've managed to address or not, and anything outstanding for any of them (for
+inclusion in an HTML report of your changes, to write at the end). Delete TODOs
+comments after you are done processing them.
+
+Start work by deleting all TODO comments you are reasonably certain are no longer
+relevant.
+
+After that, try to change the code as necessary to fix all of the TODO-related
+bugs, going in order of severity (both my grouping and your own judgement).
+
+Then group wishlist features by my own grouping (and effort level you think would be
+required, and [for summary HTML] noting any you think might cause problems or conflict
+with some other existing code). For each quick changes not likely to cause problems, go
+ahead without asking me. For things that require large code changes, and especially
+things likely to cause problems or conflicts with other code, summarize to me:
+- the wishlist feature
+- the extent of code change(s) required
+- possible problems / conflicts / etc
+...and have me OK them one by one.
+
+Finally, write an 'todo-cleanup.html' (also name incremented if necessary like before),
+that includes (at the bottom) the contents of the before-cleanup HTML file, as well as a
+summary of everything that changed, grouped again by type and severity/impact.
+Add a subsection at the bottom of each "bug"/"wishlist" section that includes any
+features/bug-fixes I declined your work on. This HTML should have table of contents at
+the top.
