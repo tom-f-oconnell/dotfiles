@@ -27,6 +27,8 @@
 # Hides the `(use "git add <file>..." ...)` etc hint lines in `git status`
 [advice]
 	statusHints = false
+	# Hides the 4-5 "hint: Updates were rejected because ..." lines after a rejected push
+	pushUpdateRejected = false
 [alias]
 	root = !pwd
 	permission-reset = !git diff -p -R --no-ext-diff --no-color | grep -E \"^(diff|(old|new) mode)\" --color=never | git apply

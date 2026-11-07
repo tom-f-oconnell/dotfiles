@@ -1171,7 +1171,16 @@ function git_status_compact() {
         NR == 2 && plain($0) ~ /^Your branch / { skip = 1; next }
         NR == 2 && plain($0) == "" { next }
         skip { if (plain($0) == "") skip = 0; next }
+        plain($0) == "Untracked files:" { sub(/Untracked files:/, "untracked files:") }
+        # Drops the final blank line + "nothing added to commit but untracked files present"
+        held_blank && plain($0) ~ /^nothing added to commit but untracked files present/ {
+            held_blank = 0
+            next
+        }
+        held_blank { print held; held_blank = 0 }
+        plain($0) == "" { held = $0; held_blank = 1; next }
         { print }
+        END { if (held_blank) print held }
     '
     return "${PIPESTATUS[0]}"
 }
