@@ -1645,7 +1645,10 @@ function print_repo_url() {
 
     local url_suffix
     if [ -z "$2" ]; then
-        url_suffix="#readme"
+        url_suffix=""
+        # TODO delete (make a new alias that passes this first? no longer want this by
+        # default)
+        #url_suffix="#readme"
     else
         url_suffix="$2"
     fi

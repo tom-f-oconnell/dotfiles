@@ -5,7 +5,7 @@
   home directory was a good idea...
   might want to re-organize things, and that will affect my options
   for trying to get dotbot working on windows too
-  
+
   see also:
   https://www.reddit.com/r/bashonubuntuonwindows/comments/fty89r
   (this last microsoft link might have the kernel of a real solution)
@@ -13,7 +13,7 @@
 
 - TODO force (check) git bash or similar is used to run dotbot on
   windows (not WSL because symlinks created in there don't seem to work for
-  windows programs, and probably not powershell because of all the bash parts 
+  windows programs, and probably not powershell because of all the bash parts
   of dotbot)
   (if there is an environment dotbot could actually succesfully be run from,
   that would set up files accessible / modifiable from both WSL and windows,
@@ -75,9 +75,6 @@ install GithubCloner requirements
 
 how to add all scripts to path / symlink them to somewhere that in it?
 
-include instructions for how I would like to install VIM plugins (Vundle?
-pathogen (does it support github?)? submodules?
-
 deal with ipython configuration (so it doesn't confirm on exit and stuf)
 see:
 https://stackoverflow.com/questions/7438112/disable-ipython-exit-confirmation
@@ -94,11 +91,7 @@ entering local changes into git..., by copying files or something)
 script to set up these things (as much as possible?) within WSL bash
 (different paths for configs at a minimum. some other things need set.)
   (see some of my chrome bookmarks under music_production folder)
-+ test that vimrc option to disable bell in WSL has no effect outside 
-  windows
-+ need to change vimrc vundle begin call in windows install only?
-  how do i want to manage?
-  see: http://www.edwardhk.com/os/windows/install-youcompleteme-for-vim-in-win10-bash-ubuntu/
++ test that vimrc option to disable bell in WSL has no effect outside windows
 + script all changes to WSL terminal, which I manually changed by right clicking
   the top of a WSL bash window -> Properties:
   - Options -> Use Ctrl-C / V as copy paste
