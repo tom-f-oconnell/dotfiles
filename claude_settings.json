@@ -21,6 +21,7 @@
   },
   "model": "opus",
   "respondToBashCommands": false,
+  "cleanupPeriodDays": 36500,
   "effortLevel": "medium",
   "modelSettings": {
     "claude-opus-5": {
