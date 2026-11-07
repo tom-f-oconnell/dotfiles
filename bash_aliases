@@ -1222,8 +1222,10 @@ function git_status_compact() {
         else
             header+=", diverged from $upstream ($ahead ahead, $behind behind)"
         fi
-        # Yellow unless HEAD is known to match upstream (i.e. not if the fetch failed)
-        if [ "$in_sync" -eq 0 ] || [ -n "$fetch_note" ]; then
+        # Green if HEAD is known to match upstream, otherwise (incl. if the fetch failed) yellow
+        if [ "$in_sync" -eq 1 ] && [ -z "$fetch_note" ]; then
+            header="$green$header$reset"
+        else
             header="$yellow$header$reset"
         fi
         if [ -n "$fetch_note" ]; then
