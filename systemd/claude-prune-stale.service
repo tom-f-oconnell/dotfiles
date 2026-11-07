@@ -3,4 +3,5 @@ Description=Remove stale background Claude Code sessions (done, not running, unt
 
 [Service]
 Type=oneshot
-ExecStart=%h/.local/bin/claude-prune-stale
+# systemd does not use the PATH set in bashrc, so this needs the dotfiles repo's location
+ExecStart=%h/src/dotfiles/bin/claude-prune-stale

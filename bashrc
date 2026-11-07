@@ -236,6 +236,13 @@ if [ -d "$MY_SCRIPTS_PATH" ]; then
     done
 fi
 
+# Commands kept with these dotfiles: only bin/, as the repo's top level has scripts not meant
+# to be run by name (and its `install` would shadow /usr/bin/install, if earlier in PATH)
+DOTFILES_BIN="$HOME/src/dotfiles/bin"
+if [ -d "$DOTFILES_BIN" ]; then
+    export PATH="$PATH:$DOTFILES_BIN"
+fi
+
 # As alternative to ssh-agent being started on login, see:
 # https://stackoverflow.com/questions/17846529#24347344
 

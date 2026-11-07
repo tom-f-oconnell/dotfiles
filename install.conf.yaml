@@ -77,8 +77,6 @@
     ~/.claude/CLAUDE.md: claude_CLAUDE.md
     ~/.claude/settings.json: claude_settings.json
 
-    # Removes stale background Claude Code sessions (`claude rm`), daily by the timer below
-    ~/.local/bin/claude-prune-stale: claude-prune-stale
     # systemd user units (see README: scheduled jobs). The timers.target.wants link is what
     # `systemctl --user enable` makes, so linking alone enables the timer (from next login).
     ~/.config/systemd/user/claude-prune-stale.service: systemd/claude-prune-stale.service

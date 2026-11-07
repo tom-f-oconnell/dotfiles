@@ -27,6 +27,11 @@ out, and not committed), and warns about anything in the template but not in
 `~/.bash.local`, offering to add it there (also commented out). Commented-out code should
 have no space after the `#`, and prose should have one, so the script can tell them apart.
 
+#### Commands
+
+Scripts meant to be run by name are in `bin/`, which `bashrc` adds to the end of `PATH`
+(so they never shadow system commands of the same name).
+
 #### Scheduled jobs
 
 These are systemd user timers rather than cron jobs: they need no root, and their unit
@@ -36,7 +41,7 @@ logged out, as long as linger is on for the user (`loginctl show-user $USER -p L
 right away; after `link_only`, they start from the next login, or run
 `systemctl --user daemon-reload && systemctl --user start <name>.timer`.
 
-- `claude-prune-stale`: daily, `claude rm` for background Claude Code sessions that are
+- `bin/claude-prune-stale`: daily, `claude rm` for background Claude Code sessions that are
   done, not running, and untouched for 7+ days (`$CLAUDE_PRUNE_DAYS` changes that).
   `claude-stale` lists what it would remove.
 
