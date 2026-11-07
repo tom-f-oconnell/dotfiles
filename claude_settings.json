@@ -34,6 +34,7 @@
     }
   },
   "tui": "fullscreen",
+  "viewMode": "focus",
   "theme": "dark",
   "switchModelsOnFlag": true,
   "hooks": {
