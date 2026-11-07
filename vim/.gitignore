@@ -1,4 +1,3 @@
 .netrwhist
-# So modules that Vundle clones into dotfiles/vim/bundle will not cause
-# confusion in the git output. We want to let Vundle track them.
+# Plugins vim-plug installs (see vimrc), which it keeps track of itself
 bundle/

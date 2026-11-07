@@ -21,33 +21,9 @@ sudo apt-get install -y build-essential cmake python3-dev
 # TODO modify so vim doesn't show output here if possible (or not interactive)
 # (so vim doesn't spit out "Warning: Output is not to a terminal" when called
 # from `install`
-# https://github.com/VundleVim/Vundle.vim
-# TODO test this works on fresh system. seems to work though.
-vim +PluginInstall +"mkdp#util#install" +"doge#install" +qall
-
-# TODO maybe test if YCM is set up and don't install this if it is? maybe w/ option to
-# force reinstall / at least printing how to do so?
-# could try parsing output of :YCMDebugInfo?
-
-# Important it happens after the vim call above, because that's when Vundle will
-# download the YouCompleteMe source.
-# Just assuming script called from `dotfiles` root directory for now.
-cd vim/bundle/YouCompleteMe
-
-# :PluginInstall does not update existing checkouts, and old YCM versions may not support
-# newer Python (e.g. a 2021 checkout vs Python 3.14 on 26.04).
-# sync is needed since ycmd has renamed/moved some of its submodules.
-git pull --ff-only
-git submodule sync --recursive
-git submodule update --init --recursive
-
-# Using this option rather than --all b/c not interested in other languages
-# explicitly mentioned in --help output, and some can cause compilation to fail,
-# like C#. Python support still works for me in WSL w/ these options.
-# Maybe just call with no options?
-#
-# YCM remembers the Python used to run install.py, and uses it to run the server, so use
-# system Python explicitly (rather than whatever python3 is first in PATH, which might be
-# from a conda env, which YCM does not support).
-/usr/bin/python3 install.py --clang-completer --quiet
-
+# https://github.com/junegunn/vim-plug
+# Installs missing plugins and updates the rest, then (the `!`) runs the 'do' hooks in vimrc
+# of all of them, changed or not: building YouCompleteMe (install.py --clangd-completer),
+# and downloading what markdown-preview.nvim and vim-doge run. vim-plug runs synchronously
+# while Vim is starting, so this all finishes before +qall.
+vim +'PlugUpdate!' +qall

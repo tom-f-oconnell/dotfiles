@@ -72,23 +72,17 @@ If `,y` doesn't reach the clipboard, check `:echo v:clipmethod` in Vim:
   - In tmux, shells started before your latest attach can have a stale `DISPLAY`. Fix w/
     `eval "$(tmux show-env -s DISPLAY)"`, or open a new tmux window.
 
-#### Vundle
+#### vim-plug
 
-To remove all directories Vundle adds to `vim/bundle`:
-```
-cd vim/bundle
-# https://stackoverflow.com/questions/9314365
-# Add -n flag to see what it would remove first.
-git clean -f -f -d -x
-```
-The above might cause some issues. Not sure.
+Vim plugins are managed by [vim-plug](https://github.com/junegunn/vim-plug) (kept here, in
+`vim/autoload/plug.vim`; `:PlugUpgrade` updates it), and installed into `vim/bundle`
+(ignored by git). `vpi` (`vim +PlugInstall +qall`) installs any missing, building
+YouCompleteMe as it does (`install.py --clangd-completer`, set on its `Plug` line in
+`vimrc`), which needs `build-essential cmake python3-dev`. `install_vim_extensions.sh`
+installs those, then updates every plugin and re-runs all of their install steps. After a
+Python upgrade, rebuild YouCompleteMe with `vim +'PlugInstall! YouCompleteMe' +qall`.
 
-To only install Vundle plugins, without trying to do the YouCompleteMe
-compilation that `install_vim_extensions.sh` does:
-```
-# I also have this aliased as `vpi`
-vim +PluginInstall +qall
-```
+`:PlugClean` removes plugin directories no longer listed in `vimrc`.
 
 #### multi-git-status
 

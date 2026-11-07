@@ -43,11 +43,7 @@ set nocompatible
 " errors showing indicating i should probably not have this...)
 " TODO why did i have this off? (do think i turn it on later tho...)
 filetype off
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
 
-" TODO maybe detect location of dotfiles dir on install and then replace
-" both this + an absolute path in vundle#begin call with that?
 " Windows only
 " (test visualbell OK on Linux or special case in VIM / deployment)
 " set visualbell
@@ -59,9 +55,6 @@ set belloff=all
 " Custom functions on the 'Leader' keyboard
 " TODO still work now that i moved this up above plugin loading?
 let mapleader = ","
-
-" TODO TODO vundle hasn't been updated in several years... maybe i should use
-" some other VIM package manager
 
 " TODO TODO why was this not changing which python is actually used?
 "let g:ycm_server_python_interpreter = '/usr/bin/python3.6'
@@ -103,74 +96,54 @@ autocmd User YcmQuickFixOpened call s:CustomizeYcmQuickFixWindow()
 " doc'd) `g:ycm_auto_hover` both disable the popups i find annoying when shown for
 " python stdlib stuff?
 
-" TODO TODO try moving to using either vim-plug or builtin package management.
-" see: https://github.com/VundleVim/Vundle.vim/issues/955 for reasons Vundle dev hasn't
-" been active for a while
-
-" TODO TODO configure s.t. vundle doesn't add stuff to my dotfiles repo
-" in a way that would either be confusing or interfere with anything.
-" this probably means either telling git to ignore some dir or have vundle
-" always install to some other path.
-
 let g:csv_bind_B = 1
 
-call vundle#begin()
-" alternatively, pass a path where Vundle should install plugins
-"call vundle#begin('~/some/path/here')
-
-" TODO i didn't seem to need to specify paths explicitly w/ vundle on ubuntu...
-" is that cause pathogen was actually managing YouCompleteMe despite it being
-" under 'bundle'?
-" how can i get it to work on WSL and ubuntu in a way that doesn't require
-" explicitly hardcoding in each plugin??
+" Plugins are managed by vim-plug (vim/autoload/plug.vim in the dotfiles; :PlugUpgrade
+" updates it), and installed into ~/.vim/bundle (ignored by the dotfiles' git), where
+" Vundle used to put them, so checkouts from then are kept.
+call plug#begin('~/.vim/bundle')
 
 " TODO look in to:
 " - svermeulen/vim-subversive: quick find replace w/ new 's' motion (maybe can replace
 "   some of my hacks for this?)
 
-" TODO test paths above (rtp + begin) allow this to work in my dotbot repo
-" (don't want to have to manually download this, and want vundle to be able
-" to update / manage itself as "required" too. test!)
-" let Vundle manage Vundle, required
-Plugin 'VundleVim/Vundle.vim'
+" Current YCM needs Vim >= 9.1.0016 and Python >= 3.12. vim-plug builds it after
+" installing it, and again whenever :PlugUpdate changes it, w/ system Python (YCM runs its
+" server w/ the Python that built it, and doesn't support conda envs').
+" --clangd-completer: C-family completion via clangd (which it downloads). To rebuild it
+" anyway (e.g. after a Python upgrade): vim +'PlugInstall! YouCompleteMe' +qall
+Plug 'ycm-core/YouCompleteMe', { 'do': '/usr/bin/python3 install.py --clangd-completer --quiet' }
 
-" TODO test vundle can always compile this (ideally on WSL too)
-" if it can't, may want to handle this one manually.
-" Current YCM needs Vim >= 9.1.0016 and Python >= 3.12. Old checkouts (mine was from
-" 2021, built for Python 3.8) don't work w/ 26.04's Python 3.14, and `:PluginInstall`
-" won't update an existing checkout, so install_vim_extensions.sh updates it first.
-Plugin 'ycm-core/YouCompleteMe'
-
-Plugin 'dense-analysis/ale'
+Plug 'dense-analysis/ale'
 
 " For "aligning text" figure out how to use.
-Plugin 'godlygeek/tabular'
+Plug 'godlygeek/tabular'
 
 " Shows indicator in left col of which lines differ from HEAD, etc.
 " TODO delete if i don't like it. haven't used much.
-Plugin 'airblade/vim-gitgutter'
+Plug 'airblade/vim-gitgutter'
 
 " TODO what does this do again?
-Plugin 'henrik/vim-indexed-search'
+Plug 'henrik/vim-indexed-search'
 
 " TODO (as per comments below) consider trying to replace w/ tagstack,etc
 " (above comment was from when i was still using tyru/current-func-info.vim
 " current solution seems to work better w/in python at least, so maybe no need)
-Plugin 'mgedmin/taghelper.vim'
+Plug 'mgedmin/taghelper.vim'
 
 " TODO more modern version of this? some other site seemed to have something
 " that highlighted the opening and closing whatever; did it close them too?
-Plugin 'Raimondi/delimitMate'
+Plug 'Raimondi/delimitMate'
 
-Plugin 'plasticboy/vim-markdown'
+Plug 'plasticboy/vim-markdown'
 
 " Could also try 'instant-markdown/vim-instant-markdown' or
 " 'skanehira/preview-markdown.vim'. The latter renders in a VIM split not a browser.
 "
-" NOTE: requires `:call mkdp#util#install()` after `:PluginInstall`
-Plugin 'iamcco/markdown-preview.nvim'
+" Its 'do' hook downloads the previewer it runs (mkdp#util#install())
+Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
 
-Plugin 'lervag/vimtex'
+Plug 'lervag/vimtex'
 
 " Trying mainly for `[f` / `]f` to switch between files, though might want to try
 " EditSimilar plugin mentioned in same answer:
@@ -179,34 +152,34 @@ Plugin 'lervag/vimtex'
 " same extention or not ignored by git (but include stuff not committed). also default
 " to current [f / ]f behavior (adding ignoring of non-[text/code]-like files if
 " necessary)
-Plugin 'tpope/vim-unimpaired'
+Plug 'tpope/vim-unimpaired'
 
-Plugin 'ntpeters/vim-better-whitespace'
+Plug 'ntpeters/vim-better-whitespace'
 
-Plugin 'romainl/vim-qf'
+Plug 'romainl/vim-qf'
 
-Plugin 'wellle/context.vim'
+Plug 'wellle/context.vim'
 
 " TODO TODO figure out how to get this to add a 'Returns: ' section as well (populated
 " w/ variables at least for references maybe? might be possible by making a new standard
 " from their python one? see their github.)
 "
 " Adds <leader>d by default (which is what I was using for similar before anyway)
-" NOTE: requires `:call doge#install()` after `:PluginInstall`
-Plugin 'kkoomen/vim-doge'
+" Its 'do' hook downloads the binary it runs (doge#install())
+Plug 'kkoomen/vim-doge', { 'do': { -> doge#install() } }
 
-Plugin 'preservim/nerdcommenter'
+Plug 'preservim/nerdcommenter'
 
 " TODO maybe also try mechatroner/rainbow_csv (similar # of commits / recency, but a bit
 " fewer contributors ~2022)
-Plugin 'chrisbra/csv.vim'
+Plug 'chrisbra/csv.vim'
 
 " lukhio/vim-mapping-conflicts seems useful, but raised a bunch of errors when I tested
 " it.
 
 " FastFold strongly recommended in simpylfold docs
-Plugin 'Konfekt/FastFold'
-Plugin 'tmhedberg/simpylfold'
+Plug 'Konfekt/FastFold'
+Plug 'tmhedberg/simpylfold'
 
 " TODO test this out:
 " https://github.com/python-mode/python-mode
@@ -214,19 +187,16 @@ Plugin 'tmhedberg/simpylfold'
 " may still get some use of the more IDE-type features.)
 " Plug 'python-mode/python-mode', { 'for': 'python', 'branch': 'develop' }
 
-Plugin 'morhetz/gruvbox'
+Plug 'morhetz/gruvbox'
 
 " All of your Plugins must be added before the following line
-call vundle#end()
-" Brief help
-" :PluginList       - lists configured plugins
-" :PluginInstall    - installs plugins; append `!` to update or just
-"                     :PluginUpdate
-" :PluginSearch foo - searches for foo; append `!` to refresh local cache
-" :PluginClean      - confirms removal of unused plugins; append `!` to
-"                     auto-approve removal
-
-" see :h vundle for more details or wiki for FAQ
+call plug#end()
+" Brief help (more at https://github.com/junegunn/vim-plug)
+" :PlugInstall[!] [name...] - installs missing plugins (`!`: also re-runs their 'do' hooks)
+" :PlugUpdate[!] [name...]  - installs or updates plugins ('do' hooks run for those changed)
+" :PlugClean[!]             - removes plugin directories not listed above (`!`: w/o asking)
+" :PlugStatus / :PlugDiff   - state of the plugins / what the last update changed
+" :PlugUpgrade              - updates vim-plug itself
 
 " https://stackoverflow.com/questions/57014805
 function IsWSL()

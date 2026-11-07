@@ -2345,7 +2345,7 @@ alias v='vi'
 alias sv='sudo vi'
 
 # [v]im [p]lugin [i]nstall
-alias vpi='vim +PluginInstall +qall'
+alias vpi='vim +PlugInstall +qall'
 
 alias black='black --skip-string-normalization'
 

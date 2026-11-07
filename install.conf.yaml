@@ -110,7 +110,9 @@
   #  stderr: True
   #  stdin: True
   -
-    description: "Installing VIM extensions"
+    # Plugins (vim-plug), then their 'do' hooks from vimrc, incl. building YouCompleteMe w/
+    # --clangd-completer (set on its Plug line, so :PlugUpdate rebuilds it the same way)
+    description: "Installing Vim plugins, building YouCompleteMe (clangd completer)"
     command: "./install_vim_extensions.sh"
     stdout: False
     stderr: True
