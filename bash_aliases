@@ -1205,6 +1205,7 @@ function git_status_compact() {
         [[ $track =~ behind\ ([0-9]+) ]] && behind=${BASH_REMATCH[1]}
 
         header="branch: $branch"
+        local in_sync=0
         if [ -z "$head_oid" ]; then
             :
         elif [ -z "$upstream" ]; then
@@ -1213,12 +1214,17 @@ function git_status_compact() {
             header+=", upstream $upstream is gone"
         elif [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ]; then
             header+=", up to date with $upstream"
+            in_sync=1
         elif [ "$behind" -eq 0 ]; then
             header+=", ahead of $upstream by $(_git_n_commits "$ahead")"
         elif [ "$ahead" -eq 0 ]; then
             header+=", behind $upstream by $(_git_n_commits "$behind")"
         else
             header+=", diverged from $upstream ($ahead ahead, $behind behind)"
+        fi
+        # Yellow unless HEAD is known to match upstream (i.e. not if the fetch failed)
+        if [ "$in_sync" -eq 0 ] || [ -n "$fetch_note" ]; then
+            header="$yellow$header$reset"
         fi
         if [ -n "$fetch_note" ]; then
             header+="$nl$yellow($fetch_note)$reset"
