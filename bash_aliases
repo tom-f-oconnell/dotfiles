@@ -1160,6 +1160,9 @@ function _git_n_commits() {
 #   commit:     <hash> <date> <subject>   (for HEAD)
 # git has no config for that part of the long format (it's hardcoded in wt-status.c), so
 # this post-processes git's output.
+#
+# If run interactively, and the branch is behind its upstream (and not also ahead) with no
+# changes to tracked files, this then offers to fast-forward to the (just fetched) upstream.
 function git_status_compact() {
     local color=never cols=0
     if [ -t 1 ]; then
@@ -1180,7 +1183,7 @@ function git_status_compact() {
         fi
     fi
 
-    local header= commit_lines= ref
+    local header= commit_lines= ref ahead=0 behind=0
     # (fails if HEAD is detached, leaving git's "HEAD detached at X" line as is)
     if ref=$(git symbolic-ref --quiet HEAD 2>/dev/null); then
         local branch=${ref#refs/heads/}
@@ -1195,7 +1198,7 @@ function git_status_compact() {
             fetch_note="couldn't fetch $remote: $fetch_err"
         fi
 
-        local upstream track ahead=0 behind=0
+        local upstream track
         read -r upstream track < <(git for-each-ref \
             --format='%(upstream:short) %(upstream:track,nobracket)' "$ref")
         [[ $track =~ ahead\ ([0-9]+) ]] && ahead=${BASH_REMATCH[1]}
@@ -1240,6 +1243,8 @@ function git_status_compact() {
                 "Unmerged paths|Untracked files|Ignored files):$"
             final_lines = "^(no changes added to commit|" \
                 "nothing added to commit but untracked files present)"
+            tracked_changes = "^(Changes to be committed|Changes not staged for commit|" \
+                "Unmerged paths):$"
         }
         function plain(s) { gsub(/\033\[[0-9;]*m/, "", s); return s }
         NR == 1 {
@@ -1253,6 +1258,8 @@ function git_status_compact() {
         NR == 2 && plain($0) ~ /^Your branch / { skip = 1; next }
         NR == 2 && plain($0) == "" { next }
         skip { if (plain($0) == "") skip = 0; next }
+        # Changes to tracked files (exit status 3 at the end)
+        plain($0) ~ tracked_changes { tracked_changed = 1 }
         # Lowercasing section headers (SGR color codes have no uppercase letters)
         plain($0) ~ headers {
             match($0, /[A-Z]/)
@@ -1269,9 +1276,31 @@ function git_status_compact() {
         held_blank { print held; held_blank = 0 }
         plain($0) == "" { held = $0; held_blank = 1; next }
         { print }
-        END { if (held_blank) print held }
+        END {
+            if (held_blank) print held
+            if (tracked_changed) exit 3
+        }
     '
-    return "${PIPESTATUS[0]}"
+    local -a codes=("${PIPESTATUS[@]}")
+
+    if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ] && [ "${codes[1]}" -eq 0 ] && \
+            [ -t 0 ] && [ -t 1 ]; then
+        local reply rest
+        printf 'pull %s from %s? [y/N] ' "$(_git_n_commits "$behind")" "$upstream"
+        # A single key, without needing enter. Read without echo, then discarding the rest
+        # of multi-character keys (e.g. arrows), so neither shows up as garbage.
+        read -r -s -n 1 reply
+        read -r -s -t 0.05 -n 64 rest
+        if [[ $reply == [[:print:]] ]]; then
+            printf '%s' "$reply"
+        fi
+        echo
+        if [ "$reply" = y ] || [ "$reply" = Y ]; then
+            git merge --ff-only '@{upstream}'
+            return
+        fi
+    fi
+    return "${codes[0]}"
 }
 
 function git_fn() {
