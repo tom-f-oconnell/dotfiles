@@ -1032,8 +1032,9 @@ alias now="date '+%F %H:%M:%S'"
 #   $3: the commit (e.g. HEAD).
 #   $4: the label.
 #   $5: optional SGR color code (e.g. 31 for red) for the label and subject.
+#   $6: optional width to pad "<label>:" to, to align it with other such lines.
 function _git_commit_line() {
-    local color=$1 cols=$2 rev=$3 label=$4 sgr=$5
+    local color=$1 cols=$2 rev=$3 label=$4 sgr=$5 width=${6:-0}
     local -a fields=()
     local field
     while IFS= read -r -d '' field; do
@@ -1068,7 +1069,9 @@ function _git_commit_line() {
         more=1
     fi
 
-    local prefix="$label: $hash $date "
+    local padding
+    printf -v padding '%*s' $(( width > ${#label} + 1 ? width - ${#label} - 1 : 0 )) ''
+    local prefix="$label:$padding $hash $date "
     local room=$(( cols - ${#prefix} ))
     if [ "$cols" -gt 0 ] && [ "${#subject}" -gt "$room" ]; then
         more=1
@@ -1097,11 +1100,48 @@ function _git_commit_line() {
             label_color=$'\e['"${sgr}m"
         fi
     fi
-    local out="$label_color$label:$reset $colored_hash $date_color$date$reset"
+    local out="$label_color$label:$reset$padding $colored_hash $date_color$date$reset"
     if [ -n "$subject" ]; then
         out+=" $label_color$subject$reset"
     fi
     printf '%s\n' "$out"
+}
+
+# The _git_commit_line lines for a remote branch (in red) and HEAD, aligned.
+#
+# Args:
+#   $1, $2: as for _git_commit_line.
+#   $3: the remote branch (e.g. @{upstream}).
+#   $4: its label (e.g. origin/main).
+function _git_remote_and_head_lines() {
+    local color=$1 cols=$2 rev=$3 label=$4
+    local width=$(( ${#label} > 6 ? ${#label} + 1 : 7 ))
+    _git_commit_line "$color" "$cols" "$rev" "$label" 31 "$width"
+    _git_commit_line "$color" "$cols" HEAD commit '' "$width"
+}
+
+# Fetches from a remote quietly, never prompting for passwords / passphrases, nor waiting
+# long on a remote that isn't reachable. On failure, prints why (the first line of git's
+# error) and returns non-zero.
+#
+# Args:
+#   $1: the remote.
+#   $2: optional ref on it (e.g. refs/heads/main), to fetch only that.
+function _git_quick_fetch() {
+    local ssh_cmd=${GIT_SSH_COMMAND:-$(git config core.sshCommand)}
+    local err
+    err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= \
+        GIT_SSH_COMMAND="${ssh_cmd:-ssh} -o BatchMode=yes -o ConnectTimeout=5" \
+        timeout 10 git fetch --quiet "$@" 2>&1 >/dev/null)
+    case $? in
+        0) return 0 ;;
+        124) echo "timed out" ;;
+        *)
+            err=${err%%$'\n'*}
+            echo "${err#fatal: }"
+            ;;
+    esac
+    return 1
 }
 
 function _git_n_commits() {
@@ -1117,7 +1157,7 @@ function _git_n_commits() {
 # line after them) replaced by:
 #   branch: X, <up to date with / ahead of / behind / diverged from> <upstream> [...]
 #   <upstream>: <hash> <date> <subject>   (only if upstream has commits HEAD doesn't)
-#   commit: <hash> <date> <subject>       (for HEAD)
+#   commit:     <hash> <date> <subject>   (for HEAD)
 # git has no config for that part of the long format (it's hardcoded in wt-status.c), so
 # this post-processes git's output.
 function git_status_compact() {
@@ -1128,13 +1168,19 @@ function git_status_compact() {
             color=always
         fi
     fi
-    local yellow= reset= nl=$'\n'
+    local yellow= green= reset= nl=$'\n'
     if [ "$color" = always ]; then
         yellow=$'\e[33m'
         reset=$'\e[m'
+        # (a softer green, where the terminal supports 256 colors)
+        if [ "$(tput colors 2>/dev/null || echo 0)" -ge 256 ]; then
+            green=$'\e[38;5;114m'
+        else
+            green=$'\e[32m'
+        fi
     fi
 
-    local header= ref
+    local header= commit_lines= ref
     # (fails if HEAD is detached, leaving git's "HEAD detached at X" line as is)
     if ref=$(git symbolic-ref --quiet HEAD 2>/dev/null); then
         local branch=${ref#refs/heads/}
@@ -1143,23 +1189,10 @@ function git_status_compact() {
         read -r head_oid remote merge_ref < <(git for-each-ref \
             --format='%(objectname) %(upstream:remotename) %(upstream:remoteref)' "$ref")
 
-        local fetch_note=
-        if [ -n "$remote" ] && [ "$remote" != . ]; then
-            local ssh_cmd=${GIT_SSH_COMMAND:-$(git config core.sshCommand)}
-            local fetch_err
-            # Never prompting for passwords / passphrases, nor waiting long on a remote that
-            # isn't reachable
-            fetch_err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= \
-                GIT_SSH_COMMAND="${ssh_cmd:-ssh} -o BatchMode=yes -o ConnectTimeout=5" \
-                timeout 10 git fetch --quiet "$remote" "$merge_ref" 2>&1 >/dev/null)
-            case $? in
-                0) ;;
-                124) fetch_note="couldn't fetch $remote: timed out" ;;
-                *)
-                    fetch_err=${fetch_err%%"$nl"*}
-                    fetch_note="couldn't fetch $remote: ${fetch_err#fatal: }"
-                    ;;
-            esac
+        local fetch_note= fetch_err
+        if [ -n "$remote" ] && [ "$remote" != . ] && \
+                ! fetch_err=$(_git_quick_fetch "$remote" "$merge_ref"); then
+            fetch_note="couldn't fetch $remote: $fetch_err"
         fi
 
         local upstream track ahead=0 behind=0
@@ -1188,17 +1221,20 @@ function git_status_compact() {
             header+="$nl$yellow($fetch_note)$reset"
         fi
         if [ "$behind" -gt 0 ]; then
-            header+="$nl$(_git_commit_line "$color" "$cols" '@{upstream}' "$upstream" 31)"
+            commit_lines=$(_git_remote_and_head_lines "$color" "$cols" '@{upstream}' \
+                "$upstream")
         fi
     fi
-    local commit_line
-    if commit_line=$(_git_commit_line "$color" "$cols" HEAD commit); then
-        header+="${header:+$nl}$commit_line"
+    if [ -z "$commit_lines" ]; then
+        commit_lines=$(_git_commit_line "$color" "$cols" HEAD commit)
+    fi
+    if [ -n "$commit_lines" ]; then
+        header+="${header:+$nl}$commit_lines"
     fi
 
     # (header passed via the environment, since awk -v would interpret any backslashes)
     git -c color.status="$color" status --no-ahead-behind "$@" | \
-        GIT_STATUS_HEADER=$header awk '
+        GIT_STATUS_HEADER=$header GIT_STATUS_CLEAN_COLOR=$green awk '
         BEGIN {
             headers = "^(Changes to be committed|Changes not staged for commit|" \
                 "Unmerged paths|Untracked files|Ignored files):$"
@@ -1222,6 +1258,10 @@ function git_status_compact() {
             match($0, /[A-Z]/)
             $0 = substr($0, 1, RSTART - 1) tolower(substr($0, RSTART, 1)) \
                 substr($0, RSTART + 1)
+        }
+        ENVIRON["GIT_STATUS_CLEAN_COLOR"] != "" && \
+                plain($0) ~ /^nothing to commit, working tree clean/ {
+            $0 = ENVIRON["GIT_STATUS_CLEAN_COLOR"] plain($0) "\033[m"
         }
         # Drops the final blank line + "no changes added to commit" or "nothing added to
         # commit but untracked files present"
@@ -1303,8 +1343,108 @@ complete -F _complete_alias gc
 
 # Using this for just git push until I can fix the above and get confidence in it.
 # TODO what was --follow-tags for again?
-alias gp='git push'
-complete -F _complete_alias gp
+# For git_push_compact, after a rejected push: if the remote branch the current branch
+# pushes to has commits HEAD doesn't (after fetching it), prints the _git_commit_line lines
+# for it and HEAD.
+#
+# Args:
+#   $1, $2: as for _git_commit_line.
+function _git_push_rejected_summary() {
+    local color=$1 cols=$2 ref
+    ref=$(git symbolic-ref --quiet HEAD) || return 0
+    local push push_short remote remote_ref upstream upstream_ref
+    local format='%(push)%1f%(push:short)%1f%(push:remotename)%1f%(push:remoteref)%1f'
+    format+='%(upstream)%1f%(upstream:remoteref)'
+    IFS=$'\x1f' read -r push push_short remote remote_ref upstream upstream_ref < <(
+        git for-each-ref --format="$format" "$ref")
+    if [ -z "$push" ] || [ "$remote" = . ]; then
+        return 0
+    fi
+    # (push:remoteref is empty with push.default=simple, where the push branch is upstream)
+    if [ -z "$remote_ref" ] && [ "$push" = "$upstream" ]; then
+        remote_ref=$upstream_ref
+    fi
+    local fetch_err
+    if ! fetch_err=$(_git_quick_fetch "$remote" ${remote_ref:+"$remote_ref"}); then
+        local yellow= reset=
+        if [ "$color" = always ]; then
+            yellow=$'\e[33m'
+            reset=$'\e[m'
+        fi
+        echo "$yellow(couldn't fetch $remote: $fetch_err)$reset"
+    fi
+    if [ -n "$(git rev-list -1 "HEAD..$push" -- 2>/dev/null)" ]; then
+        _git_remote_and_head_lines "$color" "$cols" "$push" "$push_short"
+    fi
+}
+
+# `git push`, but with the "To <remote>" line lowercased, and (if the push is rejected
+# because the remote has commits HEAD doesn't) followed by the same remote / HEAD commit
+# lines `g` shows. Only git's stderr goes through the filter, which passes progress updates
+# through as they come.
+function git_push_compact() {
+    local color=never cols=0
+    local -a git_opts=() push_opts=()
+    if [ -t 2 ]; then
+        cols=${COLUMNS:-$(tput cols 2>/dev/null || echo 0)}
+        if [ "$(git config --get-colorbool color.push true)" = true ]; then
+            color=always
+            git_opts=(-c color.push=always -c color.remote=always)
+        fi
+        # (git only shows progress by default when stderr is a terminal)
+        local arg quiet=0
+        for arg in "$@"; do
+            case $arg in
+                -q|--quiet) quiet=1 ;;
+            esac
+        done
+        if [ "$quiet" -eq 0 ]; then
+            push_opts=(--progress)
+        fi
+    fi
+
+    local -a codes
+    {
+        git "${git_opts[@]}" push "${push_opts[@]}" "$@" 2>&1 1>&3 3>&- | perl -e '
+            $| = 1;
+            my ($buf, $rejected) = ("", 0);
+            # Each line (or progress update, ending in \r) as soon as it is complete
+            while (sysread(STDIN, my $chunk, 4096)) {
+                $buf .= $chunk;
+                while ($buf =~ s/^([^\r\n]*[\r\n])//) {
+                    my $line = $1;
+                    (my $plain = $line) =~ s/\e\[[0-9;]*m//g;
+                    $rejected = 1 if $plain =~ /^ ! \[rejected\]/;
+                    $line =~ s/^To /to /;
+                    print $line;
+                }
+            }
+            print $buf;
+            exit($rejected ? 3 : 0);
+        ' >&2 3>&-
+        codes=("${PIPESTATUS[@]}")
+    } 3>&1
+    if [ "${codes[1]}" -eq 3 ]; then
+        _git_push_rejected_summary "$color" "$cols" >&2
+    fi
+    return "${codes[0]}"
+}
+
+# Completes `gp ...` as `git push ...`. (__git_complete can't do this, as git's completion
+# for push arguments checks that the command word is "push".)
+function _complete_gp() {
+    declare -F __git_wrap__git_main >/dev/null || return 0
+    local cmd=${COMP_WORDS[0]}
+    local pre=${COMP_LINE%%"$cmd"*}
+    COMP_WORDS=(git push "${COMP_WORDS[@]:1}")
+    COMP_CWORD=$((COMP_CWORD + 1))
+    COMP_LINE="${pre}git push${COMP_LINE#"$pre$cmd"}"
+    COMP_POINT=$((COMP_POINT + 8 - ${#cmd}))
+    __git_wrap__git_main
+}
+
+alias gp='git_push_compact'
+complete -o bashdefault -o default -o nospace -F _complete_gp gp
 
 # TODO make function gcp that passes all input ***WITHOUT MANGLING ANYTHING VIA SHELL
 # INTERFERENCE*** (test!) to `git commit -m <here>` and then pushes as well
