@@ -1,5 +1,5 @@
 [Unit]
-Description=Remove stale background Claude Code sessions (done, not running, untouched 7+ days)
+Description=Remove stale background Claude Code sessions (exited, untouched 7+ days)
 
 [Service]
 Type=oneshot

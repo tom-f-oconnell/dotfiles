@@ -41,9 +41,10 @@ logged out, as long as linger is on for the user (`loginctl show-user $USER -p L
 right away; after `link_only`, they start from the next login, or run
 `systemctl --user daemon-reload && systemctl --user start <name>.timer`.
 
-- `bin/claude-prune-stale`: daily, `claude rm` for background Claude Code sessions that are
-  done, not running, and untouched for 7+ days (`$CLAUDE_PRUNE_DAYS` changes that).
-  `claude-stale` lists what it would remove.
+- `bin/claude-prune-stale`: daily, `claude rm` for background Claude Code sessions that
+  have exited (whatever their last status: done, needs input, failed) and been untouched
+  for 7+ days (`$CLAUDE_PRUNE_DAYS` changes that). `claude-stale` lists what it would
+  remove.
 
 `systemctl --user list-timers` shows when each runs next, and `journalctl --user -u
 <name>` what it did.
