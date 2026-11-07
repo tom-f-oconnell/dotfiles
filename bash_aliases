@@ -3149,3 +3149,13 @@ alias cconv='claude-conversation'
 # Background Claude Code sessions that are done, not running and untouched for 7+ days (id,
 # then name): what `claude-prune-stale` removes, which a systemd user timer runs daily.
 alias claude-stale='claude-prune-stale --dry-run'
+
+# Background Claude Code sessions (id, status, name), the ids `claude stop` / `claude rm`
+# take. Plain `claude agents` opens the interactive agent view instead of printing them.
+function claude-agents-list() {
+    {
+        printf 'ID\tstatus\tname\n'
+        command claude agents --json |
+            jq -r '.[] | select(.kind=="background") | "\(.id)\t\(.state // .status)\t\(.name)"'
+    } | column -t -s $'\t'
+}
