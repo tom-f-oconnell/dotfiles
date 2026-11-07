@@ -1022,9 +1022,90 @@ alias now="date '+%F %H:%M:%S'"
 # some substring (e.g. "git"). maybe also want to expand aliases (if that
 # wouldn't be default behavior, so that "recursive" aliases still get listed)
 
+# `git status`, but with the "On branch X" and "Your branch is ..." lines joined into one
+# "branch: X (...)" line, followed by a line with the hash and date of HEAD, and without
+# the blank line after them. git has no config for that part of the long format (it's
+# hardcoded in wt-status.c), so this post-processes git's output.
+function git_status_compact() {
+    local color=never
+    if [ -t 1 ] && [ "$(git config --get-colorbool color.status true)" = true ]; then
+        color=always
+    fi
+    local commit_line
+    commit_line=$(git --no-pager log -1 --color="$color" \
+        --format='commit: %C(auto)%h%C(reset) %ad' \
+        --date=format-local:'%Y-%m-%d %H:%M' 2>/dev/null)
+
+    git -c color.status="$color" status "$@" | awk -v commit_line="$commit_line" '
+        function plain(s) { gsub(/\033\[[0-9;]*m/, "", s); return s }
+        # Text in the same color as raw line s (git colors status lines as a whole)
+        function recolor(s, text) {
+            if (match(s, /^(\033\[[0-9;]*m)+/))
+                return substr(s, 1, RLENGTH) text "\033[m"
+            return text
+        }
+        function print_header(tracking) {
+            print header (tracking == "" ? "" : " " tracking)
+            if (commit_line != "") print commit_line
+        }
+        # Line 1 is always the branch / detached HEAD line
+        NR == 1 {
+            header = $0
+            if (plain($0) ~ /^On branch /) sub(/On branch /, "branch: ", header)
+            state = "after_header"
+            next
+        }
+        state == "after_header" {
+            p = plain($0)
+            if (p ~ /^Your branch is .*\.$/) {
+                sub(/^Your branch is /, "", p)
+                print_header(recolor($0, "(" substr(p, 1, length(p) - 1) ")"))
+                state = "tracking"
+            } else if (p ~ /^Your branch and .* refer to different commits\.$/) {
+                sub(/^Your branch and /, "", p)
+                sub(/ refer to different commits\.$/, "", p)
+                print_header(recolor($0, "(differs from " p ")"))
+                state = "tracking"
+            } else if (p ~ /^Your branch and .* have diverged,$/) {
+                sub(/^Your branch and /, "", p)
+                sub(/ have diverged,$/, "", p)
+                upstream = p
+                diverged_line = $0
+                state = "diverged"
+            } else {
+                # No upstream. Only an initial commit has a blank line here.
+                print_header("")
+                state = "rest"
+                if (p != "") print
+            }
+            next
+        }
+        state == "diverged" {
+            p = plain($0)
+            if (p ~ /^and have [0-9]+ and [0-9]+ different commits each/) {
+                split(p, w, " ")
+                print_header(recolor($0, "(diverged from " upstream ": " w[3] \
+                    " ahead, " w[5] " behind)"))
+            } else {
+                print_header("")
+                print diverged_line
+                print
+            }
+            state = "tracking"
+            next
+        }
+        # Keeps hint lines like "  (use \"git push\" ...)" and drops the blank line
+        # ending the tracking info
+        state == "tracking" && plain($0) == "" { state = "rest"; next }
+        { print }
+        END { if (NR == 1) print_header("") }
+    '
+    return "${PIPESTATUS[0]}"
+}
+
 function git_fn() {
     if [ "$#" -eq 0 ]; then
-        git status
+        git_status_compact
     else
         git "$@"
     fi
@@ -1041,13 +1122,18 @@ complete -F _complete_alias grm
 
 alias g='git_fn'
 
-# https://unix.stackexchange.com/questions/216748
+# Gives `g` all of git's completion (subcommands, git aliases, options, refs, ...), via
+# the helper git's completion script provides for this. That script is otherwise only
+# loaded on first `git <TAB>`.
 # (bash-completion isn't loaded in non-interactive shells, e.g. Claude Code's)
-if declare -F _completion_loader >/dev/null; then
+# _comp_load replaces the deprecated _completion_loader in bash-completion>=2.12
+if declare -F _comp_load >/dev/null; then
+    _comp_load git
+elif declare -F _completion_loader >/dev/null; then
     _completion_loader git
-    # The sed part just replaces the command name 'git' at end of the printed completion
-    # definition with 'g' (my alias for `git_fn`)
-    eval $(complete -p git | sed 's/git$/g/')
+fi
+if declare -F __git_complete >/dev/null; then
+    __git_complete g git
 fi
 
 # TODO git init before both of these adds? init idempotent, or need to check?
