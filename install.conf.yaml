@@ -33,6 +33,7 @@
     ~/.inputrc:
     ~/.vimrc:
     ~/.vim:
+    ~/.config/nvim:
     ~/.tmux.conf:
 
     #~/.lesskey:
@@ -115,6 +116,13 @@
     description: "Installing Vim plugins, building YouCompleteMe (clangd completer)"
     command: "./install_vim_extensions.sh"
     stdout: False
+    stderr: True
+    stdin: True
+  -
+    # Nightly, w/ a venv for its Python provider (see README). -u: update an existing one
+    description: "Installing Neovim (nightly) and its Neovim-only plugins"
+    command: "./install_neovim.sh"
+    stdout: True
     stderr: True
     stdin: True
   - ./ui_settings.sh

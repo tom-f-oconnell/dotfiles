@@ -101,6 +101,15 @@ let g:csv_bind_B = 1
 " Plugins are managed by vim-plug (vim/autoload/plug.vim in the dotfiles; :PlugUpgrade
 " updates it), and installed into ~/.vim/bundle (ignored by the dotfiles' git), where
 " Vundle used to put them, so checkouts from then are kept.
+"
+" Neovim shares these (see nvim/init.vim). For plugins only one of them uses, use
+" `Plug '...', Cond(has('nvim'))` (or !has('nvim')), which still lists them (just never
+" loading them), so :PlugClean in the other editor doesn't delete them.
+function! Cond(cond, ...)
+  let opts = get(a:000, 0, {})
+  return a:cond ? opts : extend(opts, {'on': [], 'for': []})
+endfunction
+
 call plug#begin('~/.vim/bundle')
 
 " TODO look in to:
@@ -142,6 +151,10 @@ Plug 'plasticboy/vim-markdown'
 "
 " Its 'do' hook downloads the previewer it runs (mkdp#util#install())
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
+
+" Renders markdown in the buffer (configured in nvim/lua/markdown_render.lua). Vim instead
+" uses the markdown_render autocmds below.
+Plug 'MeanderingProgrammer/render-markdown.nvim', Cond(has('nvim'))
 
 Plug 'lervag/vimtex'
 
@@ -560,6 +573,9 @@ au Filetype markdown nmap <buffer> <F5> <Plug>MarkdownPreviewToggle
 " ~/.vim/after/syntax/markdown.vim, and table columns aligned by ~/.vim/autoload/mdtable.vim.
 " concealcursor=nc keeps the cursor line rendered too, except in visual mode.
 " ModeChanged (rather than InsertLeave) so leaving insert mode with Ctrl-C also counts.
+" Not in Neovim, which uses render-markdown.nvim instead (and can't run mdtable.vim, which
+" is Vim9 script).
+if !has('nvim')
 function! s:MarkdownModeChanged() abort
   let raw = v:event.new_mode =~# '^\%([iR]\|ni\)'
   if raw == (&l:conceallevel == 0)
@@ -580,6 +596,7 @@ augroup markdown_render
   au TextChanged * if &filetype ==# 'markdown' && &l:conceallevel
     \ | call mdtable#Render() | endif
 augroup END
+endif
 
 " To exclude spellcheck from certain .txt files
 " TODO TODO TODO revert change that deleted the "Filetype special_txt..." line
@@ -1118,6 +1135,9 @@ inoremap <F12> <C-o>:syntax sync fromstart<CR>
 " (i guess i'd have to change it to not be "inoremap" then, since that
 " specifies an insert mode binding
 
+" Neovim handles bracketed paste itself (and has no t_SI/t_EI or 'pastetoggle'). There,
+" this <Esc>... mapping would also make Esc in insert mode wait for 'timeoutlen'.
+if !has('nvim')
 let &t_SI .= "\<Esc>[?2004h"
 let &t_EI .= "\<Esc>[?2004l"
 inoremap <special> <expr> <Esc>[200~ XTermPasteBegin()
@@ -1129,6 +1149,7 @@ function XTermPasteBegin()
   set paste
   return ""
 endfunction
+endif
 
 " TODO any reason not to always have this set?
 " This is to more easily read through files with really long lines, like soem

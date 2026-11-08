@@ -85,6 +85,28 @@ Python upgrade, rebuild YouCompleteMe with `vim +'PlugInstall! YouCompleteMe' +q
 
 `:PlugClean` removes plugin directories no longer listed in `vimrc`.
 
+#### Neovim
+
+Neovim (`nvim`) uses the same `vimrc`, `vim/` and plugins as Vim, which stays the default
+editor. `nvim/init.vim` (linked from `~/.config/nvim`) sources `vimrc`, which checks
+`has('nvim')` where Neovim needs something different, and plugins only one editor uses are
+listed with `Cond(has('nvim'))` (so `:PlugClean` in the other keeps them). The main
+difference is markdown: Neovim renders it with
+[render-markdown.nvim](https://github.com/MeanderingProgrammer/render-markdown.nvim)
+(configured in `nvim/lua/markdown_render.lua`), which also wraps tables to fit the window.
+
+`install_neovim.sh` (run by `install`) installs a nightly build in `~/.local/opt/nvim`,
+because wrapping by displayed (not raw) width isn't in a release until 0.13. `-u` updates
+it. It also makes a venv w/ `pynvim` for Neovim's Python provider (which YouCompleteMe
+needs), in `~/.local/share/nvim/venv`.
+
+Differences from Vim:
+- YouCompleteMe works, but w/o its popups (signature help, hover), inlay hints or symbol
+  search, which are Vim-only.
+- Command history, marks and registers are kept separately (`~/.local/state/nvim/shada`).
+- The clipboard (`,y` / `,v`) uses `xclip` w/ a display, else tmux's buffer (which tmux
+  passes on via OSC 52), else OSC 52 if the terminal supports it.
+
 #### multi-git-status
 
 For now, just manually follow the instructions copied from [here](https://github.com/fboender/multi-git-status):
