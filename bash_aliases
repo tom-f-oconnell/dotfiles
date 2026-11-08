@@ -1152,6 +1152,22 @@ function _git_n_commits() {
     fi
 }
 
+# Prints the prompt "$1 [y/N] ", and reads a single key (without needing enter). Returns 0
+# if it was y or Y.
+function _git_confirm() {
+    local reply rest
+    printf '%s [y/N] ' "$1"
+    # Read without echo, then discarding the rest of multi-character keys (e.g. arrows), so
+    # neither shows up as garbage.
+    read -r -s -n 1 reply
+    read -r -s -t 0.05 -n 64 rest
+    if [[ $reply == [[:print:]] ]]; then
+        printf '%s' "$reply"
+    fi
+    echo
+    [ "$reply" = y ] || [ "$reply" = Y ]
+}
+
 # `git status`, but first fetching the current branch's upstream (so the comparison with it
 # is current), and with git's "On branch X" and "Your branch is ..." lines (and the blank
 # line after them) replaced by:
@@ -1163,6 +1179,9 @@ function _git_n_commits() {
 #
 # If run interactively, and the branch is behind its upstream (and not also ahead) with no
 # changes to tracked files, this then offers to fast-forward to the (just fetched) upstream.
+# If instead it is ahead of its upstream (and not also behind), and `git push` would push
+# to that upstream branch, this offers to push just this branch to it (with or without
+# uncommitted changes, which pushing doesn't touch).
 function git_status_compact() {
     local color=never cols=0
     if [ -t 1 ]; then
@@ -1183,7 +1202,7 @@ function git_status_compact() {
         fi
     fi
 
-    local header= commit_lines= ref ahead=0 behind=0
+    local header= commit_lines= ref ahead=0 behind=0 pushes_to_upstream=0
     # (fails if HEAD is detached, leaving git's "HEAD detached at X" line as is)
     if ref=$(git symbolic-ref --quiet HEAD 2>/dev/null); then
         local branch=${ref#refs/heads/}
@@ -1198,11 +1217,18 @@ function git_status_compact() {
             fetch_note="couldn't fetch $remote: $fetch_err"
         fi
 
-        local upstream track
-        read -r upstream track < <(git for-each-ref \
-            --format='%(upstream:short) %(upstream:track,nobracket)' "$ref")
+        local upstream upstream_ref push_ref track
+        local format='%(upstream:short)%1f%(upstream)%1f%(push)%1f'
+        format+='%(upstream:track,nobracket)'
+        IFS=$'\x1f' read -r upstream upstream_ref push_ref track < <(
+            git for-each-ref --format="$format" "$ref")
         [[ $track =~ ahead\ ([0-9]+) ]] && ahead=${BASH_REMATCH[1]}
         [[ $track =~ behind\ ([0-9]+) ]] && behind=${BASH_REMATCH[1]}
+        # (%(push) is empty e.g. with push.default=simple and a differently named upstream,
+        # and is some other ref e.g. with a pushRemote, where pushing would be to elsewhere)
+        if [ -n "$push_ref" ] && [ "$push_ref" = "$upstream_ref" ]; then
+            pushes_to_upstream=1
+        fi
 
         header="branch: $branch"
         local in_sync=0
@@ -1291,20 +1317,19 @@ function git_status_compact() {
     '
     local -a codes=("${PIPESTATUS[@]}")
 
-    if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ] && [ "${codes[1]}" -eq 0 ] && \
-            [ -t 0 ] && [ -t 1 ]; then
-        local reply rest
-        printf 'pull %s from %s? [y/N] ' "$(_git_n_commits "$behind")" "$upstream"
-        # A single key, without needing enter. Read without echo, then discarding the rest
-        # of multi-character keys (e.g. arrows), so neither shows up as garbage.
-        read -r -s -n 1 reply
-        read -r -s -t 0.05 -n 64 rest
-        if [[ $reply == [[:print:]] ]]; then
-            printf '%s' "$reply"
-        fi
-        echo
-        if [ "$reply" = y ] || [ "$reply" = Y ]; then
+    if ! [ -t 0 ] || ! [ -t 1 ]; then
+        return "${codes[0]}"
+    fi
+    if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ] && [ "${codes[1]}" -eq 0 ]; then
+        if _git_confirm "pull $(_git_n_commits "$behind") from $upstream?"; then
             git merge --ff-only '@{upstream}'
+            return
+        fi
+    elif [ "$ahead" -gt 0 ] && [ "$behind" -eq 0 ] && [ "$pushes_to_upstream" -eq 1 ]; then
+        # (an explicit refspec, so e.g. push.default=matching doesn't also push other
+        # branches)
+        if _git_confirm "push $(_git_n_commits "$ahead") to $upstream?"; then
+            git_push_compact "$remote" "$ref:$merge_ref"
             return
         fi
     fi
