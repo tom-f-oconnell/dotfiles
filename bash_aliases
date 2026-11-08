@@ -2372,6 +2372,9 @@ fi
 alias v='vi'
 alias sv='sudo vi'
 
+alias nv='nvim'
+alias snv='sudo nvim'
+
 # [v]im [p]lugin [i]nstall
 alias vpi='vim +PlugInstall +qall'
 
@@ -3180,7 +3183,7 @@ alias claude-stale='claude-prune-stale --dry-run'
 # name). Only background sessions have an id (what `claude stop` / `claude rm` take);
 # interactive ones show '-'. Plain `claude agents` opens the interactive agent view instead
 # of printing them.
-function claude-agents-list() {
+function claude-list() {
     {
         printf 'ID\tbackground\tstatus\tname\n'
         command claude agents --json |
