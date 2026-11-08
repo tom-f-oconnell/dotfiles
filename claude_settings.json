@@ -1,4 +1,8 @@
 {
+  "cleanupPeriodDays": 36500,
+  "env": {
+    "UV_PROJECT_ENVIRONMENT": "venv"
+  },
   "permissions": {
     "deny": [
       "Read(**/*.tif)",
@@ -16,28 +20,7 @@
       "Read(.git/**)"
     ]
   },
-  "env": {
-    "UV_PROJECT_ENVIRONMENT": "venv"
-  },
   "model": "opus",
-  "respondToBashCommands": false,
-  "cleanupPeriodDays": 36500,
-  "effortLevel": "medium",
-  "modelSettings": {
-    "claude-opus-5": {
-      "effortLevel": "medium"
-    },
-    "claude-opus-5-5": {
-      "effortLevel": "xhigh"
-    },
-    "claude-fable-5-1": {
-      "effortLevel": "xhigh"
-    }
-  },
-  "tui": "fullscreen",
-  "viewMode": "focus",
-  "theme": "dark",
-  "switchModelsOnFlag": true,
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -54,8 +37,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -66,8 +49,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -78,8 +61,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -90,8 +73,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -102,8 +85,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -114,8 +97,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -126,8 +109,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -138,8 +121,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -150,8 +133,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -162,8 +145,8 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
@@ -174,11 +157,29 @@
           {
             "type": "command",
             "command": "f=\"$HOME/src/al_analysis/scripts/claude_pair_remapping_experiments/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
-            "async": true,
-            "timeout": 20
+            "timeout": 20,
+            "async": true
           }
         ]
       }
     ]
-  }
+  },
+  "respondToBashCommands": false,
+  "viewMode": "focus",
+  "effortLevel": "medium",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "medium"
+    },
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    },
+    "claude-fable-5-1": {
+      "effortLevel": "xhigh"
+    }
+  },
+  "tui": "fullscreen",
+  "theme": "dark",
+  "switchModelsOnFlag": true,
+  "remoteControlAtStartup": true
 }
