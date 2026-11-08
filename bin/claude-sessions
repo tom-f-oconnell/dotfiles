@@ -1,0 +1,901 @@
+#!/usr/bin/env python3
+"""List, inspect and safely resume Claude Code sessions, on this machine or another.
+
+Subcommands (bash_aliases wraps them as `claude-list`, `claude-peek` and the `claude`
+function):
+  list [host ...]         active sessions: id (first 8 characters of the session ID),
+                          background or not, status and for how long, terminal, time since
+                          anyone typed there, name
+  peek <name|id> [host]   read-only look at one session: status, terminal, working directory
+                          and git state, and its last few turns
+  resume-guard <args>     run by the `claude` function for `claude -r` / `claude -c`: when the
+                          session is still open elsewhere, offers to show, take over, close or
+                          fork it, instead of resuming it twice (two processes then write one
+                          transcript without seeing each other's turns). For one not running,
+                          expands a session ID prefix (as `list` shows) to the full ID. Exits
+                          100 when neither applies, so the caller runs claude as usual.
+
+For another host, this script runs there over ssh (piped to its python3), so that host
+needs only Claude Code and python3, not these dotfiles.
+"""
+import argparse
+import json
+import os
+import re
+import shlex
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import termios
+import textwrap
+import time
+import tty
+from datetime import datetime, timezone
+from pathlib import Path
+
+HOME = Path.home()
+CLAUDE_DIR = HOME / ".claude"
+# resume-guard exit status meaning "no open session involved: run claude as usual"
+PASS = 100
+
+USE_COLOR = False
+
+
+def style(text, code):
+    return f"\033[{code}m{text}\033[0m" if USE_COLOR else text
+
+
+def claude_bin() -> str:
+    # ssh commands and systemd services may not have ~/.local/bin on their PATH
+    return shutil.which("claude") or str(HOME / ".local/bin/claude")
+
+
+def age(seconds) -> str:
+    """Compact duration, e.g. 45s, 12m, 2h13m, 3d4h ('-' for None)."""
+    if seconds is None:
+        return "-"
+    s = max(0, int(seconds))
+    if s < 60:
+        return f"{s}s"
+    m, h, d = s // 60, s // 3600, s // 86400
+    if s < 3600:
+        return f"{m}m"
+    if s < 86400:
+        return f"{h}h{m % 60:02d}m"
+    return f"{d}d{h % 24}h"
+
+
+def local_time(ts) -> str:
+    """HH:MM for today, else e.g. 'Nov 05 14:02', from an ISO timestamp or epoch ms."""
+    if ts is None:
+        return "?"
+    if isinstance(ts, (int, float)):
+        t = datetime.fromtimestamp(ts / 1000)
+    else:
+        try:
+            t = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone()
+        except ValueError:
+            return "?"
+    if t.date() == datetime.now().date():
+        return t.strftime("%H:%M")
+    return t.strftime("%b %d %H:%M")
+
+
+def _proc_alive(pid) -> bool:
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            # field 3 is the state; a zombie has already exited
+            return f.read().rsplit(")", 1)[1].split()[0] != "Z"
+    except (OSError, IndexError):
+        return False
+
+
+def _terminal_info(pid):
+    """(tty name e.g. 'pts/20' or None, ssh client address or None, seconds since input)."""
+    try:
+        dev = os.readlink(f"/proc/{pid}/fd/0")
+    except OSError:
+        return None, None, None
+    if not (dev.startswith("/dev/pts/") or dev.startswith("/dev/tty")):
+        return None, None, None
+    ssh_from = None
+    try:
+        with open(f"/proc/{pid}/environ", "rb") as f:
+            for var in f.read().split(b"\0"):
+                if var.startswith(b"SSH_CONNECTION="):
+                    ssh_from = var.split(b"=", 1)[1].split()[0].decode()
+    except (OSError, IndexError):
+        pass
+    try:
+        # a terminal's atime is when it last had input (what `w` shows as IDLE)
+        typed_ago = time.time() - os.stat(dev).st_atime
+    except OSError:
+        typed_ago = None
+    return dev[len("/dev/"):], ssh_from, typed_ago
+
+
+def live_sessions():
+    """Active sessions, as `claude agents --json` lists them, plus details from this host.
+
+    Added keys: `status_for` (seconds in the current status), `tty`, `ssh_from`,
+    `typed_ago` (seconds since input on that terminal) and `version` (Claude Code's).
+    """
+    r = subprocess.run([claude_bin(), "agents", "--json"], capture_output=True, text=True,
+                       timeout=60)
+    if r.returncode:
+        sys.exit(f"`claude agents --json` failed: {(r.stderr or r.stdout).strip()}")
+    sessions = json.loads(r.stdout or "[]")
+    now = time.time()
+    for s in sessions:
+        pid = s.get("pid")
+        info = {}
+        try:
+            info = json.loads((CLAUDE_DIR / "sessions" / f"{pid}.json").read_text())
+        except (OSError, ValueError):
+            pass
+        since = info.get("statusUpdatedAt") or s.get("startedAt")
+        s["status_for"] = now - since / 1000 if since else None
+        s["version"] = info.get("version")
+        # a background session's terminal is the daemon's, not one anyone sits at
+        s["tty"], s["ssh_from"], s["typed_ago"] = (
+            _terminal_info(pid) if pid and s.get("kind") != "background" else (None,) * 3)
+    return sessions
+
+
+def status_of(s) -> str:
+    return s.get("state") or s.get("status") or "?"
+
+
+def match(sessions, key, loose=True):
+    """Sessions that `key` names: full session ID, background id or name, else a session ID
+    prefix (8+ characters), else (`loose`) part of a name, ignoring case."""
+    exact = [s for s in sessions if key in (s.get("sessionId"), s.get("id"), s.get("name"))]
+    if exact:
+        return exact
+    if len(key) >= 8:
+        prefix = [s for s in sessions if (s.get("sessionId") or "").startswith(key)]
+        if prefix:
+            return prefix
+    if not loose:
+        return []
+    return [s for s in sessions if key.lower() in (s.get("name") or "").lower()]
+
+
+def transcript_path(session_id):
+    hits = sorted(CLAUDE_DIR.glob(f"projects/*/{session_id}.jsonl"))
+    return hits[0] if hits else None
+
+
+# ---------------------------------------------------------------------------------------
+# Transcripts
+
+def _is_prompt(e) -> bool:
+    """Whether a transcript entry is a prompt (typed, or an automated notice), not a tool
+    result."""
+    if e.get("type") != "user" or e.get("isMeta"):
+        return False
+    content = (e.get("message") or {}).get("content")
+    if isinstance(content, str):
+        return True
+    return isinstance(content, list) and not any(
+        isinstance(b, dict) and b.get("type") == "tool_result" for b in content)
+
+
+def _prompt_text(e):
+    """(text, automated) of a prompt entry."""
+    content = e["message"]["content"]
+    if isinstance(content, list):
+        content = "\n".join(b.get("text", "") for b in content
+                            if isinstance(b, dict) and b.get("type") == "text")
+    content = content.strip()
+    cmd = re.search(r"<command-name>(.*?)</command-name>", content)
+    if cmd:
+        args = re.search(r"<command-args>(.*?)</command-args>", content, re.S)
+        return (cmd.group(1) + (" " + args.group(1).strip() if args else "")).strip(), False
+    if content.startswith("<local-command-stdout>"):
+        return re.sub(r"</?local-command-stdout>", "", content).strip(), True
+    return content, content.startswith(("<", "[", "Caveat:"))
+
+
+CHAIN_TYPES = ("user", "assistant", "system")
+
+
+def _tips(entries, k):
+    """Up to `k` branch tips (uuids) of the conversation, newest first.
+
+    The newest entry is one. A session resumed while still open has a branch per process,
+    each recorded in that process's `last-prompt` entries, so the others are where those
+    lead (each followed to the newest entry beyond it).
+    """
+    pos, children = {}, {}
+    for i, e in enumerate(entries):
+        u = e.get("uuid")
+        if u and not e.get("isSidechain") and e.get("type") in CHAIN_TYPES:
+            pos[u] = i
+            children.setdefault(e.get("parentUuid"), []).append(u)
+    if not pos:
+        return []
+    # newest position in each entry's subtree (children are always written after parents)
+    latest = dict(pos)
+    for u in sorted(pos, key=pos.get, reverse=True):
+        parent = entries[pos[u]].get("parentUuid")
+        if parent in latest:
+            latest[parent] = max(latest[parent], latest[u])
+
+    def tip(u):
+        while children.get(u):
+            u = max(children[u], key=latest.get)
+        return u
+
+    candidates = [max(pos, key=pos.get)] + [
+        e["leafUuid"] for e in reversed(entries)
+        if e.get("type") == "last-prompt" and e.get("leafUuid") in pos]
+    tips = []
+    for c in candidates:
+        t = tip(c)
+        if t not in tips:
+            tips.append(t)
+            if len(tips) == k:
+                break
+    return tips
+
+
+def _chain(by_uuid, leaf, want_prompts):
+    """The branch ending at `leaf`, oldest first, back to its `want_prompts`-th last typed
+    prompt, and whether that is complete (False: earlier entries are needed)."""
+    chain, prompts = [], 0
+    e = by_uuid.get(leaf)
+    while e is not None:
+        chain.append(e)
+        if _is_prompt(e) and not _prompt_text(e)[1]:
+            prompts += 1
+            if prompts >= want_prompts:
+                return chain[::-1], True
+        parent = e.get("parentUuid")
+        if parent is None:
+            # start of the conversation, or a compaction boundary
+            return chain[::-1], True
+        e = by_uuid.get(parent)
+    return chain[::-1], False
+
+
+def read_transcript(path, want_prompts, versions=()):
+    """Entries read, and branches of the conversation, newest first.
+
+    The branches are the newest one, and for each Claude Code version in `versions` (those
+    of the session's running processes) the newest one that version wrote, as
+    (chain back to its `want_prompts`-th last typed prompt, writer's version) pairs. Reads
+    from the end of the file (transcripts can be 100 MB), more until they are complete.
+    """
+    size = path.stat().st_size
+    chunk = 2 << 20
+    while True:
+        start = max(0, size - chunk)
+        with open(path, "rb") as f:
+            f.seek(start)
+            lines = f.read().split(b"\n")
+        if start:
+            lines = lines[1:]
+        entries = []
+        for line in lines:
+            if line.strip():
+                try:
+                    entries.append(json.loads(line))
+                except ValueError:
+                    pass
+        by_uuid = {e["uuid"]: e for e in entries if e.get("uuid")}
+        wanted, picked = set(versions), []
+        for i, t in enumerate(_tips(entries, 10)):
+            v = by_uuid[t].get("version")
+            if i == 0 or v in wanted:
+                picked.append((t, v))
+                wanted.discard(v)
+        chains = [(_chain(by_uuid, t, want_prompts), v) for t, v in picked]
+        if start == 0 or (chains and not wanted and all(done for (_, done), _ in chains)):
+            return entries, [(chain, v) for (chain, _), v in chains]
+        chunk *= 4
+
+
+def _tool_summary(block) -> str:
+    inp = block.get("input") or {}
+    for key in ("description", "command", "file_path", "path", "pattern", "url", "query",
+                "prompt", "skill", "action"):
+        v = inp.get(key)
+        if isinstance(v, str) and v.strip():
+            return f"{block.get('name')}: {v.strip().splitlines()[0]}"
+    return str(block.get("name"))
+
+
+def _clip(text, width, max_lines, full):
+    """Text wrapped to `width`, cut to `max_lines` lines (unless `full`)."""
+    out = []
+    for para in text.splitlines() or [""]:
+        out += textwrap.wrap(para, width, replace_whitespace=False) or [""]
+    if not full and len(out) > max_lines:
+        out = out[:max_lines] + [f"[... {len(out) - max_lines} more lines]"]
+    return out
+
+
+def render_turns(chain, width, full, max_tools=6, max_lines=80):
+    """Lines describing the entries of `chain`: prompts, replies, tool calls (collapsed),
+    recaps and compactions; the last `max_lines` of them unless `full`."""
+    width = max(width, 40)
+    lines, tools = [], []
+    indent = "    "
+
+    def flush_tools():
+        shown = tools if full else tools[:max_tools]
+        for t in shown:
+            lines.append(style(indent + "- " + t[: width - len(indent) - 2], "2"))
+        if len(tools) > len(shown):
+            lines.append(style(f"{indent}  ... and {len(tools) - len(shown)} more tool calls",
+                               "2"))
+        tools.clear()
+
+    for e in chain:
+        when = local_time(e.get("timestamp"))
+        if _is_prompt(e):
+            flush_tools()
+            text, automated = _prompt_text(e)
+            label = "notice" if automated else "you"
+            body = _clip(text, width - len(indent), 2 if automated else 6, full)
+            head = f"[{when}] {label}: "
+            lines.append("")
+            lines.append(style(head, "1") + (style(body[0], "1") if not automated else body[0]))
+            lines += [indent + b for b in body[1:]]
+        elif e.get("type") == "assistant":
+            for b in (e.get("message") or {}).get("content") or []:
+                if not isinstance(b, dict):
+                    continue
+                if b.get("type") == "tool_use":
+                    tools.append(_tool_summary(b))
+                elif b.get("type") == "text" and b.get("text", "").strip():
+                    flush_tools()
+                    body = _clip(b["text"].strip(), width - len(indent), 10, full)
+                    lines.append(f"[{when}] claude: " + body[0])
+                    lines += [indent + x for x in body[1:]]
+        elif e.get("type") == "system" and e.get("subtype") == "away_summary":
+            flush_tools()
+            body = _clip(str(e.get("content", "")), width - len(indent), 6, full)
+            lines.append(style(f"[{when}] recap: " + body[0], "3"))
+            lines += [style(indent + x, "3") for x in body[1:]]
+        elif e.get("type") == "system" and e.get("subtype") == "compact_boundary":
+            flush_tools()
+            lines.append(style(f"[{when}] (conversation compacted here)", "2"))
+    flush_tools()
+    if not full and len(lines) > max_lines:
+        cut = len(lines) - max_lines
+        lines = [style(f"[... {cut} earlier lines; --full shows them]", "2")] + lines[cut:]
+    return lines
+
+
+def pending_tool(chain):
+    """Name of the newest tool call that has no result yet, else None."""
+    results = set()
+    for e in chain:
+        content = (e.get("message") or {}).get("content")
+        if e.get("type") == "user" and isinstance(content, list):
+            results |= {b.get("tool_use_id") for b in content if isinstance(b, dict)}
+    for e in reversed(chain):
+        if e.get("type") != "assistant":
+            continue
+        calls = [b for b in (e.get("message") or {}).get("content") or []
+                 if isinstance(b, dict) and b.get("type") == "tool_use"]
+        open_calls = [b for b in calls if b.get("id") not in results]
+        return open_calls[-1].get("name") if open_calls else None
+    return None
+
+
+def _git_state(cwd):
+    try:
+        r = subprocess.run(["git", "-C", cwd, "status", "--porcelain=v1", "-b"],
+                           capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if r.returncode:
+        return None
+    lines = r.stdout.splitlines()
+    head = lines[0][3:] if lines else "?"
+    branch = head.split("...")[0]
+    parts = [branch]
+    if len(lines) > 1:
+        parts.append(f"{len(lines) - 1} uncommitted")
+    m = re.search(r"\[(.*)\]", head)
+    if m:
+        parts.append(m.group(1))
+    return ", ".join(parts)
+
+
+def _process_line(s) -> str:
+    """One running process of a session: kind, ids, version, status, terminal."""
+    bits = [s.get("kind") or "?"]
+    if s.get("id"):
+        bits.append(f"id {s['id']}")
+    bits.append(f"pid {s['pid']}")
+    if s.get("version"):
+        bits.append(f"Claude Code {s['version']}")
+    line = (", ".join(bits) + f"; {status_of(s)} for {age(s.get('status_for'))} (started "
+            f"{local_time(s.get('startedAt'))})")
+    if s.get("kind") != "background":
+        line += f"; {s.get('tty') or 'no terminal'}"
+        line += f", ssh from {s['ssh_from']}" if s.get("ssh_from") else ", local"
+        if s.get("typed_ago") is not None:
+            line += f", last typed {age(s['typed_ago'])} ago"
+    return line
+
+
+def peek(procs, turns=3, full=False, width=None):
+    """Print a read-only summary of a session and its last `turns` prompts.
+
+    Args:
+        procs: its running processes (`live_sessions()` rows with one session ID; more than
+            one when it was resumed while still open), or a stub with only `sessionId` for
+            one that is not running.
+    """
+    width = width or min(shutil.get_terminal_size((100, 20)).columns, 160)
+    procs = [s for s in procs if s.get("pid")] or procs[:1]
+    running = bool(procs[0].get("pid"))
+    sid = procs[0].get("sessionId")
+    path = transcript_path(sid) if sid else None
+    versions = [s.get("version") for s in procs if s.get("pid") and s.get("version")]
+    entries, branches = read_transcript(path, turns, versions) if path else ([], [])
+    newest = branches[0][0] if branches else []
+    title = next((e.get("aiTitle") for e in reversed(entries) if e.get("type") == "ai-title"),
+                 None)
+    mode = next((e.get("permissionMode") for e in reversed(entries)
+                 if e.get("type") == "permission-mode"), None)
+    last_assistant = next((e for e in reversed(newest) if e.get("type") == "assistant"), None)
+    cwd = procs[0].get("cwd") or next((e.get("cwd") for e in reversed(newest)
+                                       if e.get("cwd")), None)
+
+    names = [s.get("name") for s in procs if s.get("name")]
+    print(style(" / ".join(names) or sid, "1") + (f'  "{title}"' if title else ""))
+    rows = []
+    if not running:
+        last = newest[-1].get("timestamp") if newest else None
+        rows += [("session", sid), ("status", f"not running (last activity {local_time(last)})")]
+    elif len(procs) == 1:
+        rows += [("session", sid), ("process", _process_line(procs[0]))]
+    else:
+        rows.append(("session", style(
+            f"{sid}, OPEN IN {len(procs)} PROCESSES: it was resumed while still open, and each "
+            "writes its own branch of the transcript without seeing the others' turns", "33")))
+        rows += [(s.get("name") or "?", _process_line(s)) for s in procs]
+    if cwd:
+        git = _git_state(cwd) if os.path.isdir(cwd) else None
+        rows.append(("cwd", cwd + (f" (git: {git})" if git else "")))
+    model = []
+    if last_assistant:
+        model.append((last_assistant.get("message") or {}).get("model") or "?")
+        if last_assistant.get("effort"):
+            model.append(f"effort {last_assistant['effort']}")
+    if mode:
+        model.append(f"permission mode {mode}")
+    if model:
+        rows.append(("model", ", ".join(model)))
+    if not path:
+        rows.append(("transcript", "not found"))
+    label_width = max(10, *(len(k) for k, _ in rows))
+    for k, v in rows:
+        print(f"  {k:<{label_width}} {v}")
+
+    for i, (chain, version) in enumerate(branches):
+        if len(branches) > 1 or len(procs) > 1:
+            # which process writes a branch is not recorded, but each entry has the writer's
+            # Claude Code version, which tells them apart when the versions differ
+            writers = [s.get("name") or "?" for s in procs
+                       if version and s.get("version") == version]
+            if len(writers) == 1:
+                by = f"written by {writers[0]}"
+            elif writers:
+                by = f"written by one of {' / '.join(writers)}"
+            else:
+                by = f"written by a process no longer running (Claude Code {version})"
+            last = chain[-1].get("timestamp") if chain else None
+            note = ", which a resume continues" if i == 0 else ""
+            print(style(f"\n=== branch {i + 1} of {len(branches)}: last written "
+                        f"{local_time(last)}, {by}{note} ===", "1"))
+        for line in render_turns(chain, width, full):
+            print(line)
+        waiting = pending_tool(chain)
+        if waiting and running:
+            print(style(f"\n(its {waiting} call has no result yet: still running, or waiting "
+                        "for permission)", "33"))
+    found = {v for _, v in branches}
+    for s in procs:
+        if not s.get("pid") or s.get("version") in found:
+            continue
+        if [t.get("version") for t in procs].count(s.get("version")) > 1:
+            print(style(f"\n({s.get('name')} runs the same Claude Code version as another "
+                        "process of this session, so its branch cannot be told apart)", "2"))
+        else:
+            print(style(f"\n({s.get('name')} has not written to this transcript since the "
+                        "session was resumed in another process, so its last turns are part of "
+                        "the history above)", "2"))
+
+
+# ---------------------------------------------------------------------------------------
+# Other hosts
+
+def is_local(host) -> bool:
+    return host in ("localhost", socket.gethostname(), socket.gethostname().split(".")[0])
+
+
+def run_remote(host, args, capture=False):
+    """Run this script on `host` (piped to its python3 over ssh) with `args`."""
+    cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", host,
+           "python3 - " + " ".join(shlex.quote(a) for a in args)]
+    with open(os.path.abspath(__file__), "rb") as script:
+        r = subprocess.run(cmd, stdin=script, capture_output=capture, text=capture)
+    if r.returncode:
+        err = (r.stderr or "").strip() if capture else ""
+        sys.exit(f"{host}: failed ({r.returncode}){': ' + err if err else ''}")
+    return r.stdout if capture else None
+
+
+# ---------------------------------------------------------------------------------------
+# Subcommands
+
+LIST_COLUMNS = ("ID", "background", "status", "for", "terminal", "last typed", "name")
+
+
+def by_session(sessions):
+    """`sessions` grouped by session ID, in order of first appearance (a group has several
+    processes when the session was resumed while still open)."""
+    groups = {}
+    for s in sessions:
+        groups.setdefault(s.get("sessionId") or id(s), []).append(s)
+    return list(groups.values())
+
+
+def list_rows(sessions):
+    rows = []
+    for group in by_session(sessions):
+        for s in group:
+            name = s.get("name") or "-"
+            others = [t.get("name") or "?" for t in group if t is not s]
+            if others:
+                name += f"  (same session as {', '.join(others)})"
+            # a background id is its session ID's first 8 characters; show the same for
+            # interactive sessions (claude-peek and `claude -r` take it)
+            sid = s.get("id") or (s.get("sessionId") or "-")[:8]
+            rows.append([sid, "yes" if s.get("kind") == "background" else "no",
+                         status_of(s), age(s.get("status_for")), s.get("tty") or "-",
+                         age(s.get("typed_ago")), name])
+    return rows
+
+
+def cmd_list(a):
+    if a.json:
+        json.dump(live_sessions(), sys.stdout)
+        return 0
+    hosts = a.hosts or [None]
+    table = []
+    for host in hosts:
+        if host is None or is_local(host):
+            sessions = live_sessions()
+        else:
+            sessions = json.loads(run_remote(host, ["list", "--json"], capture=True))
+        rows = list_rows(sessions)
+        if len(hosts) > 1:
+            rows = [[host or socket.gethostname().split(".")[0]] + r for r in rows]
+        table += rows
+    header = (["host"] if len(hosts) > 1 else []) + list(LIST_COLUMNS)
+    widths = [max(len(str(r[i])) for r in [header] + table) for i in range(len(header))]
+    for r in [header] + table:
+        print("  ".join(str(c).ljust(w) for c, w in zip(r, widths)).rstrip())
+    return 0
+
+
+def cmd_peek(a):
+    if a.host and not is_local(a.host):
+        args = (["--color"] if USE_COLOR else []) + ["peek", a.session, "-n", str(a.turns),
+                "--width", str(a.width or shutil.get_terminal_size((100, 20)).columns)]
+        args += ["--full"] if a.full else []
+        run_remote(a.host, args)
+        return 0
+    sessions = live_sessions()
+    groups = by_session(match(sessions, a.session))
+    if len(groups) > 1:
+        print(f"{a.session!r} matches several sessions:", file=sys.stderr)
+        for g in groups:
+            print(f"  {' / '.join(s.get('name') or '?' for s in g)}  {g[0].get('sessionId')}",
+                  file=sys.stderr)
+        return 1
+    if groups:
+        # every process of that session, also those `a.session` did not name
+        sid = groups[0][0].get("sessionId")
+        peek([s for s in sessions if s.get("sessionId") == sid] or groups[0], a.turns, a.full,
+             a.width)
+        return 0
+    # not running: a session ID (or a prefix of one) whose transcript is still here
+    found = sorted(CLAUDE_DIR.glob(f"projects/*/{a.session}*.jsonl")) if len(a.session) >= 8 \
+        else []
+    if len(found) == 1:
+        peek([{"sessionId": found[0].stem}], a.turns, a.full, a.width)
+        return 0
+    print(f"no running session matches {a.session!r}" +
+          (", and several transcripts do" if found else ""), file=sys.stderr)
+    return 1
+
+
+def read_key(prompt) -> str:
+    """One keypress from the terminal ('' for Ctrl+C)."""
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    with open("/dev/tty", "rb", buffering=0) as t:
+        fd = t.fileno()
+        old = termios.tcgetattr(fd)
+        try:
+            tty.setcbreak(fd)
+            ch = os.read(fd, 1).decode(errors="replace")
+            # drop the rest of a multi-byte key (arrows etc.), so it doesn't reach the shell
+            termios.tcflush(fd, termios.TCIFLUSH)
+        except KeyboardInterrupt:
+            ch = ""
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    print(ch if ch.isprintable() else "")
+    return ch
+
+
+def parse_resume(args):
+    """(mode, value, rest) for claude's arguments: mode 'resume' (value None: the picker) or
+    'continue' or None, and the other arguments, in order."""
+    mode, value, rest = None, None, []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("-r", "--resume"):
+            mode = "resume"
+            if i + 1 < len(args) and not args[i + 1].startswith("-"):
+                value = args[i + 1]
+                i += 1
+        elif a.startswith("--resume="):
+            mode, value = "resume", a.split("=", 1)[1]
+        elif a in ("-c", "--continue"):
+            mode = mode or "continue"
+        else:
+            rest.append(a)
+        i += 1
+    return mode, value, rest
+
+
+def effective_cwd() -> str:
+    # bash_aliases' `claude` function runs claude in ~/claude when started from ~
+    cwd = os.getcwd()
+    if os.path.samefile(cwd, HOME) and (HOME / "claude").is_dir():
+        return str(HOME / "claude")
+    return cwd
+
+
+def newest_transcript_id(cwd):
+    """Session ID of the most recently written conversation in `cwd` (what `claude -c`
+    continues), or None."""
+    project = CLAUDE_DIR / "projects" / re.sub(r"[^A-Za-z0-9]", "-", cwd)
+    files = list(project.glob("*.jsonl")) if project.is_dir() else []
+    return max(files, key=lambda p: p.stat().st_mtime).stem if files else None
+
+
+def where(s) -> str:
+    """One line on where process `s` of a session runs and how active it is."""
+    name = s.get("name") or s.get("sessionId")
+    if s.get("kind") == "background":
+        return (f"{name} is running as a background session (id {s.get('id')}), "
+                f"{status_of(s)} for {age(s.get('status_for'))}.")
+    term = s.get("tty") or "another terminal"
+    term += f" (ssh from {s['ssh_from']})" if s.get("ssh_from") else ""
+    typed = (f", last typed there {age(s['typed_ago'])} ago"
+             if s.get("typed_ago") is not None else "")
+    return (f"{name} is open in another terminal: {term}, {status_of(s)} for "
+            f"{age(s.get('status_for'))}{typed}.")
+
+
+def where_lines(procs):
+    """Lines on where a session is open, one per process."""
+    if len(procs) == 1:
+        return [where(procs[0])]
+    names = " / ".join(s.get("name") or "?" for s in procs)
+    return ([f"{names}: one session, open in {len(procs)} processes at once (it was resumed "
+             "while still open, and each writes its own branch of the transcript):"]
+            + ["  - " + where(s) for s in procs])
+
+
+def refresh(procs):
+    """The processes of `procs`' session as listed now ([] once all have exited)."""
+    sid = procs[0].get("sessionId")
+    return [t for t in live_sessions() if t.get("sessionId") == sid]
+
+
+def stop(s) -> bool:
+    """Stop process `s` of a session and wait for it to exit."""
+    if s.get("kind") == "background":
+        return subprocess.run([claude_bin(), "stop", s["id"]]).returncode == 0
+    pid = s["pid"]
+    try:
+        # Claude Code exits cleanly on SIGTERM, printing how to resume in its terminal
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return True
+    for _ in range(60):
+        if not _proc_alive(pid):
+            return True
+        time.sleep(0.25)
+    print(f"{s.get('name')} is still running 15 s later (pid {pid}); left it alone.")
+    return False
+
+
+def confirm_stop(procs):
+    """Ask before stopping every process of `procs`' session, as listed now. Returns those
+    to stop ([] if all have exited already), or None to stop none."""
+    now = refresh(procs)
+    if not now:
+        return []
+    parts, warn = [], ""
+    for s in now:
+        parts.append(f"{s.get('name')}: " + (
+            f"background session {s.get('id')}" if s.get("kind") == "background"
+            else f"pid {s['pid']} on {s.get('tty') or 'its terminal'}"))
+        if status_of(s) in ("busy", "working"):
+            warn += (f" {s.get('name')} is {status_of(s)} (for {age(s.get('status_for'))}): "
+                     "stopping it now loses that turn.")
+    what = "it" if len(now) == 1 else f"all {len(now)}"
+    k = read_key(f"Stop {what} ({'; '.join(parts)})?{warn} [y/N] ")
+    return now if k.lower() == "y" else None
+
+
+def exec_claude(args, cwd):
+    """Replace this process with claude `args`, run in `cwd`."""
+    if cwd and os.path.isdir(cwd) and not os.path.samefile(cwd, os.getcwd()):
+        print(f"(in {cwd})")
+        os.chdir(cwd)
+    sys.stdout.flush()
+    os.execv(claude_bin(), ["claude"] + list(args))
+
+
+def session_menu(procs, rest):
+    """Options for resuming a session open elsewhere (`procs`: its processes). Does not
+    return when it runs claude."""
+    sid, cwd = procs[0]["sessionId"], procs[0].get("cwd")
+    while True:
+        background = len(procs) == 1 and procs[0].get("kind") == "background"
+        them = "it" if len(procs) == 1 else f"all {len(procs)}"
+        print("\n".join(where_lines(procs)))
+        print("  1. Show it: status and last few turns (read-only), then back here")
+        if background:
+            print("  2. Attach to it here (`claude attach`; ← or Ctrl+Z leaves it running)")
+            print("  3. Stop it (`claude stop`) and do nothing else")
+        else:
+            print(f"  2. Take it over: stop {them} there, then continue the same session here")
+            print(f"  3. Close it: stop {them} there and do nothing else")
+        print("  4. Fork it: a new session starting from this history; the original keeps "
+              "going on its own")
+        print("  5. Resume it anyway (not advised): both write one transcript without seeing "
+              "each other's turns, and a later resume keeps only one side")
+        k = read_key("Press 1-5 (anything else cancels): ")
+        if k == "1":
+            print()
+            peek(procs)
+            print()
+            procs = refresh(procs)
+            if not procs:
+                print("It has exited since; resuming it here.")
+                exec_claude(["-r", sid] + rest, cwd)
+        elif k == "2" and background:
+            exec_claude(["attach", procs[0]["id"]], cwd)
+        elif k in ("2", "3"):
+            to_stop = confirm_stop(procs)
+            if to_stop is None:
+                continue
+            if not to_stop:
+                print("It has exited already.")
+            if not all([stop(s) for s in to_stop]):
+                return 1
+            if k == "3":
+                print(f"Stopped; `claude -r {sid}` resumes it later.")
+                return 0
+            exec_claude(["-r", sid] + rest, cwd)
+        elif k == "4":
+            exec_claude(["-r", sid, "--fork-session"] + rest, cwd)
+        elif k == "5":
+            exec_claude(["-r", sid] + rest, cwd)
+        else:
+            print("Cancelled.")
+            return 0
+
+
+def resume_by_prefix(value, rest):
+    """Resume the (not running) session whose ID starts with `value`, as `list` shows IDs,
+    in its own directory; PASS unless exactly one transcript matches a partial ID."""
+    if not re.fullmatch(r"[0-9a-f-]{8,35}", value):
+        return PASS
+    found = sorted(CLAUDE_DIR.glob(f"projects/*/{value}*.jsonl"))
+    if len(found) != 1:
+        return PASS
+    _, chains = read_transcript(found[0], 1)
+    cwd = next((e.get("cwd") for e in reversed(chains[0] if chains else []) if e.get("cwd")),
+               None)
+    print(f"(resuming {found[0].stem})")
+    exec_claude(["-r", found[0].stem] + rest, cwd)
+
+
+def cmd_resume_guard(a):
+    args = a.args
+    # flags under which resuming an open session is safe or not interactive, and
+    # subcommands / prompts (a first argument that is not a flag)
+    skip = {"-p", "--print", "--bg", "--background", "--fork-session", "-h", "--help",
+            "-v", "--version"}
+    if not args or not args[0].startswith("-") or skip & set(args):
+        return PASS
+    mode, value, rest = parse_resume(args)
+    if mode is None:
+        return PASS
+    sessions = live_sessions()
+    cwd = effective_cwd()
+    if mode == "continue":
+        sid = newest_transcript_id(cwd)
+        groups = by_session([s for s in sessions if sid and s.get("sessionId") == sid])
+    elif value is not None:
+        groups = by_session(match(sessions, value, loose=False))
+    else:
+        # the picker: say which of its sessions are open elsewhere, since picking one of
+        # those resumes it twice
+        here = by_session([s for s in sessions if s.get("cwd") and os.path.isdir(s["cwd"])
+                           and os.path.samefile(s["cwd"], cwd)])[:9]
+        if not here:
+            return PASS
+        print("Open elsewhere (resuming one of these from the picker would run it twice):")
+        for i, g in enumerate(here, 1):
+            print(f"  {i}. " + "\n     ".join(where_lines(g)))
+        keys = "1" if len(here) == 1 else f"1-{len(here)}"
+        k = read_key(f"Press {keys} for the options for that one, Enter for the picker "
+                     "(anything else cancels): ")
+        if k in ("\n", "\r"):
+            return PASS
+        if not (k.isdigit() and 1 <= int(k) <= len(here)):
+            print("Cancelled.")
+            return 0
+        groups = [here[int(k) - 1]]
+    if not groups and value is not None:
+        return resume_by_prefix(value, rest)
+    if len(groups) != 1:
+        return PASS
+    # every process of that session, also those `value` did not name
+    sid = groups[0][0].get("sessionId")
+    return session_menu([s for s in sessions if s.get("sessionId") == sid], rest)
+
+
+def main() -> int:
+    global USE_COLOR
+    if sys.argv[1:2] == ["resume-guard"]:
+        # claude's own arguments, which argparse would try to parse
+        return cmd_resume_guard(argparse.Namespace(args=sys.argv[2:]))
+    p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    p.add_argument("--color", action="store_true", help=argparse.SUPPRESS)
+    sub = p.add_subparsers(dest="cmd", required=True)
+    pl = sub.add_parser("list", help="active sessions, here or on other hosts")
+    pl.add_argument("hosts", nargs="*", help="hosts to list (default: this one)")
+    pl.add_argument("--json", action="store_true", help="this host's sessions as JSON")
+    pp = sub.add_parser("peek", help="read-only look at one session")
+    pp.add_argument("session", help="name (or part of one), session ID (or 8+ character "
+                                    "prefix) or background id")
+    pp.add_argument("host", nargs="?", help="host the session runs on (default: this one)")
+    pp.add_argument("-n", "--turns", type=int, default=3,
+                    help="show back to this many prompts ago (default: 3)")
+    pp.add_argument("--full", action="store_true", help="do not shorten anything")
+    pp.add_argument("--width", type=int, help=argparse.SUPPRESS)
+    sub.add_parser("resume-guard", help="run by the `claude` function in bash_aliases, "
+                                        "with claude's arguments")
+    a = p.parse_args()
+    USE_COLOR = a.color or sys.stdout.isatty()
+    return {"list": cmd_list, "peek": cmd_peek}[a.cmd](a)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print()
+        sys.exit(130)

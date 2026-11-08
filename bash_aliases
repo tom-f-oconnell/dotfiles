@@ -3158,7 +3158,24 @@ alias minus='printf "−" | xclip -sel clip; echo "put − character in clipboar
 # non-interactive use (stdin not a terminal), and calls made from inside a Claude Code
 # session (its shell has CLAUDECODE set, and loads this function from a shell snapshot).
 # Arguments pass through. `claude` has no completion spec, so none is lost by shadowing.
+# Resuming (`-r <id or name>`, `-c`, or the `-r` picker) first goes through
+# `claude-sessions resume-guard` (bin/): when that session is still open in another
+# terminal or in the background, it offers to show, take over, close or fork it, rather
+# than run it twice. It exits 100 when no open session is involved, and claude runs as usual.
 function claude() {
+    if [ -z "$CLAUDECODE" ] && [ -t 0 ] && command -v claude-sessions >/dev/null; then
+        local a rc
+        for a in "$@"; do
+            case "$a" in
+                -r|--resume|--resume=*|-c|--continue)
+                    claude-sessions resume-guard "$@"
+                    rc=$?
+                    [ "$rc" -ne 100 ] && return "$rc"
+                    break
+                    ;;
+            esac
+        done
+    fi
     if [ -z "$CLAUDECODE" ] && [ -t 0 ] && [ "$PWD" -ef "$HOME" ]; then
         if [ ! -d "$HOME/claude" ]; then
             mkdir "$HOME/claude" || return
@@ -3179,14 +3196,19 @@ alias cconv='claude-conversation'
 # systemd user timer runs daily.
 alias claude-stale='claude-prune-stale --dry-run'
 
-# Active Claude Code sessions, interactive and background (id, whether background, status,
-# name). Only background sessions have an id (what `claude stop` / `claude rm` take);
-# interactive ones show '-'. Plain `claude agents` opens the interactive agent view instead
-# of printing them.
+# Active Claude Code sessions, interactive and background: id, whether background, status
+# and for how long, terminal, time since anyone typed there, name. The id is the first 8
+# characters of the session ID, which `claude-peek` and `claude -r` take; for background
+# sessions it is also what `claude attach` / `stop` / `rm` take. Hosts as arguments list
+# theirs over ssh (`claude-list hal atlas`). Plain `claude agents` opens the interactive
+# agent view instead of printing them.
 function claude-list() {
-    {
-        printf 'ID\tbackground\tstatus\tname\n'
-        command claude agents --json |
-            jq -r '.[] | "\(.id // "-")\t\(if .kind == "background" then "yes" else "no" end)\t\(.state // .status)\t\(.name // "-")"'
-    } | column -t -s $'\t'
+    claude-sessions list "$@"
+}
+
+# Read-only look at one session (name or part of one, session ID or prefix, or background
+# id), optionally on another host: status, terminal, working directory and git state, and
+# its last few turns (`-n` for more, `--full` for nothing shortened).
+function claude-peek() {
+    claude-sessions peek "$@"
 }
