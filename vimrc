@@ -626,6 +626,17 @@ au Filetype xml setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 set backspace=indent,eol,start
 set autoindent
 
+" Swap files in one directory (Neovim's default, so Vim and Neovim warn about files open
+" in the other), rather than next to each file. The trailing // names them after the
+" file's full path (symlinks resolved), w/ % for /, e.g. %home%tom%src%dotfiles%vimrc.swp.
+" Neovim creates the directory itself; Vim doesn't.
+let s:swapdir = (empty($XDG_STATE_HOME) ? expand('~/.local/state') : $XDG_STATE_HOME)
+  \ . '/nvim/swap'
+if !isdirectory(s:swapdir)
+  call mkdir(s:swapdir, 'p', 0700)
+endif
+let &directory = s:swapdir . '//'
+
 " TODO TODO what was the purpose of this again?
 if has("au")
   filetype plugin indent on

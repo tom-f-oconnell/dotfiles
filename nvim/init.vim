@@ -34,11 +34,9 @@ set shortmess+=S
 " Y yanks the whole line, rather than to the end of it.
 silent! nunmap Y
 
-" Swap files next to the edited file (Vim's default), rather than under
-" ~/.local/state/nvim/swap, so each editor warns about files open in the other.
-set directory=.,~/tmp,/var/tmp,/tmp
-" Prompt (as Vim does) when a file is already open in another Vim / Neovim, rather than
-" Neovim's default of just editing it anyway, w/ a W325 warning.
+" Prompt (as Vim does) when a file is already open in another Vim / Neovim (swap files are
+" in the same directory for both, see vimrc), rather than Neovim's default of just
+" editing it anyway, w/ a W325 warning.
 autocmd! nvim.swapfile
 
 lua require('markdown_render')

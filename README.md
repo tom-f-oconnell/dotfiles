@@ -100,6 +100,9 @@ because wrapping by displayed (not raw) width isn't in a release until 0.13. `-u
 it. It also makes a venv w/ `pynvim` for Neovim's Python provider (which YouCompleteMe
 needs), in `~/.local/share/nvim/venv`.
 
+Both keep swap files in `~/.local/state/nvim/swap` (Neovim's default), rather than next to
+each file, so each warns about files open in the other.
+
 Differences from Vim:
 - YouCompleteMe works, but w/o its popups (signature help, hover), inlay hints or symbol
   search, which are Vim-only.
