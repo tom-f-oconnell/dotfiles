@@ -36,14 +36,20 @@ similar flags to force no user interaction for commands that can fundamentally c
 system behavior.
 
 When you recommend a command for me to run myself, also copy it to my clipboard, so that I
-don't have to select it, and say that you did. I'm usually connected over SSH, so do it with
-an OSC 52 escape sequence written to the terminal Claude Code runs in, which my terminal turns
-into my own clipboard: find the tty of the Claude Code process (an ancestor of your shell, e.g.
-`ps -o tty= -p <pid>`), then
-`printf '\033]52;c;%s\a' "$(printf %s "$cmd" | base64 -w0)" > /dev/pts/<n>`, without a
-trailing newline in the command, so that pasting it doesn't run it. Still show the command
-too. If I've said I mean to run several, copy only the first, and copy each next one only
-once I've said the one before worked.
+don't have to select it, and say that you did, but still show the command too. Copy it
+without a trailing newline, so that pasting it doesn't run it. If I've said I mean to run
+several, copy only the first, and copy each next one only once I've said the one before
+worked. Find the Claude Code process (an ancestor of your shell) and read its environment
+(`/proc/<pid>/environ`) to see where I am:
+- With WAYLAND_DISPLAY, I'm at a desktop, e.g. working locally on hal or atlas: use
+  `wl-copy` with its WAYLAND_DISPLAY and XDG_RUNTIME_DIR. With DISPLAY instead (X11, or a
+  forwarded display): `xclip -selection clipboard` with its DISPLAY. My terminals there are
+  GNOME Terminal and Ptyxis, which are built on VTE and ignore OSC 52.
+- Otherwise (over SSH with no display): write an OSC 52 escape sequence to the tty of the
+  Claude Code process (`ps -o tty= -p <pid>`),
+  `printf '\033]52;c;%s\a' "$(printf %s "$cmd" | base64 -w0)" > /dev/pts/<n>`. That only
+  reaches my clipboard if the terminal I'm connecting from supports OSC 52, so say it may not
+  have worked.
 
 When making new projects that use ports, pick a random port across all acceptable
 general purpose unreserved ports, but also avoid known ports of popular existing
