@@ -10,3 +10,10 @@ Host github.com
     # git commands to hang on it
     ServerAliveInterval 15
     ServerAliveCountMax 3
+
+# The Hetzner Cloud server the public BoulderMesh demo runs on
+Host bouldermesh
+    HostName 178.105.53.11
+    User tom
+    IdentityFile ~/.ssh/hetzner_ed25519
+    IdentitiesOnly yes
