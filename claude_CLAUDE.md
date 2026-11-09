@@ -35,6 +35,16 @@ Do not add `-y` to any `sudo apt install` commands in any instructions you write
 similar flags to force no user interaction for commands that can fundamentally change
 system behavior.
 
+When you recommend a command for me to run myself, also copy it to my clipboard, so that I
+don't have to select it, and say that you did. I'm usually connected over SSH, so do it with
+an OSC 52 escape sequence written to the terminal Claude Code runs in, which my terminal turns
+into my own clipboard: find the tty of the Claude Code process (an ancestor of your shell, e.g.
+`ps -o tty= -p <pid>`), then
+`printf '\033]52;c;%s\a' "$(printf %s "$cmd" | base64 -w0)" > /dev/pts/<n>`, without a
+trailing newline in the command, so that pasting it doesn't run it. Still show the command
+too. If I've said I mean to run several, copy only the first, and copy each next one only
+once I've said the one before worked.
+
 When making new projects that use ports, pick a random port across all acceptable
 general purpose unreserved ports, but also avoid known ports of popular existing
 services, to avoid clashes. Currently you seen to pick 8000 or 8080 for just about
