@@ -178,6 +178,11 @@
       "effortLevel": "xhigh"
     }
   },
+  "statusLine": {
+    "type": "command",
+    "command": "~/src/dotfiles/claude_statusline.sh",
+    "hideVimModeIndicator": true
+  },
   "tui": "fullscreen",
   "theme": "dark",
   "editorMode": "vim",

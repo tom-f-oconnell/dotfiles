@@ -58,6 +58,12 @@ right away; after `link_only`, they start from the next login, or run
 `systemctl --user list-timers` shows when each runs next, and `journalctl --user -u
 <name>` what it did.
 
+#### Claude Code status line
+
+`claude_statusline.sh` puts bars for how much of the plan's 5-hour and weekly usage limits
+is used (and when each resets) below the Claude Code prompt, along with the vim mode. It
+needs `jq`. Usage only shows with a Pro / Max / Ultra login, after a session's first reply.
+
 #### Vim clipboard
 
 In Vim, `,y` copies a Visual selection (or a motion) to the system clipboard, and `,v`
