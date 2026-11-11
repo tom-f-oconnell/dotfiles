@@ -1397,6 +1397,56 @@ function _git_confirm() {
     [ "$reply" = y ] || [ "$reply" = Y ]
 }
 
+# Prints the remote `git push` would push a branch without an upstream to: its pushRemote,
+# remote.pushDefault or branch.<name>.remote if set, otherwise the only remote if there's
+# just one, or else origin. Returns non-zero (printing nothing) if that remote doesn't exist.
+#
+# Args:
+#   $1: the branch's ref (e.g. refs/heads/main).
+function _git_push_remote() {
+    local -a remotes
+    mapfile -t remotes < <(git remote)
+    local remote r
+    remote=$(git for-each-ref --format='%(push:remotename)' "$1")
+    if [ -z "$remote" ]; then
+        if [ "${#remotes[@]}" -eq 1 ]; then
+            remote=${remotes[0]}
+        else
+            remote=origin
+        fi
+    fi
+    for r in "${remotes[@]}"; do
+        if [ "$r" = "$remote" ]; then
+            echo "$remote"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# How HEAD compares to a remote branch, as git_status_compact's header puts it (e.g.
+# "ahead of origin/main by 2 commits").
+#
+# Args:
+#   $1: the remote branch's name to show (e.g. origin/main).
+#   $2: the remote branch (e.g. @{upstream}).
+#   $3, $4: how many commits HEAD is ahead of / behind it.
+function _git_compared_to() {
+    local name=$1 rev=$2 ahead=$3 behind=$4
+    if [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ]; then
+        echo "up to date with $name"
+    elif [ "$behind" -eq 0 ]; then
+        echo "ahead of $name by $(_git_n_commits "$ahead")"
+    elif [ "$ahead" -eq 0 ]; then
+        echo "behind $name by $(_git_n_commits "$behind")"
+    # (e.g. after one side's history was rewritten, as by git filter-repo)
+    elif ! git merge-base HEAD "$rev" >/dev/null 2>&1; then
+        echo "no commits in common with $name"
+    else
+        echo "diverged from $name ($ahead ahead, $behind behind)"
+    fi
+}
+
 # `git status`, but first fetching the current branch's upstream (so the comparison with it
 # is current), and with git's "On branch X" and "Your branch is ..." lines (and the blank
 # line after them) replaced by:
@@ -1406,10 +1456,19 @@ function _git_confirm() {
 # git has no config for that part of the long format (it's hardcoded in wt-status.c), so
 # this post-processes git's output.
 #
+# If the branch has no upstream, it's instead compared to the branch of the same name on
+# the remote `git push` would push to (see _git_push_remote), fetching that, as in:
+#   branch: X, no upstream; ahead of origin/X by 2 commits
+# or, if the remote has no such branch:
+#   branch: X, no upstream; not on origin
+#
 # If run interactively, and that fetch needs credentials (e.g. an SSH key with a
 # passphrase, not yet in the agent), ssh / git prompt for them, and if it times out with
-# commits left to fetch, this asks whether to keep fetching (see _git_quick_fetch -p). If
-# the branch is then behind its upstream (and not also ahead) with no changes to tracked
+# commits left to fetch, this asks whether to keep fetching (see _git_quick_fetch -p).
+# Without an upstream, this then offers to set that remote branch as upstream (going on to
+# the offers below if so), or if the remote has no such branch, to push the branch to it
+# and set that as upstream (as `git push -u` does).
+# If the branch is behind its upstream (and not also ahead) with no changes to tracked
 # files, this offers to fast-forward to the (just fetched) upstream.
 # If instead it is ahead of its upstream (and not also behind), and `git push` would push
 # to that upstream branch, this offers to push just this branch to it (with or without
@@ -1440,6 +1499,8 @@ function git_status_compact() {
     fi
 
     local header= commit_lines= ref ahead=0 behind=0 pushes_to_upstream=0
+    # (for a branch without an upstream, see below)
+    local new_remote= new_upstream= not_on_remote=0
     # (fails if HEAD is detached, leaving git's "HEAD detached at X" line as is)
     if ref=$(git symbolic-ref --quiet HEAD 2>/dev/null); then
         local branch=${ref#refs/heads/}
@@ -1471,23 +1532,49 @@ function git_status_compact() {
             pushes_to_upstream=1
         fi
 
+        # Without an upstream, the remote branch to offer as one, or (if the remote has no
+        # branch of this name) the remote to offer to push to
+        if [ -n "$head_oid" ] && [ -z "$upstream" ] && new_remote=$(_git_push_remote "$ref")
+        then
+            if ! fetch_err=$(_git_quick_fetch "${fetch_opts[@]}" "$new_remote" "$ref"); then
+                if [[ $fetch_err == "couldn't find remote ref "* ]]; then
+                    not_on_remote=1
+                else
+                    fetch_note="couldn't fetch $new_remote: $fetch_err"
+                fi
+            fi
+            # (if the fetch failed otherwise, comparing to what was last fetched, if any)
+            if [ "$not_on_remote" -eq 0 ] && git rev-parse --verify --quiet \
+                    "refs/remotes/$new_remote/$branch" >/dev/null; then
+                new_upstream=$new_remote/$branch
+                read -r ahead behind < <(git rev-list --left-right --count \
+                    "HEAD...refs/remotes/$new_upstream")
+            fi
+        fi
+
         header="branch: $branch"
-        local in_sync=0
+        local in_sync=0 compared_rev= compared_name=
         if [ -z "$head_oid" ]; then
             :
+        elif [ -n "$new_upstream" ]; then
+            compared_rev=refs/remotes/$new_upstream
+            compared_name=$new_upstream
+            header+=", no upstream; $(_git_compared_to "$compared_name" "$compared_rev" \
+                "$ahead" "$behind")"
+        elif [ "$not_on_remote" -eq 1 ]; then
+            header+=", no upstream; not on $new_remote"
         elif [ -z "$upstream" ]; then
             header+=", no upstream"
         elif [ "$track" = gone ]; then
             header+=", upstream $upstream is gone"
-        elif [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ]; then
-            header+=", up to date with $upstream"
-            in_sync=1
-        elif [ "$behind" -eq 0 ]; then
-            header+=", ahead of $upstream by $(_git_n_commits "$ahead")"
-        elif [ "$ahead" -eq 0 ]; then
-            header+=", behind $upstream by $(_git_n_commits "$behind")"
         else
-            header+=", diverged from $upstream ($ahead ahead, $behind behind)"
+            compared_rev='@{upstream}'
+            compared_name=$upstream
+            header+=", $(_git_compared_to "$compared_name" "$compared_rev" "$ahead" \
+                "$behind")"
+            if [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ]; then
+                in_sync=1
+            fi
         fi
         # Green if HEAD is known to match upstream, otherwise (incl. if the fetch failed) yellow
         if [ "$in_sync" -eq 1 ] && [ -z "$fetch_note" ]; then
@@ -1499,8 +1586,8 @@ function git_status_compact() {
             header+="$nl$yellow($fetch_note)$reset"
         fi
         if [ "$behind" -gt 0 ]; then
-            commit_lines=$(_git_remote_and_head_lines "$color" "$cols" '@{upstream}' \
-                "$upstream")
+            commit_lines=$(_git_remote_and_head_lines "$color" "$cols" "$compared_rev" \
+                "$compared_name")
         fi
     fi
     if [ -z "$commit_lines" ]; then
@@ -1560,6 +1647,25 @@ function git_status_compact() {
 
     if [ "$interactive" -eq 0 ]; then
         return "${codes[0]}"
+    fi
+    if [ "$not_on_remote" -eq 1 ]; then
+        if _git_confirm "push to $new_remote/$branch, and set that as upstream?"; then
+            git_push_compact -u "$new_remote" "$ref:$ref"
+            return
+        fi
+        return "${codes[0]}"
+    elif [ -n "$new_upstream" ]; then
+        if ! _git_confirm "set upstream to $new_upstream?"; then
+            return "${codes[0]}"
+        fi
+        git branch --set-upstream-to="refs/remotes/$new_upstream" || return
+        upstream=$new_upstream
+        remote=$new_remote
+        merge_ref=$ref
+        push_ref=$(git for-each-ref --format='%(push)' "$ref")
+        if [ "$push_ref" = "refs/remotes/$new_upstream" ]; then
+            pushes_to_upstream=1
+        fi
     fi
     if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ] && [ "${codes[1]}" -eq 0 ]; then
         if _git_confirm "pull $(_git_n_commits "$behind") from $upstream?"; then
