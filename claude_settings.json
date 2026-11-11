@@ -180,6 +180,7 @@
   },
   "tui": "fullscreen",
   "theme": "dark",
+  "editorMode": "vim",
   "switchModelsOnFlag": true,
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true
