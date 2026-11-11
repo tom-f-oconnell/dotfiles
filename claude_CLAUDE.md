@@ -60,6 +60,12 @@ general purpose unreserved ports, but also avoid known ports of popular existing
 services, to avoid clashes. Currently you seen to pick 8000 or 8080 for just about
 everything.
 
+Before starting (or setting up something that will automatically start) long-running
+jobs, think briefly about whether they're likely to take a surprisingly long time, e.g.
+work that scales with the square of the input, or one job over far more input than
+usual (like meshing a whole Fontainebleau sector's ~80 climbs' photos at once). If so,
+warn me, with a rough estimate, before proceeding.
+
 
 ### READMEs
 
