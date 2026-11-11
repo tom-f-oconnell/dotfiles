@@ -1198,17 +1198,97 @@ function _git_ssh_needs_passphrase() {
     [ "$locked" -eq 1 ]
 }
 
-# Fetches from a remote quietly, without waiting long on a remote that isn't reachable,
-# and (unless -p) never prompting for passwords / passphrases. On failure, prints why (the
-# first line of git's error) and returns non-zero.
+# Runs a git fetch, printing the messages on its stderr other than progress (e.g. errors,
+# one per line), and returning its exit status. With -s, also shows its progress on one
+# line of the terminal (stderr), if it's still going after a second, clearing that once
+# done.
 #
 # Args:
-#   -p: if the fetch would need credentials (e.g. an SSH key with a passphrase, not yet in
-#       the agent), fetches letting ssh / git prompt for them on the terminal, without the
-#       time limit. That's decided up front for ssh keys where _git_ssh_needs_passphrase
-#       can tell, and otherwise by the quick fetch failing for want of them. (With
+#   -s <label>: show progress, after this label (e.g. "fetching origin: ").
+#   $@: the command (e.g. git fetch --progress origin).
+function _git_fetch_filtered() {
+    local show=0 label= cols=0
+    if [ "$1" = -s ]; then
+        show=1
+        label=$2
+        shift 2
+        cols=${COLUMNS:-$(tput cols 2>/dev/null || echo 0)}
+    fi
+    "$@" 2>&1 >/dev/null | perl -e '
+        use strict;
+        use warnings;
+        use IO::Select;
+        use Time::HiRes qw(time);
+        my ($show, $cols, $label) = @ARGV;
+        $| = 1;
+        STDERR->autoflush(1);
+        my ($buf, $latest, $start, $shown) = ("", undef, undef, 0);
+        # e.g. "Receiving objects:  45% (450/1000), 1.20 MiB | 2.40 MiB/s" (updated in
+        # place, with \r), "remote: Total 6 (delta 2), ...", and lines ending ", done."
+        sub is_progress {
+            (my $s = shift) =~ s/^remote: //;
+            return $s =~ /^[A-Z][a-z]+( [a-z]+)*: +\d+% \(/ || $s =~ /, done\.$/ ||
+                $s =~ /^Total \d+ /;
+        }
+        # The "From <url>" and (indented) ref update lines, without --quiet
+        sub is_summary { return $_[0] =~ /^From / || $_[0] =~ /^ / }
+        sub due { return $show && defined $start && time - $start >= 1 }
+        sub display {
+            my $s = $label . $latest;
+            $s = substr($s, 0, $cols - 1) if $cols > 1 && length($s) >= $cols;
+            print STDERR "\r\e[K$s";
+            $shown = 1;
+        }
+        # (so Ctrl-C leaves no progress line behind)
+        $SIG{INT} = $SIG{TERM} = sub { print STDERR "\r\e[K" if $shown; exit 130 };
+        my $sel = IO::Select->new(\*STDIN);
+        while (1) {
+            # (waiting at most until progress is due to be shown)
+            my $wait;
+            if ($show && !$shown && defined $start && !due()) {
+                $wait = $start + 1 - time;
+                $wait = 0 if $wait < 0;
+            }
+            if ($sel->can_read($wait)) {
+                last if !sysread(STDIN, my $chunk, 4096);
+                $start //= time;
+                $buf .= $chunk;
+                while ($buf =~ s/^([^\r\n]*)[\r\n]//) {
+                    (my $seg = $1) =~ s/\e\[[0-9;]*[mK]//g;
+                    $seg =~ s/\s+$//;
+                    next if $seg eq "";
+                    if (is_progress($seg)) {
+                        $latest = $seg;
+                        display() if $shown || due();
+                    } elsif (!is_summary($seg)) {
+                        print "$seg\n";
+                    }
+                }
+            } elsif (!$shown && defined $latest && due()) {
+                display();
+            }
+        }
+        $buf =~ s/\s+$//;
+        print "$buf\n" if $buf ne "" && !is_progress($buf) && !is_summary($buf);
+        print STDERR "\r\e[K" if $shown;
+    ' "$show" "$cols" "$label"
+    return "${PIPESTATUS[0]}"
+}
+
+# Fetches from a remote quietly, without waiting long on a remote that isn't reachable,
+# and (unless -p) never prompting. On failure, prints why (the first line of git's error,
+# or that it timed out, and if so whether the ref has commits there not yet fetched) and
+# returns non-zero.
+#
+# Args:
+#   -p: for when someone is at the terminal. If the fetch would need credentials (e.g. an
+#       SSH key with a passphrase, not yet in the agent), fetches letting ssh / git prompt
+#       for them. That's decided up front for ssh keys where _git_ssh_needs_passphrase can
+#       tell, and otherwise by the quick fetch failing for want of them. (With
 #       `AddKeysToAgent yes` in ~/.ssh/config, ssh then adds the key to the agent, so a
-#       push right after doesn't prompt again.)
+#       push right after doesn't prompt again.) If instead the fetch times out, with
+#       commits left to fetch, asks whether to keep fetching. Either fetch after that has
+#       no time limit. Any fetch still going after a second shows its progress.
 #   $1: the remote.
 #   $2: optional ref on it (e.g. refs/heads/main), to fetch only that.
 function _git_quick_fetch() {
@@ -1217,42 +1297,79 @@ function _git_quick_fetch() {
         prompt=1
         shift
     fi
+    local remote=$1 ref=$2
     local ssh_cmd=${GIT_SSH_COMMAND:-$(git config core.sshCommand)}
     ssh_cmd=${ssh_cmd:-ssh}
-    local err rc can_prompt=0
-    if [ "$prompt" -eq 1 ] && _git_ssh_needs_passphrase "$ssh_cmd" "$1"; then
-        can_prompt=1
+    local -a no_prompt_env=(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS=
+        GIT_SSH_COMMAND="$ssh_cmd -o ConnectTimeout=5 -o BatchMode=yes")
+    # (submodules' commits aren't needed for the status, and failing to fetch them would
+    # fail the fetch)
+    local -a show=() fetch=(git fetch --no-recurse-submodules)
+    if [ "$prompt" -eq 1 ] && [ -t 2 ]; then
+        show=(-s "fetching $remote: ")
+        # (fetch.unpackLimit=1 so the objects received go to index-pack, which shows its
+        # progress when told to, rather than (if fewer than 100, e.g. a few large files)
+        # unpack-objects, which only does so when its stderr is a terminal)
+        fetch=(git -c fetch.unpackLimit=1 fetch --no-recurse-submodules --progress)
     else
-        err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= \
-            GIT_SSH_COMMAND="$ssh_cmd -o ConnectTimeout=5 -o BatchMode=yes" \
-            timeout 10 git fetch --quiet "$@" 2>&1 >/dev/null)
+        fetch+=(--quiet)
+    fi
+
+    local err rc slow=0
+    if [ "$prompt" -eq 1 ] && _git_ssh_needs_passphrase "$ssh_cmd" "$remote"; then
+        slow=1
+    else
+        err=$(_git_fetch_filtered "${show[@]}" \
+            env "${no_prompt_env[@]}" timeout 10 "${fetch[@]}" "$@")
         rc=$?
+        if [ "$rc" -eq 124 ]; then
+            # The ref's commit on the remote, if not yet fetched (so probably what was
+            # taking long), or nothing if it was something else (e.g. a slow network).
+            # (Not just checking if the commit is here, as a killed fetch can leave it,
+            # without the rest of what it was fetching.)
+            local tip=
+            if [ -n "$ref" ]; then
+                tip=$(env "${no_prompt_env[@]}" timeout 4 git ls-remote "$remote" "$ref" \
+                    2>/dev/null | awk -v ref="$ref" '$2 == ref { print $1; exit }')
+                if [ -n "$tip" ] && [ -n "$(git for-each-ref --contains "$tip" \
+                        "refs/remotes/$remote/" 2>/dev/null)" ]; then
+                    tip=
+                fi
+            fi
+            if [ -z "$tip" ]; then
+                echo "timed out"
+                return 1
+            fi
+            local branch=${ref#refs/heads/}
+            # (to stderr, as stdout is the failure message)
+            local question="$remote's $branch has new commits (up to ${tip:0:7}), but"
+            question+=" fetching them timed out. keep fetching?"
+            if [ "$prompt" -eq 1 ] && _git_confirm "$question" >&2; then
+                slow=1
+            else
+                echo "timed out; its $branch is now at ${tip:0:7}, not fetched yet"
+                return 1
+            fi
         # (ssh's "Permission denied (publickey).", or git's "could not read Username for
         # '<url>': terminal prompts disabled")
-        if [ "$rc" -ne 0 ] && [ "$prompt" -eq 1 ] && \
+        elif [ "$rc" -ne 0 ] && [ "$prompt" -eq 1 ] && \
             [[ $err == *'Permission denied ('* || $err == *'terminal prompts disabled'* ]]
         then
-            can_prompt=1
+            slow=1
         fi
     fi
-    if [ "$can_prompt" -eq 1 ]; then
+    if [ "$slow" -eq 1 ]; then
         # (not under `timeout`, which runs commands in a process group that can't read the
         # terminal)
-        err=$(GIT_SSH_COMMAND="$ssh_cmd -o ConnectTimeout=5" \
-            git fetch --quiet "$@" 2>&1 >/dev/null)
+        err=$(_git_fetch_filtered "${show[@]}" \
+            env GIT_SSH_COMMAND="$ssh_cmd -o ConnectTimeout=5" "${fetch[@]}" "$@")
         rc=$?
     fi
-    case $rc in
-        0) return 0 ;;
-        124) echo "timed out" ;;
-        *)
-            err=${err%%$'\n'*}
-            # (ssh ends its messages with \r\n, and a \r left in would send the cursor back
-            # to the start of the line)
-            err=${err%$'\r'}
-            echo "${err#fatal: }"
-            ;;
-    esac
+    if [ "$rc" -eq 0 ]; then
+        return 0
+    fi
+    err=${err%%$'\n'*}
+    echo "${err#fatal: }"
     return 1
 }
 
@@ -1289,10 +1406,11 @@ function _git_confirm() {
 # git has no config for that part of the long format (it's hardcoded in wt-status.c), so
 # this post-processes git's output.
 #
-# If run interactively, and that fetch needs credentials (e.g. an SSH key with a passphrase,
-# not yet in the agent), ssh / git prompt for them (see _git_quick_fetch -p). If the branch
-# is then behind its upstream (and not also ahead) with no changes to tracked files, this
-# offers to fast-forward to the (just fetched) upstream.
+# If run interactively, and that fetch needs credentials (e.g. an SSH key with a
+# passphrase, not yet in the agent), ssh / git prompt for them, and if it times out with
+# commits left to fetch, this asks whether to keep fetching (see _git_quick_fetch -p). If
+# the branch is then behind its upstream (and not also ahead) with no changes to tracked
+# files, this offers to fast-forward to the (just fetched) upstream.
 # If instead it is ahead of its upstream (and not also behind), and `git push` would push
 # to that upstream branch, this offers to push just this branch to it (with or without
 # uncommitted changes, which pushing doesn't touch).
