@@ -12,6 +12,10 @@ confusing.
 
 Make all commits to the default branch.
 
+If I ask for a feature that already exists (wholly, or in a form that already does what I
+described, even if I didn't realize it), tell me so, and how to use it, before building
+anything. Don't add a duplicate unless I still ask for it after hearing that.
+
 Commit finished changes without asking me first (once tests pass), rather than waiting
 for me to say "commit". This doesn't extend to pushing. However, if the Github
 integration is set up to allow pushing the particular repo you are working in, do push
