@@ -1120,15 +1120,95 @@ function _git_remote_and_head_lines() {
     _git_commit_line "$color" "$cols" HEAD commit '' "$width"
 }
 
+# Returns 0 if fetching from a remote would have ssh prompt for a key's passphrase, as far as
+# can be told locally (in a few ms, without connecting): the remote is fetched over ssh,
+# there's no shared (ControlMaster) connection open to its host, and of the keys ssh would
+# offer, none is in the agent or usable without a passphrase, but one needs a passphrase.
+# Otherwise, including when unsure, returns non-zero. (It can't tell which keys the server
+# accepts, but ssh only prompts for one the server accepts, after trying the agent's keys.)
+#
+# Args:
+#   $1: the ssh command git runs (e.g. "ssh").
+#   $2: the remote.
+function _git_ssh_needs_passphrase() {
+    local ssh_cmd=$1 url
+    url=$(git remote get-url "$2" 2>/dev/null) || return 1
+    # ssh://[user@]host[:port]/path (or git+ssh://...), or scp-like [user@]host:path
+    local ssh_url_re='^(ssh|git\+ssh|ssh\+git)://([^/@]+@)?([^]/:@[]+)(:([0-9]+))?(/|$)'
+    local scp_like_re='^([^/:@]+@)?([^]/:@[]+):'
+    local -a dest
+    if [[ $url =~ $ssh_url_re ]]; then
+        dest=("${BASH_REMATCH[2]}${BASH_REMATCH[3]}")
+        if [ -n "${BASH_REMATCH[5]}" ]; then
+            dest=(-p "${BASH_REMATCH[5]}" "${dest[@]}")
+        fi
+    elif [[ $url != *://* && $url =~ $scp_like_re ]]; then
+        dest=("${BASH_REMATCH[1]}${BASH_REMATCH[2]}")
+    else
+        return 1
+    fi
+
+    # (running ssh the way git does, so e.g. a -i in core.sshCommand counts)
+    local config
+    config=$(sh -c "$ssh_cmd -G \"\$@\"" ssh "${dest[@]}" </dev/null 2>/dev/null) || return 1
+    if sh -c "$ssh_cmd -O check \"\$@\"" ssh "${dest[@]}" </dev/null >/dev/null 2>&1; then
+        return 1
+    fi
+    local agent_fps key value
+    local -a files=()
+    # ("<bits> <fingerprint> <comment> (<type>)" per key, or nothing if there's no agent)
+    agent_fps=$(ssh-add -E sha256 -l 2>/dev/null)
+    while read -r key value; do
+        case $key in
+            batchmode)
+                [ "$value" = yes ] && return 1 ;;
+            # (keys from somewhere else)
+            pkcs11provider|securitykeyprovider)
+                [ "$value" != none ] && [ "$value" != internal ] && return 1 ;;
+            identityagent)
+                case $value in
+                    none) agent_fps= ;;
+                    SSH_AUTH_SOCK) ;;
+                    *) return 1 ;;
+                esac
+                ;;
+            identityfile)
+                [[ $value == *%* ]] && return 1
+                files+=("${value/#\~/$HOME}")
+                ;;
+        esac
+    done <<< "$config"
+
+    local file bits fp rest locked=0
+    for file in "${files[@]}"; do
+        [ -f "$file" ] || continue
+        fp=
+        read -r bits fp rest < <(ssh-keygen -E sha256 -lf "$file" </dev/null 2>/dev/null)
+        if [ -z "$fp" ]; then
+            # (can't tell if it's one of the agent's)
+            [ -n "$agent_fps" ] && return 1
+        elif [[ $agent_fps == *" $fp "* ]]; then
+            return 1
+        fi
+        if ssh-keygen -y -P '' -f "$file" </dev/null >/dev/null 2>&1; then
+            return 1
+        fi
+        locked=1
+    done
+    [ "$locked" -eq 1 ]
+}
+
 # Fetches from a remote quietly, without waiting long on a remote that isn't reachable,
 # and (unless -p) never prompting for passwords / passphrases. On failure, prints why (the
 # first line of git's error) and returns non-zero.
 #
 # Args:
-#   -p: if the fetch fails for want of credentials (e.g. an SSH key with a passphrase, not
-#       yet in the agent), retries it letting ssh / git prompt for them on the terminal,
-#       without the time limit. (With `AddKeysToAgent yes` in ~/.ssh/config, ssh then adds
-#       the key to the agent, so a push right after doesn't prompt again.)
+#   -p: if the fetch would need credentials (e.g. an SSH key with a passphrase, not yet in
+#       the agent), fetches letting ssh / git prompt for them on the terminal, without the
+#       time limit. That's decided up front for ssh keys where _git_ssh_needs_passphrase
+#       can tell, and otherwise by the quick fetch failing for want of them. (With
+#       `AddKeysToAgent yes` in ~/.ssh/config, ssh then adds the key to the agent, so a
+#       push right after doesn't prompt again.)
 #   $1: the remote.
 #   $2: optional ref on it (e.g. refs/heads/main), to fetch only that.
 function _git_quick_fetch() {
@@ -1138,19 +1218,28 @@ function _git_quick_fetch() {
         shift
     fi
     local ssh_cmd=${GIT_SSH_COMMAND:-$(git config core.sshCommand)}
-    ssh_cmd="${ssh_cmd:-ssh} -o ConnectTimeout=5"
-    local err rc
-    err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= GIT_SSH_COMMAND="$ssh_cmd -o BatchMode=yes" \
-        timeout 10 git fetch --quiet "$@" 2>&1 >/dev/null)
-    rc=$?
-    # (ssh's "Permission denied (publickey).", or git's "could not read Username for
-    # '<url>': terminal prompts disabled")
-    if [ "$rc" -ne 0 ] && [ "$prompt" -eq 1 ] && \
+    ssh_cmd=${ssh_cmd:-ssh}
+    local err rc can_prompt=0
+    if [ "$prompt" -eq 1 ] && _git_ssh_needs_passphrase "$ssh_cmd" "$1"; then
+        can_prompt=1
+    else
+        err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= \
+            GIT_SSH_COMMAND="$ssh_cmd -o ConnectTimeout=5 -o BatchMode=yes" \
+            timeout 10 git fetch --quiet "$@" 2>&1 >/dev/null)
+        rc=$?
+        # (ssh's "Permission denied (publickey).", or git's "could not read Username for
+        # '<url>': terminal prompts disabled")
+        if [ "$rc" -ne 0 ] && [ "$prompt" -eq 1 ] && \
             [[ $err == *'Permission denied ('* || $err == *'terminal prompts disabled'* ]]
-    then
+        then
+            can_prompt=1
+        fi
+    fi
+    if [ "$can_prompt" -eq 1 ]; then
         # (not under `timeout`, which runs commands in a process group that can't read the
         # terminal)
-        err=$(GIT_SSH_COMMAND=$ssh_cmd git fetch --quiet "$@" 2>&1 >/dev/null)
+        err=$(GIT_SSH_COMMAND="$ssh_cmd -o ConnectTimeout=5" \
+            git fetch --quiet "$@" 2>&1 >/dev/null)
         rc=$?
     fi
     case $rc in
@@ -1200,10 +1289,10 @@ function _git_confirm() {
 # git has no config for that part of the long format (it's hardcoded in wt-status.c), so
 # this post-processes git's output.
 #
-# If run interactively, and that fetch fails for want of credentials (e.g. an SSH key with a
-# passphrase, not yet in the agent), it is retried letting ssh / git prompt for them. If
-# the branch is then behind its upstream (and not also ahead) with no changes to tracked
-# files, this offers to fast-forward to the (just fetched) upstream.
+# If run interactively, and that fetch needs credentials (e.g. an SSH key with a passphrase,
+# not yet in the agent), ssh / git prompt for them (see _git_quick_fetch -p). If the branch
+# is then behind its upstream (and not also ahead) with no changes to tracked files, this
+# offers to fast-forward to the (just fetched) upstream.
 # If instead it is ahead of its upstream (and not also behind), and `git push` would push
 # to that upstream branch, this offers to push just this branch to it (with or without
 # uncommitted changes, which pushing doesn't touch).
