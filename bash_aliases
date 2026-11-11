@@ -1120,24 +1120,47 @@ function _git_remote_and_head_lines() {
     _git_commit_line "$color" "$cols" HEAD commit '' "$width"
 }
 
-# Fetches from a remote quietly, never prompting for passwords / passphrases, nor waiting
-# long on a remote that isn't reachable. On failure, prints why (the first line of git's
-# error) and returns non-zero.
+# Fetches from a remote quietly, without waiting long on a remote that isn't reachable,
+# and (unless -p) never prompting for passwords / passphrases. On failure, prints why (the
+# first line of git's error) and returns non-zero.
 #
 # Args:
+#   -p: if the fetch fails for want of credentials (e.g. an SSH key with a passphrase, not
+#       yet in the agent), retries it letting ssh / git prompt for them on the terminal,
+#       without the time limit. (With `AddKeysToAgent yes` in ~/.ssh/config, ssh then adds
+#       the key to the agent, so a push right after doesn't prompt again.)
 #   $1: the remote.
 #   $2: optional ref on it (e.g. refs/heads/main), to fetch only that.
 function _git_quick_fetch() {
+    local prompt=0
+    if [ "$1" = -p ]; then
+        prompt=1
+        shift
+    fi
     local ssh_cmd=${GIT_SSH_COMMAND:-$(git config core.sshCommand)}
-    local err
-    err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= \
-        GIT_SSH_COMMAND="${ssh_cmd:-ssh} -o BatchMode=yes -o ConnectTimeout=5" \
+    ssh_cmd="${ssh_cmd:-ssh} -o ConnectTimeout=5"
+    local err rc
+    err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= GIT_SSH_COMMAND="$ssh_cmd -o BatchMode=yes" \
         timeout 10 git fetch --quiet "$@" 2>&1 >/dev/null)
-    case $? in
+    rc=$?
+    # (ssh's "Permission denied (publickey).", or git's "could not read Username for
+    # '<url>': terminal prompts disabled")
+    if [ "$rc" -ne 0 ] && [ "$prompt" -eq 1 ] && \
+            [[ $err == *'Permission denied ('* || $err == *'terminal prompts disabled'* ]]
+    then
+        # (not under `timeout`, which runs commands in a process group that can't read the
+        # terminal)
+        err=$(GIT_SSH_COMMAND=$ssh_cmd git fetch --quiet "$@" 2>&1 >/dev/null)
+        rc=$?
+    fi
+    case $rc in
         0) return 0 ;;
         124) echo "timed out" ;;
         *)
             err=${err%%$'\n'*}
+            # (ssh ends its messages with \r\n, and a \r left in would send the cursor back
+            # to the start of the line)
+            err=${err%$'\r'}
             echo "${err#fatal: }"
             ;;
     esac
@@ -1177,8 +1200,10 @@ function _git_confirm() {
 # git has no config for that part of the long format (it's hardcoded in wt-status.c), so
 # this post-processes git's output.
 #
-# If run interactively, and the branch is behind its upstream (and not also ahead) with no
-# changes to tracked files, this then offers to fast-forward to the (just fetched) upstream.
+# If run interactively, and that fetch fails for want of credentials (e.g. an SSH key with a
+# passphrase, not yet in the agent), it is retried letting ssh / git prompt for them. If
+# the branch is then behind its upstream (and not also ahead) with no changes to tracked
+# files, this offers to fast-forward to the (just fetched) upstream.
 # If instead it is ahead of its upstream (and not also behind), and `git push` would push
 # to that upstream branch, this offers to push just this branch to it (with or without
 # uncommitted changes, which pushing doesn't touch).
@@ -1202,6 +1227,11 @@ function git_status_compact() {
         fi
     fi
 
+    local interactive=0
+    if [ -t 0 ] && [ -t 1 ]; then
+        interactive=1
+    fi
+
     local header= commit_lines= ref ahead=0 behind=0 pushes_to_upstream=0
     # (fails if HEAD is detached, leaving git's "HEAD detached at X" line as is)
     if ref=$(git symbolic-ref --quiet HEAD 2>/dev/null); then
@@ -1212,8 +1242,12 @@ function git_status_compact() {
             --format='%(objectname) %(upstream:remotename) %(upstream:remoteref)' "$ref")
 
         local fetch_note= fetch_err
-        if [ -n "$remote" ] && [ "$remote" != . ] && \
-                ! fetch_err=$(_git_quick_fetch "$remote" "$merge_ref"); then
+        local -a fetch_opts=()
+        if [ "$interactive" -eq 1 ]; then
+            fetch_opts=(-p)
+        fi
+        if [ -n "$remote" ] && [ "$remote" != . ] && ! fetch_err=$(
+                _git_quick_fetch "${fetch_opts[@]}" "$remote" "$merge_ref"); then
             fetch_note="couldn't fetch $remote: $fetch_err"
         fi
 
@@ -1317,7 +1351,7 @@ function git_status_compact() {
     '
     local -a codes=("${PIPESTATUS[@]}")
 
-    if ! [ -t 0 ] || ! [ -t 1 ]; then
+    if [ "$interactive" -eq 0 ]; then
         return "${codes[0]}"
     fi
     if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ] && [ "${codes[1]}" -eq 0 ]; then
