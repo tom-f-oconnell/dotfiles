@@ -66,6 +66,13 @@ work that scales with the square of the input, or one job over far more input th
 usual (like meshing a whole Fontainebleau sector's ~80 climbs' photos at once). If so,
 warn me, with a rough estimate, before proceeding.
 
+Never pipe an endless generator (`yes`, `cat /dev/zero`, an unbounded loop) into a
+program's stdin, especially `script`: give it a fixed list of answers or drive a pty
+instead, and run the whole test under `timeout`. Every `docker run` for a test gets
+`--memory <N>g --memory-swap <N>g --pids-limit 512` and is stopped with `docker stop`
+afterwards. hal is shared, and its earlyoom kills Python processes first when memory runs
+low, whoever is using the memory (a `yes y | script` test in an unlimited container did
+this on 2026-11-07 and again on 2026-11-11, killing others' running jobs).
 
 ### READMEs
 
