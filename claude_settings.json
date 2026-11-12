@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/session_title_hook.sh\"; [ -x \"$f\" ] && exec \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/session_title_hook.sh\"; [ -x \"$f\" ] && exec \"$f\"; cat >/dev/null; exit 0",
             "timeout": 10
           }
         ]
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -84,7 +84,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -96,7 +96,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -108,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -120,7 +120,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -132,7 +132,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -144,7 +144,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
@@ -156,7 +156,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$HOME/src/model_experiment_queue/monitor-server/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
+            "command": "f=\"$HOME/src/model_experiment_queue/coordination/monitor/presence_hook.py\"; [ -f \"$f\" ] && exec timeout -k 2 15 python3 -I \"$f\"; cat >/dev/null; exit 0",
             "timeout": 20,
             "async": true
           }
