@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Claude Code's status line (statusLine in claude_settings.json): the model and its effort
-# level, then bars for how much of the plan's 5-hour and weekly usage limits is used, and
+# Claude Code's status line (statusLine in claude_settings.json): the model (in red if
+# Fable) and its effort level (bold if xhigh or max, and followed by a cyan bar per level,
+# filled up to it), then bars for how much of the plan's 5-hour and weekly usage limits is used, and
 # when each resets, then any per-model weekly limits (e.g. Fable's), then as much of the
 # session's name as fits, and the vim mode at the right edge (in place of the built-in
 # `-- INSERT --` line, which hideVimModeIndicator hides). E.g.:
-#   Opus 5.5 high · 7d ▓▓▓▓▓▓▓░░░ 73% (Sun) · Fable ▓▓▓▓░░░░░░ 43% · Fix the pa…  --INSERT--
+#   Opus 5.5 high ▊▊▊▊▊ · 7d ▓▓▓▓▓▓▓░░░ 73% (Sun) · Fable ▓▓▓▓░░░░░░ 43% · Fix the pa…  --INSERT--
 # The bars are narrowed (to no less than MIN_CELLS) as needed to fit the rest but the name.
 #
 # Claude Code passes the session's state as JSON on stdin. The 5-hour and weekly usage is
@@ -109,6 +110,33 @@ function window() {
     printf '%s' "$out"
 }
 
+# The model and its effort level, as line() starts with
+head=$model
+if [[ ${model,,} == *fable* ]]; then
+    head=$'\e[31m'"$model"$'\e[m'
+fi
+if [ -n "$effort" ]; then
+    if [ "$effort" = xhigh ] || [ "$effort" = max ]; then
+        head+=" "$'\e[1m'"$effort"$'\e[m'
+    else
+        head+=" $effort"
+    fi
+    # (a narrow full-height block per level, filled ones in the cyan a usage bar's ▓ would
+    # look like, and the rest as its ░ would, as the terminal draws shades by blending)
+    levels=(low medium high xhigh max)
+    for i in "${!levels[@]}"; do
+        if [ "${levels[i]}" = "$effort" ]; then
+            head+=" "$'\e[38;5;73m'
+            for (( j = 0; j < ${#levels[@]}; j++ )); do
+                (( j == i + 1 )) && head+=$'\e[38;5;23m'
+                head+='▊'
+            done
+            head+=$'\e[m'
+            break
+        fi
+    done
+fi
+
 # The usage windows to show, as parallel arrays of window()'s first 3 args.
 labels=() percents=() resets=()
 
@@ -157,7 +185,7 @@ fi
 # Args:
 #   $1: how many cells wide each usage window's bar is.
 function line() {
-    local out="$model${effort:+ $effort}" i
+    local out=$head i
     for i in "${!labels[@]}"; do
         out+="${out:+ · }$(window "${labels[i]}" "${percents[i]}" "${resets[i]}" "$1")"
     done
