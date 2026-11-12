@@ -1275,6 +1275,71 @@ function _git_fetch_filtered() {
     return "${PIPESTATUS[0]}"
 }
 
+# For a remote fetched from GitHub over ssh, fetches a branch anonymously over HTTPS
+# instead, if the repo is public, so no SSH key (or its passphrase) is needed. The branch
+# goes to its remote-tracking ref, as fetching it from the remote would. If what's there
+# is already here (e.g. HEAD), just points that ref at it, without fetching.
+#
+# Args:
+#   $1: the remote.
+#   $2: the branch's ref on it (e.g. refs/heads/main).
+#   $@ (after those): the fetch command (e.g. git fetch --quiet), to which the URL and
+#       refspec are added.
+#
+# Returns:
+#   0 if fetched, 1 (printing why, as git would) if the repo is public but fetching failed
+#   (e.g. the branch isn't there), or 2 (printing nothing) if the remote isn't on GitHub,
+#   the repo isn't public, or GitHub couldn't be reached quickly.
+function _git_public_github_fetch() {
+    local remote=$1 ref=$2
+    shift 2
+    [[ $ref == refs/heads/* ]] || return 2
+    local url path
+    url=$(git remote get-url "$remote" 2>/dev/null) || return 2
+    local ssh_re='^(ssh://([^/@]+@)?github\.com(:22)?/|([^/:@]+@)?github\.com:)'
+    ssh_re+='([^/]+/[^/]+)$'
+    [[ $url =~ $ssh_re ]] || return 2
+    path=${BASH_REMATCH[5]%/}
+    path=${path%.git}
+    # (only with the default refspec, so the remote-tracking ref is the usual one)
+    git config --get-all "remote.$remote.fetch" | \
+        grep -qxF "+refs/heads/*:refs/remotes/$remote/*" || return 2
+    local dst=refs/remotes/$remote/${ref#refs/heads/}
+    local https=https://github.com/$path.git
+
+    # (-c credential.helper= and no prompts, so a private repo fails, rather than being
+    # fetched with whatever credentials are around)
+    local -a anon_git=(env GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= SSH_ASKPASS=
+        git -c credential.helper=)
+    local out rc tip
+    out=$(timeout 5 "${anon_git[@]}" ls-remote --exit-code "$https" "$ref" 2>/dev/null)
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        echo "couldn't find remote ref $ref"
+        return 1
+    elif [ "$rc" -ne 0 ]; then
+        return 2
+    fi
+    tip=$(awk -v ref="$ref" '$2 == ref { print $1; exit }' <<< "$out")
+    [ -n "$tip" ] || return 2
+    # (not just checking the commit is here, as a killed fetch can leave it, without the
+    # rest of what it was fetching)
+    if [ -n "$(git for-each-ref --contains "$tip" 2>/dev/null)" ]; then
+        if [ "$(git rev-parse --verify --quiet "$dst")" != "$tip" ]; then
+            git update-ref -m "fetch: from $https" "$dst" "$tip" || return 2
+        fi
+        return 0
+    fi
+    local err
+    # ($1 is the command, e.g. _git_fetch_filtered, and the rest its args)
+    err=$("$@" "$https" "+$ref:$dst")
+    rc=$?
+    [ "$rc" -eq 0 ] && return 0
+    err=${err%%$'\n'*}
+    echo "${err#fatal: }"
+    return 1
+}
+
 # Fetches from a remote quietly, without waiting long on a remote that isn't reachable,
 # and (unless -p) never prompting. On failure, prints why (the first line of git's error,
 # or that it timed out, and if so whether the ref has commits there not yet fetched) and
@@ -1282,8 +1347,9 @@ function _git_fetch_filtered() {
 #
 # Args:
 #   -p: for when someone is at the terminal. If the fetch would need credentials (e.g. an
-#       SSH key with a passphrase, not yet in the agent), fetches letting ssh / git prompt
-#       for them. That's decided up front for ssh keys where _git_ssh_needs_passphrase can
+#       SSH key with a passphrase, not yet in the agent), and the remote isn't a public
+#       GitHub repo (which is fetched over HTTPS instead, without them, with or without
+#       -p; see _git_public_github_fetch), fetches letting ssh / git prompt for them. That's decided up front for ssh keys where _git_ssh_needs_passphrase can
 #       tell, and otherwise by the quick fetch failing for want of them. (With
 #       `AddKeysToAgent yes` in ~/.ssh/config, ssh then adds the key to the agent, so a
 #       push right after doesn't prompt again.) If instead the fetch times out, with
@@ -1315,9 +1381,9 @@ function _git_quick_fetch() {
         fetch+=(--quiet)
     fi
 
-    local err rc slow=0
+    local err rc slow=0 creds=0
     if [ "$prompt" -eq 1 ] && _git_ssh_needs_passphrase "$ssh_cmd" "$remote"; then
-        slow=1
+        creds=1
     else
         err=$(_git_fetch_filtered "${show[@]}" \
             env "${no_prompt_env[@]}" timeout 10 "${fetch[@]}" "$@")
@@ -1352,9 +1418,27 @@ function _git_quick_fetch() {
             fi
         # (ssh's "Permission denied (publickey).", or git's "could not read Username for
         # '<url>': terminal prompts disabled")
-        elif [ "$rc" -ne 0 ] && [ "$prompt" -eq 1 ] && \
+        elif [ "$rc" -ne 0 ] && \
             [[ $err == *'Permission denied ('* || $err == *'terminal prompts disabled'* ]]
         then
+            creds=1
+        fi
+    fi
+    if [ "$creds" -eq 1 ]; then
+        # (a public GitHub repo is fetched over HTTPS instead, without the credentials. Not
+        # under `timeout` with -p, where there are no prompts to wait on, so a large fetch
+        # can finish.)
+        local -a anon_fetch=(env GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= SSH_ASKPASS=)
+        [ "$prompt" -eq 0 ] && anon_fetch+=(timeout 10)
+        anon_fetch+=(git -c credential.helper= "${fetch[@]:1}")
+        local anon_err
+        anon_err=$(_git_public_github_fetch "$remote" "$ref" \
+            _git_fetch_filtered "${show[@]}" "${anon_fetch[@]}")
+        case $? in
+            0) return 0 ;;
+            1) echo "$anon_err"; return 1 ;;
+        esac
+        if [ "$prompt" -eq 1 ]; then
             slow=1
         fi
     fi
@@ -1462,9 +1546,10 @@ function _git_compared_to() {
 # or, if the remote has no such branch:
 #   branch: X, no upstream; not on origin
 #
-# If run interactively, and that fetch needs credentials (e.g. an SSH key with a
-# passphrase, not yet in the agent), ssh / git prompt for them, and if it times out with
-# commits left to fetch, this asks whether to keep fetching (see _git_quick_fetch -p).
+# If that fetch needs credentials (e.g. an SSH key with a passphrase, not yet in the agent),
+# a public GitHub repo is fetched over HTTPS instead, without them. Otherwise, if run
+# interactively, ssh / git prompt for them. If it times out with commits left to fetch,
+# this asks whether to keep fetching (see _git_quick_fetch -p).
 # Without an upstream, this then offers to set that remote branch as upstream (going on to
 # the offers below if so), or if the remote has no such branch, to push the branch to it
 # and set that as upstream (as `git push -u` does).
