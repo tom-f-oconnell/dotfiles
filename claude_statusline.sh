@@ -3,7 +3,7 @@
 # plan's 5-hour and weekly usage limits is used, and when each resets, then any per-model
 # weekly limits (e.g. Fable's), then the vim mode (in place of the built-in `-- INSERT --`
 # line, which hideVimModeIndicator hides). E.g.:
-#   5h ▓▓▓░░░░░░░ 31% (resets 14:05) · 7d ▓▓▓▓▓▓▓░░░ 73% (resets Sun) · Fable ▓▓▓▓░░░░░░ 43% · -- INSERT --
+#   5h ▓▓▓░░░░░░░ 31% (14:05) · 7d ▓▓▓▓▓▓▓░░░ 73% (Sun) · Fable ▓▓▓▓░░░░░░ 43% · -- INSERT --
 #
 # Claude Code passes the session's state as JSON on stdin. The 5-hour and weekly usage is
 # only there when logged in with a Pro / Max / Ultra plan, and only after the session's
@@ -59,7 +59,7 @@ if (( now - last_fetch >= FETCH_EVERY )) && mkdir -p "$cache" \
     fetch_usage < /dev/null > /dev/null 2>&1 &
 fi
 
-# Prints "<label> <bar> <percent>% (resets <when>)" for one usage window, or nothing if
+# Prints "<label> <bar> <percent>% (<when it resets>)" for one usage window, or nothing if
 # Claude Code didn't give it. The bar is green, then yellow from 70%, and red from 90%.
 #
 # Args:
@@ -92,7 +92,7 @@ function window() {
         else
             printf -v when '%(%a)T' "$reset"
         fi
-        out+=" (resets $when)"
+        out+=" ($when)"
     fi
     printf '%s' "$out"
 }
