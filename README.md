@@ -62,8 +62,9 @@ right away; after `link_only`, they start from the next login, or run
 
 `claude_statusline.sh` puts the model and its effort level below the Claude Code prompt,
 then bars for how much of the plan's 5-hour and weekly usage limits is used (and when each
-resets), then any per-model weekly limits (e.g. Fable's), and the vim mode. The bars narrow
-as needed to fit the terminal. It needs `jq` and `curl`. Usage only shows with a Pro / Max
+resets), then any per-model weekly limits (e.g. Fable's), then as much of the session's
+name as fits, and the vim mode at the right edge. The bars narrow as needed to fit the
+rest but the name. It needs `jq` and `curl`. Usage only shows with a Pro / Max
 / Ultra login, after a session's first reply. The per-model limits come from the same place
 as `/usage`, fetched at most every 2 minutes, so they can lag that much.
 

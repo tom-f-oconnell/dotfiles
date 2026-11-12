@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Claude Code's status line (statusLine in claude_settings.json): the model and its effort
 # level, then bars for how much of the plan's 5-hour and weekly usage limits is used, and
-# when each resets, then any per-model weekly limits (e.g. Fable's), then the vim mode (in
-# place of the built-in `-- INSERT --` line, which hideVimModeIndicator hides). E.g.:
-#   Opus 5.5 high · 5h ▓▓▓░░░░░░░ 31% (14:05) · 7d ▓▓▓▓▓▓▓░░░ 73% (Sun) · Fable ▓▓▓▓░░░░░░ 43%
-# The bars are narrowed (to no less than MIN_CELLS) as needed to fit the terminal.
+# when each resets, then any per-model weekly limits (e.g. Fable's), then as much of the
+# session's name as fits, and the vim mode at the right edge (in place of the built-in
+# `-- INSERT --` line, which hideVimModeIndicator hides). E.g.:
+#   Opus 5.5 high · 7d ▓▓▓▓▓▓▓░░░ 73% (Sun) · Fable ▓▓▓▓░░░░░░ 43% · Fix the pa…  --INSERT--
+# The bars are narrowed (to no less than MIN_CELLS) as needed to fit the rest but the name.
 #
 # Claude Code passes the session's state as JSON on stdin. The 5-hour and weekly usage is
 # only there when logged in with a Pro / Max / Ultra plan, and only after the session's
@@ -20,6 +21,8 @@ MAX_CELLS=10
 MIN_CELLS=4
 # (columns of the terminal the status line can't use, as Claude Code pads it on each side)
 MARGIN=4
+# (the fewest columns to show a cut-off session name in, else it's left out)
+MIN_NAME=6
 
 shopt -s extglob
 
@@ -28,10 +31,11 @@ usage=$cache/usage.json
 
 # (\x1f-separated, as read's IFS would merge runs of a whitespace separator like \t, losing
 # empty fields)
-IFS=$'\x1f' read -r model effort mode five five_reset week week_reset < <(jq -r '[
+IFS=$'\x1f' read -r model effort mode five five_reset week week_reset session < <(jq -r '[
     .model.display_name, .effort.level, .vim.mode,
     .rate_limits.five_hour.used_percentage, .rate_limits.five_hour.resets_at,
-    .rate_limits.seven_day.used_percentage, .rate_limits.seven_day.resets_at
+    .rate_limits.seven_day.used_percentage, .rate_limits.seven_day.resets_at,
+    (.session_name // "" | gsub("[[:cntrl:]]"; ""))
 ] | map(. // "" | tostring) | join("\u001f")')
 
 printf -v now '%(%s)T' -1
@@ -139,13 +143,16 @@ if [ -f "$usage" ]; then
         | map(tostring) | join("\u001f")' "$usage" 2>/dev/null)
 fi
 
-# (vim shows nothing for normal mode)
-vim=
-if [ -n "$mode" ] && [ "$mode" != NORMAL ]; then
-    vim="-- $mode --"
+# (vim shows nothing for normal mode, but the room for it is kept, so the session name
+# doesn't change length with the mode)
+vim= vim_width=0
+if [ -n "$mode" ]; then
+    [ "$mode" != NORMAL ] && vim="--$mode--"
+    vim_width=${#vim}
+    (( vim_width < 10 )) && vim_width=10
 fi
 
-# Prints the status line.
+# Prints the model, its effort level, and the usage windows.
 #
 # Args:
 #   $1: how many cells wide each usage window's bar is.
@@ -154,20 +161,47 @@ function line() {
     for i in "${!labels[@]}"; do
         out+="${out:+ · }$(window "${labels[i]}" "${percents[i]}" "${resets[i]}" "$1")"
     done
-    [ -n "$vim" ] && out+="${out:+ · }$vim"
     printf '%s' "$out"
+}
+
+# Prints how many columns $1 takes up on the terminal.
+function width() {
+    local plain=${1//$'\e['*([0-9;])m}
+    printf '%s' "${#plain}"
 }
 
 out=$(line "$MAX_CELLS")
 # (Claude Code gives the terminal's width as COLUMNS)
-if [ -n "$COLUMNS" ] && (( ${#labels[@]} )); then
-    plain=${out//$'\e['*([0-9;])m}
-    over=$(( ${#plain} - (COLUMNS - MARGIN) ))
-    if (( over > 0 )); then
-        # (taking the same number of cells from each bar, rounding up)
-        cells=$(( MAX_CELLS - (over + ${#labels[@]} - 1) / ${#labels[@]} ))
-        (( cells < MIN_CELLS )) && cells=$MIN_CELLS
-        out=$(line "$cells")
+if [ -z "$COLUMNS" ]; then
+    [ -n "$session" ] && out+="${out:+ · }$session"
+    [ -n "$vim" ] && out+="${out:+ · }$vim"
+    printf '%s\n' "$out"
+    exit
+fi
+
+room=$(( COLUMNS - MARGIN ))
+# (the vim mode, with at least a space before it)
+right=$(( vim_width ? vim_width + 1 : 0 ))
+over=$(( $(width "$out") + right - room ))
+if (( over > 0 && ${#labels[@]} )); then
+    # (taking the same number of cells from each bar, rounding up)
+    cells=$(( MAX_CELLS - (over + ${#labels[@]} - 1) / ${#labels[@]} ))
+    (( cells < MIN_CELLS )) && cells=$MIN_CELLS
+    out=$(line "$cells")
+fi
+
+if [ -n "$session" ]; then
+    left=$(( room - $(width "$out") - 3 - right ))
+    if (( ${#session} > left && left >= MIN_NAME )); then
+        session="${session:0:left-1}…"
     fi
+    (( ${#session} <= left )) && out+=" · $session"
+fi
+
+if [ -n "$vim" ]; then
+    pad=$(( room - $(width "$out") - ${#vim} ))
+    (( pad < 1 )) && pad=1
+    printf -v spaces '%*s' "$pad" ''
+    out+="$spaces$vim"
 fi
 printf '%s\n' "$out"
