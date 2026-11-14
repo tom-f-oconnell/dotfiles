@@ -20,7 +20,6 @@
       "Read(.git/**)"
     ]
   },
-  "model": "fable",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -182,21 +181,6 @@
     }
   },
   "viewMode": "focus",
-  "effortLevel": "medium",
-  "modelSettings": {
-    "claude-opus-5": {
-      "effortLevel": "medium"
-    },
-    "claude-opus-5-5": {
-      "effortLevel": "xhigh"
-    },
-    "claude-fable-5-1": {
-      "effortLevel": "xhigh"
-    },
-    "claude-fable-5-2": {
-      "effortLevel": "medium"
-    }
-  },
   "tui": "fullscreen",
   "theme": "dark",
   "editorMode": "vim",

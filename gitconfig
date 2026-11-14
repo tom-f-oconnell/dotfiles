@@ -52,6 +52,10 @@
 	highlightRecent = blue,24 month ago,cyan,12 month ago,white,1 month ago,yellow,7 day ago,red
 [init]
 	defaultBranch = main
+# Keeps Claude Code's /model and /effort defaults out of the committed claude_settings.json
+# (see .gitattributes), so changing them mid-session doesn't show up as a diff. Needs jq.
+[filter "claude-settings"]
+	clean = jq --indent 2 'del(.model, .effortLevel, .modelSettings)'
 [credential]
 	helper = cache
 [safe]

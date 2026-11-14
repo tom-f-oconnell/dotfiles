@@ -1,0 +1,2 @@
+# Committed without the model / effort defaults Claude Code writes into it (filter in gitconfig)
+claude_settings.json filter=claude-settings

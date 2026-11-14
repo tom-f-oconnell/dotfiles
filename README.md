@@ -68,6 +68,13 @@ rest but the name. It needs `jq` and `curl`. Usage only shows with a Pro / Max
 / Ultra login, after a session's first reply. The per-model limits come from the same place
 as `/usage`, fetched at most every 2 minutes, so they can lag that much.
 
+#### Claude Code settings
+
+`claude_settings.json` is committed without the `model`, `effortLevel` and `modelSettings`
+keys, which Claude Code rewrites on every `/model` and `/effort`: a git filter (in
+`gitconfig`, applied by `.gitattributes`) strips them, so they stay in the working copy
+but never show as changes. It needs `jq`; without it git warns and the keys show again.
+
 #### Vim clipboard
 
 In Vim, `,y` copies a Visual selection (or a motion) to the system clipboard, and `,v`
