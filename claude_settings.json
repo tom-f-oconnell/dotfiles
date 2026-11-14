@@ -170,13 +170,20 @@
     "hideVimModeIndicator": true
   },
   "enabledPlugins": {
-    "risky-parts@claude-risky-parts": true
+    "risky-parts@claude-risky-parts": true,
+    "effort-switch-binds@claude-effort-switch-binds": true
   },
   "extraKnownMarketplaces": {
     "claude-risky-parts": {
       "source": {
         "source": "github",
         "repo": "tom-f-oconnell/claude-risky-parts"
+      }
+    },
+    "claude-effort-switch-binds": {
+      "source": {
+        "source": "github",
+        "repo": "tom-f-oconnell/claude-effort-switch-binds"
       }
     }
   },
