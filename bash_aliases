@@ -1925,15 +1925,12 @@ function git_commit_or_clone() {
     fi
 }
 
-# Outside of a git repo, completes the repository argument from the cached list of repos I
-# have access to: first the owner, if what's typed so far matches several, then
-# <owner>/<repo>. The list is fetched on first use, and refreshed in the background (for
-# the next completion) once over an hour old.
-function _git_commit_or_clone_complete() {
+# Completes github_clone's repository argument from the cached list of repos I have access
+# to: first the owner, if what's typed so far matches several, then <owner>/<repo>. The
+# list is fetched on first use, and refreshed in the background (for the next completion)
+# once over an hour old.
+function _github_clone_complete() {
     COMPREPLY=()
-    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        return
-    fi
     local cur=${COMP_WORDS[COMP_CWORD]} i
     if [[ $cur == -* ]]; then
         return
@@ -1965,6 +1962,14 @@ function _git_commit_or_clone_complete() {
         fi
     fi
     COMPREPLY=("${matches[@]}")
+}
+
+# As _github_clone_complete, but only outside of a git repo.
+function _git_commit_or_clone_complete() {
+    COMPREPLY=()
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        _github_clone_complete
+    fi
 }
 
 # TODO TODO change to work w/ multiple -m flags (or decide how else i want to write
@@ -2486,7 +2491,8 @@ function clone() {
 
 # TODO TODO try to switch all hub stuff to gh (official CLI), try to use it again, and
 # try to get autocomplete working (and with any aliases too!)
-alias cl="clone"
+alias cl='github_clone'
+complete -o bashdefault -o default -F _github_clone_complete cl
 
 # TODO option to exclude stuff not modified past a certain date / recency?
 # TODO test these (at least mgf) can also show if upstream has stuff we don't
