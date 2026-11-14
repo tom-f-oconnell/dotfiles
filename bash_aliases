@@ -1820,11 +1820,158 @@ alias gac='git_commit_add'
 alias gca='git commit --amend'
 complete -F _complete_alias gca
 
+# Where the lists `gc` uses (for completion, and to pick SSH or HTTPS) are kept: `repos`
+# has a line <owner>/<repo> for each GitHub repo I have access to, and `owners` a line for
+# my account and for each organization I'm in.
+_GITHUB_REPO_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/github_repos"
+
+# Rewrites those lists, from the GitHub API via `gh` (takes a few seconds). Does nothing if
+# another refresh is already running.
+function github_repo_cache_refresh() {
+    if ! command -v gh >/dev/null; then
+        echo "github_repo_cache_refresh: needs gh (and 'gh auth login')" >&2
+        return 1
+    fi
+    local dir=$_GITHUB_REPO_CACHE_DIR
+    mkdir -p "$dir" || return
+    (
+        flock -n 9 || exit 0
+        gh api --paginate 'user/repos?per_page=100' --jq '.[].full_name' \
+            > "$dir/repos.tmp" && mv "$dir/repos.tmp" "$dir/repos" || exit
+        {
+            gh api user --jq .login &&
+                gh api --paginate 'user/orgs?per_page=100' --jq '.[].login'
+        } > "$dir/owners.tmp" && mv "$dir/owners.tmp" "$dir/owners"
+    ) 9> "$dir/lock"
+}
+
+# Prints the URL to clone a GitHub repo from, never with a trailing .git: over SSH if it's
+# under my account or one of my organizations (or is otherwise a repo I have access to),
+# else over HTTPS.
+#
+# Args:
+#   $1: <owner>/<repo>, or any GitHub URL for the repo (or for a page within it)
+#
+# Returns 1 (printing nothing) if $1 is neither, or is an existing path.
+function _github_clone_url() {
+    local spec=$1 owner repo
+    local url_re='^(https?://|git://|ssh://)?([^/@]+@)?(www\.)?github\.com[:/]+([^/]+)/([^/?#]+)'
+    local short_re='^([A-Za-z0-9][A-Za-z0-9-]*)/([A-Za-z0-9._-]+)/?$'
+    if [[ $spec =~ $url_re ]]; then
+        owner=${BASH_REMATCH[4]}
+        repo=${BASH_REMATCH[5]}
+    elif [ ! -e "$spec" ] && [[ $spec =~ $short_re ]]; then
+        owner=${BASH_REMATCH[1]}
+        repo=${BASH_REMATCH[2]}
+    else
+        return 1
+    fi
+    repo=${repo%.git}
+
+    local dir=$_GITHUB_REPO_CACHE_DIR
+    # (GitHub's names are case-insensitive)
+    if printf '%s\n' "${MY_GITHUB_ACCOUNTS[@]}" | grep -qixF -- "$owner" ||
+        grep -qixF -- "$owner" "$dir/owners" 2>/dev/null ||
+        grep -qixF -- "$owner/$repo" "$dir/repos" 2>/dev/null; then
+        echo "git@github.com:$owner/$repo"
+    else
+        echo "https://github.com/$owner/$repo"
+    fi
+}
+
+# `git clone`, but the repository can also be given as <owner>/<repo> on GitHub, or as any
+# GitHub URL for it, which are cloned from the URL _github_clone_url gives. Anything else
+# (other URLs, local paths, git clone's options, the directory to clone into) is passed on
+# as is.
+function github_clone() {
+    if [ "$#" -eq 0 ]; then
+        echo "usage: github_clone <owner>/<repo>|<url> [<dir>] [<git clone options>]" >&2
+        return 2
+    fi
+    local -a args=()
+    local arg url skip=0 found=0
+    for arg in "$@"; do
+        if [ "$skip" -eq 1 ]; then
+            skip=0
+        elif [ "$found" -eq 0 ]; then
+            case $arg in
+                # (options whose value is the next argument)
+                -b|-o|-u|-c|-j|--branch|--origin|--upload-pack|--config|--jobs|--depth|\
+                --reference|--reference-if-able|--template|--separate-git-dir|--filter|\
+                --shallow-since|--shallow-exclude|--revision|--bundle-uri|--server-option)
+                    skip=1
+                    ;;
+                -*)
+                    ;;
+                *)
+                    if url=$(_github_clone_url "$arg"); then
+                        arg=$url
+                    fi
+                    found=1
+                    ;;
+            esac
+        fi
+        args+=("$arg")
+    done
+    git clone "${args[@]}"
+}
+
+# Inside a git repo, `git commit -m`. Anywhere else, github_clone.
+function git_commit_or_clone() {
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git commit -m "$@"
+    else
+        github_clone "$@"
+    fi
+}
+
+# Outside of a git repo, completes the repository argument from the cached list of repos I
+# have access to: first the owner, if what's typed so far matches several, then
+# <owner>/<repo>. The list is fetched on first use, and refreshed in the background (for
+# the next completion) once over an hour old.
+function _git_commit_or_clone_complete() {
+    COMPREPLY=()
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        return
+    fi
+    local cur=${COMP_WORDS[COMP_CWORD]} i
+    if [[ $cur == -* ]]; then
+        return
+    fi
+    for ((i = 1; i < COMP_CWORD; i++)); do
+        if [[ ${COMP_WORDS[i]} != -* ]]; then
+            return
+        fi
+    done
+
+    local repos=$_GITHUB_REPO_CACHE_DIR/repos
+    if [ ! -s "$repos" ]; then
+        github_repo_cache_refresh 2>/dev/null
+    elif [ -n "$(find "$repos" -mmin +60 2>/dev/null)" ]; then
+        (github_repo_cache_refresh &) >/dev/null 2>&1
+    fi
+    if [ ! -r "$repos" ]; then
+        return
+    fi
+
+    local -a matches owners
+    mapfile -t matches < <(compgen -W "$(<"$repos")" -- "$cur")
+    if [[ $cur != */* ]]; then
+        mapfile -t owners < <(printf '%s\n' "${matches[@]%%/*}" | sort -u)
+        if [ "${#owners[@]}" -gt 1 ]; then
+            COMPREPLY=("${owners[@]/%/\/}")
+            compopt -o nospace
+            return
+        fi
+    fi
+    COMPREPLY=("${matches[@]}")
+}
+
 # TODO TODO change to work w/ multiple -m flags (or decide how else i want to write
 # commit messages to use new lines, or otherwise format them better than i'm doing now)
 # https://stackoverflow.com/questions/5064563
-alias gc='git commit -m'
-complete -F _complete_alias gc
+alias gc='git_commit_or_clone'
+complete -o bashdefault -o default -F _git_commit_or_clone_complete gc
 
 # TODO TODO either here or somewhere else, which maybe gets called here,
 # have wrap git push, so that if it fails b/c there are remote changes,
