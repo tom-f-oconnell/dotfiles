@@ -2147,7 +2147,8 @@ alias gwul='print_repo_url upstream /commits'
 alias gb='git branch'
 complete -F _complete_alias gb
 
-# Requires grip, installable via `pip install grip` (on 20.04 at least)
+# Requires grip, installable via `sudo apt install grip` (movein.sh does). `pip install
+# grip`, as on 20.04, no longer works outside a venv.
 function render_and_display_markdown() {
 
     # TODO better to use mktemp or something?
