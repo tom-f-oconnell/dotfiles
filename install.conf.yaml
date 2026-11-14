@@ -102,14 +102,14 @@
     stdout: True
     stderr: True
     stdin: True
-  # TODO delete (or fix script and re-enable. currently many package versions / names
-  # will probably not work after having updated from (20.04?) to 26.04
-  #-
-  #  description: "Running ~/src/scripts/movein.sh"
-  #  command: "sudo ~/src/scripts/movein.sh"
-  #  stdout: True
-  #  stderr: True
-  #  stdin: True
+  # TODO check the packages.txt process (see migrating_movein_sh.md), and if it works,
+  # replace this step with an `apt install` from packages.txt
+  -
+    description: "Running ~/src/scripts/movein.sh"
+    command: "sudo ~/src/scripts/movein.sh"
+    stdout: True
+    stderr: True
+    stdin: True
   -
     # Plugins (vim-plug), then their 'do' hooks from vimrc, incl. building YouCompleteMe w/
     # --clangd-completer (set on its Plug line, so :PlugUpdate rebuilds it the same way)
