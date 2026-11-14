@@ -55,3 +55,7 @@ check that the new process works for you:
 - Docker and TeamViewer are installed on atlas, but their repositories are disabled there,
   so `packages.txt` lists them as left out. A new machine needs those repositories set up
   separately. The same goes for Chrome and Claude Desktop.
+- `ui_settings.sh` was rewritten for GNOME on 2026-11-13. Three things in it are commented
+  out, to re-evaluate: the Alt+M / Alt+K / Alt+J volume keys, the faster key repeat, and
+  the Ctrl+Q hotkey (whose script needs X11). The favorite apps line is also commented
+  until those apps are all set up.

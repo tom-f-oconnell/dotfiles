@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
 
+# Settings for the GNOME desktop (as in Ubuntu 26.04). The Unity / Compiz settings this
+# used to make (workspace grid, launcher favorites, sticky edges, indicator-datetime) do
+# not exist there, and were removed.
+
 # https://stackoverflow.com/questions/38859145
 if grep -q Microsoft /proc/version; then
     # Doesn't make sense to try to change these in WSL.
     exit 0
 fi
-
-# Make Amazon application icon hidden in dashboard search
-# can't install package that contains it (unity-webapps-common)
-# because it has other important stuff
-cp /usr/share/applications/ubuntu-amazon-default.desktop \
-    ~/.local/share/applications/ubuntu-amazon-default.desktop
-# TODO do in an idempotent way
-echo Hidden=true >> ~/.local/share/applications/ubuntu-amazon-default.desktop
 
 # See: https://askubuntu.com/questions/558446
 # for possible reasons Anaconda / other things could break gsettings
@@ -27,22 +23,21 @@ echo Hidden=true >> ~/.local/share/applications/ubuntu-amazon-default.desktop
 # turn off screen / lock after 30 minutes
 gsettings set org.gnome.desktop.session idle-delay 1800
 
-# default when enabling through GUI is 2x2 workspaces (and equiv. to 2 & 2 here)
-# https://askubuntu.com/questions/447673
-gsettings set org.compiz.core:/org/compiz/profiles/unity/plugins/core/ hsize 4
-gsettings set org.compiz.core:/org/compiz/profiles/unity/plugins/core/ vsize 2
+# TODO uncomment once all of these are set up (rhythmbox, and which terminal?). These are
+# the GNOME names for what the Unity launcher list had.
+#gsettings set org.gnome.shell favorite-apps "['org.gnome.Nautilus.desktop', 'firefox_firefox.desktop', 'org.gnome.Rhythmbox3.desktop', 'libreoffice-calc.desktop', 'libreoffice-writer.desktop', 'org.gnome.Ptyxis.desktop']"
 
-gsettings set com.canonical.Unity.Launcher favorites "['application://org.gnome.Nautilus.desktop', 'application://firefox.desktop', 'application://rhythmbox.desktop', 'application://libreoffice-calc.desktop', 'application://libreoffice-writer.desktop', 'unity://running-apps', 'application://gnome-terminal.desktop', 'unity://expo-icon', 'unity://devices']"
+# TODO re-evaluate whether I still want the three settings below (volume keys, key
+# repeat, ctrl+q hotkey). Commented 2026-11-13: none were applied on atlas at the time.
+# See also migrating_movein_sh.md.
 
 # keybindings, to have consistent keys for volume control across all computers
-# unfortunately, it seems ubuntu (at least up through 16.04) does not really
-# support multiple keybindings to same function. (would like to support any
-# native volume control keys as well)
+# (these keys take a list now, so several bindings per function are possible)
 # TODO maybe i could detect whether there are native keyboard controls on the
 # particular computer, and only set these if not?
-gsettings set org.gnome.settings-daemon.plugins.media-keys volume-mute '<Alt>m'
-gsettings set org.gnome.settings-daemon.plugins.media-keys volume-up '<Alt>k'
-gsettings set org.gnome.settings-daemon.plugins.media-keys volume-down '<Alt>j'
+#gsettings set org.gnome.settings-daemon.plugins.media-keys volume-mute "['<Alt>m']"
+#gsettings set org.gnome.settings-daemon.plugins.media-keys volume-up "['<Alt>k']"
+#gsettings set org.gnome.settings-daemon.plugins.media-keys volume-down "['<Alt>j']"
 # TODO play / pause?
 
 # TODO aliases for switching between a more responsive (as below) and less
@@ -51,47 +46,16 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys volume-down '<Alt>j'
 # but otherwise can be as small as I want (still an int type).
 # http://blog.rodolfocarvalho.net/2017/01/configuring-keyboard-repeat-rate-on.html
 # (default=30ms)
-gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 15
+#gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 15
 # (default=500ms, checked from `gsettings reset ...`)
-gsettings set org.gnome.desktop.peripherals.keyboard delay 280
+#gsettings set org.gnome.desktop.peripherals.keyboard delay 280
 
-# In the meantime, Displays->Sticky edges->Off
-# This is so the mouse doesn't get stuck on the boundary between monitors.
-# Not sure if I do want the default "sticky edges" in some cases though...
-# is there some way to adjust the threshold mouse velocity here?
-# (does not seem to be the relevant parameter when using Unity, see:
-# https://unix.stackexchange.com/questions/440334 )
-# https://askubuntu.com/questions/462629
-#gsettings set org.gnome.shell.overrides edge-tiling false
-# full path for this "relocatable schema" taken from here:
-# https://askubuntu.com/questions/290159
-# still not sure what (if any) general procedure exists for finding paths to
-# relocatable schemas...
-# TODO i think this is supposed to be `.../ overcome-pressure 1`, but check
-gsettings set org.compiz.unityshell:/org/compiz/profiles/unity/plugins/unityshell/overcome-pressure 1
-# there is also: org.gnome.metacity edge-tiling, but this doesn't seem like it
-# is that likely to influence unity settings and it is also not changed after
-# disabling sticky edges in gui settings
+# NOTE: ctrl_q_hotkey.sh uses xdotool, which only works in X11 sessions (the default
+# session is Wayland now)
+#set_keyboard_shortcuts.py 'VIM term close + passthrough' 'ctrl_q_hotkey.sh' '<Control>Q'
 
-# TODO add an answer to https://askubuntu.com/questions/109338 , to reflect the
-# solution i came up w/ to disable sticky edges. nothing there works w/ 16.04
-# from cli
-
-set_keyboard_shortcuts.py 'VIM term close + passthrough' 'ctrl_q_hotkey.sh' '<Control>Q'
-
+# Top bar clock like "Fri Nov 13  6:05 PM" (see wishlist_features.md for the custom format
+# the Unity clock had)
 gsettings set org.gnome.desktop.interface clock-show-date true
-# This seems to be the applicable one in 16.04, but some comments here:
-# https://askubuntu.com/questions/83597 seem to indicate earlier and later
-# (18.04) versions might use the former key? Could be a Unity / Gnome thing.
-# TODO some way to get this in MM/DD format, rather than month like "Mar"?
-gsettings set com.canonical.indicator.datetime show-date true
-
-# TODO find equivalent gnome settings for these. assuming these only work w/
-# unity?
-
-# Default is 'locale-default'. Hopefully custom doesn't break any localization
-# stuff? strftime should take care of that i guess...
-gsettings set com.canonical.indicator.datetime time-format 'custom'
-gsettings set com.canonical.indicator.datetime custom-time-format '%b  %-m-%d  %a %l:%M %p'
-
-
+gsettings set org.gnome.desktop.interface clock-show-weekday true
+gsettings set org.gnome.desktop.interface clock-format '12h'
