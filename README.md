@@ -83,6 +83,8 @@ as `/usage`, fetched at most every 2 minutes, so they can lag that much.
 keys, which Claude Code rewrites on every `/model` and `/effort`: a git filter (in
 `gitconfig`, applied by `.gitattributes`) strips them, so they stay in the working copy
 but never show as changes. It needs `jq`; without it git warns and the keys show again.
+Plain `git status` can still list the file as modified (with an empty diff) after those
+keys change its size; `g` and `dot` clear that first, as does `git add claude_settings.json`.
 
 #### Vim clipboard
 

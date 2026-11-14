@@ -1531,6 +1531,31 @@ function _git_compared_to() {
     fi
 }
 
+# Stops `git status` listing files as modified when their only changes are ones a clean
+# filter drops (e.g. the model / effort defaults in this repo's claude_settings.json).
+# If such a change alters the file's size, git calls the file modified without running the
+# filter, until the size recorded in the index is updated. This does that, with `git add`,
+# for each file with a filter attribute whose filtered contents (and mode) match the index,
+# which stages nothing.
+function _git_refresh_filtered() {
+    local top meta path old_mode new_mode old_oid filter
+    top=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
+    while IFS= read -r -d '' meta && IFS= read -r -d '' path; do
+        read -r old_mode new_mode old_oid _ <<< "$meta"
+        if [ "$old_mode" != ":$new_mode" ] || [ ! -f "$top/$path" ]; then
+            continue
+        fi
+        filter=$(git -C "$top" check-attr filter -- "$path")
+        case ${filter##*: } in
+            unspecified|unset) continue ;;
+        esac
+        if [ "$(git -C "$top" hash-object --path "$path" -- "$path" 2>/dev/null)" = \
+                "$old_oid" ]; then
+            git -C "$top" add -- "$path"
+        fi
+    done < <(git -C "$top" diff-files --raw --no-abbrev -z 2>/dev/null)
+}
+
 # `git status`, but first fetching the current branch's upstream (so the comparison with it
 # is current), and with git's "On branch X" and "Your branch is ..." lines (and the blank
 # line after them) replaced by:
@@ -1682,6 +1707,7 @@ function git_status_compact() {
         header+="${header:+$nl}$commit_lines"
     fi
 
+    _git_refresh_filtered
     # (header passed via the environment, since awk -v would interpret any backslashes)
     git -c color.status="$color" status --no-ahead-behind "$@" | \
         GIT_STATUS_HEADER=$header GIT_STATUS_CLEAN_COLOR=$green awk '
@@ -3013,7 +3039,7 @@ alias mba="cd /mnt/nas/mb_team/analysis_output"
 # TODO make aliases like mbr/mba above, but to go to latest fly dir / first of
 # latest unanalyzed (mbrl/mbal)
 
-alias dot="cd ~/src/dotfiles && git status"
+alias dot="cd ~/src/dotfiles && { _git_refresh_filtered; git status; }"
 # Not using `do` because that is some other keyword.
 alias dt="dot"
 
