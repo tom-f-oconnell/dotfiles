@@ -2439,11 +2439,12 @@ function wake_host() {
 alias wakenas='wake_host nas'
 
 alias s='ssh'
-alias sx='ssh -X'
-alias sshx='ssh -X'
+alias sx='ssh -Y'
+alias sshx='ssh -Y'
 
 alias sa='ssh atlas'
-alias sax='ssh -X atlas'
+alias sax='ssh -Y atlas'
+alias shx='ssh -Y hal'
 
 alias scpr='scp -r'
 
