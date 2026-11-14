@@ -41,6 +41,15 @@ Scripts meant to be run by name are in `bin/`, which `bashrc` adds to the end of
   rather than resume it twice (both would write one transcript without seeing each other's
   turns, and a later resume keeps only one side).
 
+#### Packages
+
+`packages.txt` lists the apt packages to install on a new machine, one per line. A line
+`#name` is a package that is known but left out: comment a package out rather than
+deleting it, or it will be proposed again. `./update_packages_txt.py` finds packages
+installed by hand on this machine that the list doesn't know yet, shows the additions as
+a diff, and writes them only after a yes (`-n` to only show the diff). To install the
+list: `sudo apt install $(grep -v '^#' packages.txt)`.
+
 #### Scheduled jobs
 
 These are systemd user timers rather than cron jobs: they need no root, and their unit
