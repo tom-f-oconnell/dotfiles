@@ -8,3 +8,5 @@ Things I'd like that have no simple way to do them yet.
   `'%b  %-m-%d  %a %l:%M %p'` (e.g. `Nov  11-13  Fri  6:05 PM`) through
   `com.canonical.indicator.datetime`. GNOME only has switches for showing the date, the
   weekday and seconds, and 12 / 24 hour. A custom format would need a shell extension.
+- **Workspaces in a grid** (4x2, as under Unity). GNOME lays workspaces out in one row.
+  See the note in `migrating_movein_sh.md` about finding an extension.

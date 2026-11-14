@@ -59,3 +59,8 @@ check that the new process works for you:
   out, to re-evaluate: the Alt+M / Alt+K / Alt+J volume keys, the faster key repeat, and
   the Ctrl+Q hotkey (whose script needs X11). The favorite apps line is also commented
   until those apps are all set up.
+- Workspaces: atlas has GNOME's dynamic workspaces in a single row, not the 4x2 grid Unity
+  had. GNOME has no grid setting, so that needs a shell extension. Come back to which
+  extensions support a grid on GNOME 50 (none is packaged in Ubuntu; look on
+  extensions.gnome.org). `ui_settings.sh` sets nothing for workspaces yet; a fixed count
+  in a row (dynamic workspaces off, 8 workspaces) is possible without an extension.
