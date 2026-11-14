@@ -77,6 +77,7 @@
     # Claude Code user-level instructions and settings
     ~/.claude/CLAUDE.md: claude_CLAUDE.md
     ~/.claude/settings.json: claude_settings.json
+    ~/.claude/keybindings.json: claude_keybindings.json
 
     # systemd user units (see README: scheduled jobs). The timers.target.wants link is what
     # `systemctl --user enable` makes, so linking alone enables the timer (from next login).
