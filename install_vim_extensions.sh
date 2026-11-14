@@ -16,7 +16,9 @@ then
 fi
 
 # TODO test this works on fresh 20.04, and WSL
-sudo apt-get install -y build-essential cmake python3-dev
+# YouCompleteMe also needs build-essential and cmake to build, which
+# ~/src/scripts/movein.sh installs (it runs before this in `install`)
+sudo apt-get install -y python3-dev
 
 # TODO modify so vim doesn't show output here if possible (or not interactive)
 # (so vim doesn't spit out "Warning: Output is not to a terminal" when called
