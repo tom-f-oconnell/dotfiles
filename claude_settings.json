@@ -20,7 +20,7 @@
       "Read(.git/**)"
     ]
   },
-  "model": "opus",
+  "model": "fable",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -165,6 +165,22 @@
     ]
   },
   "respondToBashCommands": false,
+  "statusLine": {
+    "type": "command",
+    "command": "~/src/dotfiles/claude_statusline.sh",
+    "hideVimModeIndicator": true
+  },
+  "enabledPlugins": {
+    "risky-parts@claude-risky-parts": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-risky-parts": {
+      "source": {
+        "source": "github",
+        "repo": "tom-f-oconnell/claude-risky-parts"
+      }
+    }
+  },
   "viewMode": "focus",
   "effortLevel": "medium",
   "modelSettings": {
@@ -176,12 +192,10 @@
     },
     "claude-fable-5-1": {
       "effortLevel": "xhigh"
+    },
+    "claude-fable-5-2": {
+      "effortLevel": "medium"
     }
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "~/src/dotfiles/claude_statusline.sh",
-    "hideVimModeIndicator": true
   },
   "tui": "fullscreen",
   "theme": "dark",
