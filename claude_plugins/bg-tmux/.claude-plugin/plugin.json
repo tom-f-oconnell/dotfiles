@@ -1,0 +1,6 @@
+{
+  "name": "bg-tmux",
+  "version": "0.1.0",
+  "description": "/bgt: /bg, and then (via the claude shell function in bash_aliases) respawn the session and attach to it in tmux once the terminal is free.",
+  "author": { "name": "tom-f-oconnell" }
+}

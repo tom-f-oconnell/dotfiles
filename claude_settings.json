@@ -171,7 +171,8 @@
   },
   "enabledPlugins": {
     "risky-parts@claude-risky-parts": true,
-    "effort-switch-binds@claude-effort-switch-binds": true
+    "effort-switch-binds@claude-effort-switch-binds": true,
+    "bg-tmux@dotfiles": true
   },
   "extraKnownMarketplaces": {
     "claude-risky-parts": {
@@ -184,6 +185,12 @@
       "source": {
         "source": "github",
         "repo": "tom-f-oconnell/claude-effort-switch-binds"
+      }
+    },
+    "dotfiles": {
+      "source": {
+        "source": "directory",
+        "path": "/home/tom/src/dotfiles/claude_plugins"
       }
     }
   },

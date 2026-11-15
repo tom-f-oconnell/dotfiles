@@ -1,0 +1,6 @@
+{
+  "name": "dotfiles",
+  "description": "Claude Code plugins kept in tom-f-oconnell/dotfiles.",
+  "owner": { "name": "tom-f-oconnell" },
+  "plugins": [{ "name": "bg-tmux", "source": "./bg-tmux" }]
+}

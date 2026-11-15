@@ -3799,6 +3799,9 @@ alias minus='printf "−" | xclip -sel clip; echo "put − character in clipboar
 # `claude-sessions resume-guard` (bin/): when that session is still open in another
 # terminal or in the background, it offers to show, take over, close or fork it, rather
 # than run it twice. It exits 100 when no open session is involved, and claude runs as usual.
+# Interactive sessions get CLAUDE_BGT_NOTE, a file of their own for /bgt (the bg-tmux plugin,
+# claude_plugins/) to write the session's id to before /bg: once claude exits, if it was
+# written, `cbg` respawns and attaches to that background session in tmux.
 function claude() {
     if [ -z "$CLAUDECODE" ] && [ -t 0 ] && command -v claude-sessions >/dev/null; then
         local a rc
@@ -3813,16 +3816,39 @@ function claude() {
             esac
         done
     fi
+    local note= rc
+    if [ -z "$CLAUDECODE" ] && [ -t 0 ]; then
+        note=${XDG_RUNTIME_DIR:-/tmp}/claude-bgt-$USER/$$-$RANDOM
+    fi
     if [ -z "$CLAUDECODE" ] && [ -t 0 ] && [ "$PWD" -ef "$HOME" ]; then
         if [ ! -d "$HOME/claude" ]; then
             mkdir "$HOME/claude" || return
             echo "Made ~/claude (where \`claude\` runs when started from ~)"
         fi
         # Subshell + exec: claude runs in ~/claude, but this shell stays in ~ afterwards.
-        (cd "$HOME/claude" && exec claude "$@")
+        (cd "$HOME/claude" && CLAUDE_BGT_NOTE=$note exec claude "$@")
     else
-        command claude "$@"
+        CLAUDE_BGT_NOTE=$note command claude "$@"
     fi
+    rc=$?
+    if [ -n "$note" ] && [ -s "$note" ]; then
+        local session_id id i
+        session_id=$(<"$note")
+        rm -f "$note"
+        # (the background session can take a moment to be listed)
+        for ((i = 0; i < 20; i++)); do
+            id=$(command claude agents --json 2>/dev/null | jq -r --arg s "$session_id" \
+                '.[] | select(.kind == "background" and .sessionId == $s) | .id // empty')
+            [ -n "$id" ] && break
+            sleep 0.5
+        done
+        if [ -n "$id" ]; then
+            cbg "$id"
+            return
+        fi
+        echo "claude: /bgt's session ($session_id) isn't listed in the background, so not attaching" >&2
+    fi
+    return "$rc"
 }
 
 # TODO need anything to preserve completion here (if there even was any)?

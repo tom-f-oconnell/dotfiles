@@ -40,6 +40,11 @@ Scripts meant to be run by name are in `bin/`, which `bashrc` adds to the end of
   another terminal or the background, first offers to show, take over, close or fork it,
   rather than resume it twice (both would write one transcript without seeing each other's
   turns, and a later resume keeps only one side).
+- `cbg [id]` (`bash_aliases`): for after `/bg`, `claude respawn` and `claude attach` a
+  background session in a new tmux session `claude-<id>` (or window, inside tmux),
+  defaulting to the most recent one in the current directory. `/bgt` in Claude Code (the
+  `bg-tmux` plugin in `claude_plugins/`, enabled by `claude_settings.json`) does `/bg` and
+  then this, once the terminal is free, for sessions started by the `claude` shell function.
 
 #### Packages
 
