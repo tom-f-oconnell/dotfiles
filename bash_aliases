@@ -1876,19 +1876,33 @@ function github_repo_cache_refresh() {
 # else over HTTPS.
 #
 # Args:
-#   $1: <owner>/<repo>, or any GitHub URL for the repo (or for a page within it)
+#   $1: <owner>/<repo>, <repo> (under the first of MY_GITHUB_ACCOUNTS the cached list
+#       has it under, else $GITHUB_USER), or any GitHub URL for the repo (or for a page
+#       within it)
 #
-# Returns 1 (printing nothing) if $1 is neither, or is an existing path.
+# Returns 1 (printing nothing) if $1 is none of those, or is an existing path.
 function _github_clone_url() {
     local spec=$1 owner repo
     local url_re='^(https?://|git://|ssh://)?([^/@]+@)?(www\.)?github\.com[:/]+([^/]+)/([^/?#]+)'
     local short_re='^([A-Za-z0-9][A-Za-z0-9-]*)/([A-Za-z0-9._-]+)/?$'
+    local bare_re='^[A-Za-z0-9._-]+$'
     if [[ $spec =~ $url_re ]]; then
         owner=${BASH_REMATCH[4]}
         repo=${BASH_REMATCH[5]}
     elif [ ! -e "$spec" ] && [[ $spec =~ $short_re ]]; then
         owner=${BASH_REMATCH[1]}
         repo=${BASH_REMATCH[2]}
+    elif [ ! -e "$spec" ] && [ -n "$GITHUB_USER" ] && [[ $spec =~ $bare_re ]]; then
+        owner=$GITHUB_USER
+        repo=$spec
+        local account
+        for account in "${MY_GITHUB_ACCOUNTS[@]}"; do
+            if grep -qixF -- "$account/$repo" "$_GITHUB_REPO_CACHE_DIR/repos" 2>/dev/null
+            then
+                owner=$account
+                break
+            fi
+        done
     else
         return 1
     fi
@@ -1905,13 +1919,13 @@ function _github_clone_url() {
     fi
 }
 
-# `git clone`, but the repository can also be given as <owner>/<repo> on GitHub, or as any
-# GitHub URL for it, which are cloned from the URL _github_clone_url gives. Anything else
+# `git clone`, but the repository can also be given as <owner>/<repo> on GitHub, as just
+# <repo> for one under my account (or one of MY_GITHUB_ACCOUNTS), or as any GitHub URL for it, which are cloned from the URL _github_clone_url gives. Anything else
 # (other URLs, local paths, git clone's options, the directory to clone into) is passed on
 # as is.
 function github_clone() {
     if [ "$#" -eq 0 ]; then
-        echo "usage: github_clone <owner>/<repo>|<url> [<dir>] [<git clone options>]" >&2
+        echo "usage: github_clone <owner>/<repo>|<repo>|<url> [<dir>] [<git clone options>]" >&2
         return 2
     fi
     local -a args=()
@@ -1952,7 +1966,8 @@ function git_commit_or_clone() {
 }
 
 # Completes github_clone's repository argument from the cached list of repos I have access
-# to: first the owner, if what's typed so far matches several, then <owner>/<repo>. The
+# to: first the owner (alongside the bare names of repos under $GITHUB_USER), if what's
+# typed so far matches several of those, then <owner>/<repo>. The
 # list is fetched on first use, and refreshed in the background (for the next completion)
 # once over an hour old.
 function _github_clone_complete() {
@@ -1977,13 +1992,22 @@ function _github_clone_complete() {
         return
     fi
 
-    local -a matches owners
+    local -a matches owners mine
     mapfile -t matches < <(compgen -W "$(<"$repos")" -- "$cur")
     if [[ $cur != */* ]]; then
-        mapfile -t owners < <(printf '%s\n' "${matches[@]%%/*}" | sort -u)
-        if [ "${#owners[@]}" -gt 1 ]; then
-            COMPREPLY=("${owners[@]/%/\/}")
+        if [ "${#matches[@]}" -gt 0 ]; then
+            mapfile -t owners < <(printf '%s\n' "${matches[@]%%/*}" | sort -u)
+        fi
+        if [ -n "$GITHUB_USER" ]; then
+            mapfile -t mine < <(compgen -W "$(sed -n "s|^$GITHUB_USER/||Ip" "$repos")" \
+                -- "$cur")
+        fi
+        if [ $((${#owners[@]} + ${#mine[@]})) -gt 1 ]; then
+            COMPREPLY=("${owners[@]/%/\/}" "${mine[@]}")
             compopt -o nospace
+            return
+        elif [ "${#mine[@]}" -eq 1 ]; then
+            COMPREPLY=("${mine[@]}")
             return
         fi
     fi
