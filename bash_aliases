@@ -3849,3 +3849,42 @@ function claude-list() {
 function claude-peek() {
     claude-sessions peek "$@"
 }
+
+# For after /bg in a Claude Code session: `claude respawn` and then `claude attach` that
+# background session, in a new tmux session named claude-<id> (attaching to it), or in a
+# new window when already in tmux. If that tmux session already exists, just attaches to it.
+#
+# Args:
+#   $1 (optional): the background session's id (or anything else `claude attach` takes).
+#       Defaults to the most recently started background session in this directory, else
+#       the most recent anywhere.
+function cbg() {
+    local id=$1 name
+    if [ -z "$id" ]; then
+        local line
+        line=$(command claude agents --json 2>/dev/null | jq -r --arg cwd "$PWD" '
+            [.[] | select(.kind == "background")] | sort_by(.startedAt)
+            | ((map(select(.cwd == $cwd)) | last) // last)
+            | select(. != null) | "\(.id)\t\(.name // "")"')
+        if [ -z "$line" ]; then
+            echo "cbg: no background Claude Code sessions" >&2
+            return 1
+        fi
+        id=${line%%$'\t'*}
+        name=${line#*$'\t'}
+        echo "cbg: $id${name:+ ($name)}"
+    fi
+    local cmd tmux_name
+    cmd="claude respawn $(printf %q "$id") && claude attach $(printf %q "$id")"
+    # (tmux doesn't allow . or : in session names)
+    tmux_name=claude-${id//[.: ]/-}
+    if [ -n "$TMUX" ]; then
+        tmux new-window -n "$tmux_name" -c "$PWD" && tmux send-keys "$cmd" Enter
+    elif tmux has-session -t "=$tmux_name" 2>/dev/null; then
+        tmux attach -t "=$tmux_name"
+    else
+        tmux new-session -d -s "$tmux_name" -c "$PWD" &&
+            tmux send-keys -t "=$tmux_name:" "$cmd" Enter &&
+            tmux attach -t "=$tmux_name"
+    fi
+}
