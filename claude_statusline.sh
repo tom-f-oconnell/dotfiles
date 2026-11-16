@@ -226,13 +226,15 @@ function size() {
     fi
 }
 
-# Appends to $procs "<label> <value>", with the value in level_color()'s color for $3
-# percent.
+# (the color of the CPU etc. use, to set it apart from the session name before it)
+PROCS_COLOR='38;5;110'
+
+# Appends to $procs "<label> <value>", in PROCS_COLOR, but with the value in
+# level_color()'s color for $3 percent, if any.
 function add_level() {
-    local text=$2 color
-    level_color "$3" color
-    [ -n "$color" ] && text=$'\e['"${color}m$text"$'\e[m'
-    procs+="${procs:+ }$1 $text"
+    local color
+    level_color "$3" color "$PROCS_COLOR"
+    procs+="${procs:+ }"$'\e['"${PROCS_COLOR}m$1 "$'\e['"${color}m$2"$'\e[m'
 }
 
 # The CPU, memory and GPU use, e.g. "cpu 340% mem 3.4G gpu 85% 1.2G", from the last sample
@@ -255,7 +257,7 @@ if [ -n "$claude_pid" ]; then
         add_level mem "$size" $(( mem_total ? mem * 100 / mem_total : 0 ))
         if [ "$gpu" != - ]; then
             size $(( gpu_mem * 1024 ))
-            procs+=" gpu $gpu% $size"
+            procs+=" "$'\e['"${PROCS_COLOR}mgpu $gpu% $size"$'\e[m'
         fi
     fi
 fi
