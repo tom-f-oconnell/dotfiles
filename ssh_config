@@ -17,3 +17,10 @@ Host bouldermesh
     User tom
     IdentityFile ~/.ssh/hetzner_ed25519
     IdentitiesOnly yes
+    # One shared connection, kept open 4 h after the last ssh using it ends (deploys open dozens);
+    # new ones reuse it without the key, and a dropped one is closed rather than hanging them
+    ControlMaster auto
+    ControlPath ~/.ssh/control-%C
+    ControlPersist 4h
+    ServerAliveInterval 15
+    ServerAliveCountMax 3

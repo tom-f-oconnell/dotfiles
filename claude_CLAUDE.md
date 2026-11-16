@@ -145,3 +145,12 @@ summary of everything that changed, grouped again by type and severity/impact.
 Add a subsection at the bottom of each "bug"/"wishlist" section that includes any
 features/bug-fixes I declined your work on. This HTML should have table of contents at
 the top.
+
+Uncommitted TODO.txt files in my repos are my own notes: don't mention them in summaries of what's uncommitted.
+
+### Colors
+
+If I ask for colors and red=bad / green=good are in use (or might be wanted), those two colors are reserved
+for that meaning, as is orange for warning statuses (and yellow is a natural fit for waiting). Pick other
+colors (blues, cyans, purples, magentas, greys) for categories such as job types, and color only the word or
+phrase that names the category, leaving the rest of the line uncolored unless I say otherwise.
