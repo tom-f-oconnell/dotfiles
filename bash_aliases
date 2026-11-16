@@ -1578,8 +1578,10 @@ function _git_refresh_filtered() {
 # Without an upstream, this then offers to set that remote branch as upstream (going on to
 # the offers below if so), or if the remote has no such branch, to push the branch to it
 # and set that as upstream (as `git push -u` does).
-# If the branch is behind its upstream (and not also ahead) with no changes to tracked
-# files, this offers to fast-forward to the (just fetched) upstream.
+# If the branch is behind its upstream, this offers to pull, with --autostash (so with or
+# without unstaged changes) and, while pull.ff is "only" (so a plain pull would refuse to if
+# the branch is also ahead), --rebase. With staged changes, it instead warns that pulling
+# would unstage them (as --autostash doesn't keep what was staged apart), and doesn't offer.
 # If instead it is ahead of its upstream (and not also behind), and `git push` would push
 # to that upstream branch, this offers to push just this branch to it (with or without
 # uncommitted changes, which pushing doesn't touch).
@@ -1778,9 +1780,23 @@ function git_status_compact() {
             pushes_to_upstream=1
         fi
     fi
-    if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ] && [ "${codes[1]}" -eq 0 ]; then
-        if _git_confirm "pull $(_git_n_commits "$behind") from $upstream?"; then
-            git merge --ff-only '@{upstream}'
+    if [ "$behind" -gt 0 ]; then
+        if ! git diff --cached --quiet 2>/dev/null; then
+            echo "${yellow}not offering to pull: --autostash would unstage the staged" \
+                "changes (commit or unstage them first)$reset" >&2
+            return "${codes[0]}"
+        fi
+        local -a pull_opts=(--autostash)
+        local how=
+        if [ "$(git config pull.ff)" = only ]; then
+            pull_opts+=(--rebase)
+            [ "$ahead" -gt 0 ] && how=", rebasing $(_git_n_commits "$ahead") onto them"
+        fi
+        if [ "${codes[1]}" -ne 0 ]; then
+            how+=", stashing changes meanwhile"
+        fi
+        if _git_confirm "pull $(_git_n_commits "$behind") from $upstream$how?"; then
+            git pull "${pull_opts[@]}"
             return
         fi
     elif [ "$ahead" -gt 0 ] && [ "$behind" -eq 0 ] && [ "$pushes_to_upstream" -eq 1 ]; then
