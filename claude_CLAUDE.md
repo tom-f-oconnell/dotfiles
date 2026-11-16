@@ -154,3 +154,10 @@ If I ask for colors and red=bad / green=good are in use (or might be wanted), th
 for that meaning, as is orange for warning statuses (and yellow is a natural fit for waiting). Pick other
 colors (blues, cyans, purples, magentas, greys) for categories such as job types, and color only the word or
 phrase that names the category, leaving the rest of the line uncolored unless I say otherwise.
+
+### No walls of text
+
+In anything I will read (reports, HTML pages, notes, summaries, replies), keep paragraphs short: about five
+sentences or ~100 words at most, one topic each. Split longer ones at the topic changes, or turn them into a
+list or a table. Do not put a whole long paragraph in bold: bold at most its first sentence or a lead phrase.
+A wall of text is very hard for me to read.
