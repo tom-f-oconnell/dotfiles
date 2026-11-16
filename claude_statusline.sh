@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Claude Code's status line (statusLine in claude_settings.json): the model (in red if
-# Fable) and its effort level (bold if xhigh or max, and followed by a cyan bar per level,
-# filled up to it), then bars for how much of the plan's 5-hour and weekly usage limits is
-# used, and when each resets, then any per-model weekly limits (e.g. Fable's), then as much
-# of the session's name as fits, and at the right edge, the CPU, memory, and (if any) GPU
-# use of Claude Code and everything it started. E.g.:
-#   Opus 5.5 high ▊▊▊▊▊ · 7d ▓▓▓▓░ 73% (Sun) · Fable ▓▓░░░ 43% · Fix the pa…  cpu 340% mem 3.4G
+# Fable) and its effort level, as a cyan bar per level, filled up to it, then bars for how
+# much of the plan's 5-hour and weekly usage limits is used, and when each resets, then any
+# per-model weekly limits (e.g. Fable's), then as much of the session's name as fits, and
+# at the right edge, the CPU, memory, and (if any) GPU use of Claude Code and everything it
+# started. E.g.:
+#   Opus5.5 ▊▊▊▊▊ 7d ▓▓▓▓░ 73% (Sun) Fable ▓▓░░░ 43% · Fix the pa…  cpu 340% mem 3.4G
 # The bars are narrowed (to no less than MIN_CELLS) as needed to fit the rest but the name.
 # The vim mode isn't shown (and hideVimModeIndicator hides the built-in `-- INSERT --`).
 #
@@ -130,17 +130,13 @@ function window() {
     printf '%s' "$out"
 }
 
-# The model and its effort level, as line() starts with
+# The model (without spaces, e.g. Opus5.5) and its effort level, as line() starts with
+model=${model// /}
 head=$model
 if [[ ${model,,} == *fable* ]]; then
     head=$'\e[31m'"$model"$'\e[m'
 fi
 if [ -n "$effort" ]; then
-    if [ "$effort" = xhigh ] || [ "$effort" = max ]; then
-        head+=" "$'\e[1m'"$effort"$'\e[m'
-    else
-        head+=" $effort"
-    fi
     # (a narrow full-height block per level, filled ones in the cyan a usage bar's ▓ would
     # look like, and the rest as its ░ would, as the terminal draws shades by blending)
     levels=(low medium high xhigh max)
@@ -169,6 +165,9 @@ function add_window() {
 
 add_window 5h "$five" "$five_reset"
 add_window 7d "$week" "$week_reset"
+# (how many of the windows are the plan's, which are separated by " · ", where the rest are
+# by a space)
+plan_windows=${#labels[@]}
 
 # The per-model weekly limits, as "<name>\x1f<percent>\x1f<reset>" lines, from usage
 # fetched within SHOW_FOR, and leaving out any whose window has since reset.
@@ -227,11 +226,10 @@ function size() {
     fi
 }
 
-# Appends to $procs "<label> <value>", with the value padded on the left to 4 columns, and
-# in level_color()'s color for $3 percent.
+# Appends to $procs "<label> <value>", with the value in level_color()'s color for $3
+# percent.
 function add_level() {
-    local text color
-    printf -v text '%4s' "$2"
+    local text=$2 color
     level_color "$3" color
     [ -n "$color" ] && text=$'\e['"${color}m$text"$'\e[m'
     procs+="${procs:+ }$1 $text"
@@ -267,9 +265,11 @@ fi
 # Args:
 #   $1: how many cells wide each usage window's bar is.
 function line() {
-    local out=$head i
+    local out=$head i sep
     for i in "${!labels[@]}"; do
-        out+="${out:+ · }$(window "${labels[i]}" "${percents[i]}" "${resets[i]}" "$1")"
+        sep=' '
+        (( i > 0 && i < plan_windows )) && sep=' · '
+        out+="${out:+$sep}$(window "${labels[i]}" "${percents[i]}" "${resets[i]}" "$1")"
     done
     printf '%s' "$out"
 }
