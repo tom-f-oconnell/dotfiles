@@ -77,10 +77,18 @@ right away; after `link_only`, they start from the next login, or run
 `claude_statusline.sh` puts the model and its effort level below the Claude Code prompt,
 then bars for how much of the plan's 5-hour and weekly usage limits is used (and when each
 resets), then any per-model weekly limits (e.g. Fable's), then as much of the session's
-name as fits, and the vim mode at the right edge. The bars narrow as needed to fit the
-rest but the name. It needs `jq` and `curl`. Usage only shows with a Pro / Max
+name as fits, and at the right edge, the CPU, memory and (if any) GPU use of Claude Code and
+everything it started, e.g. `cpu 340% mem 3.4G gpu 85% 1.2G`. The bars narrow as needed
+to fit the rest but the name. It needs `jq` and `curl`. Usage only shows with a Pro / Max
 / Ultra login, after a session's first reply. The per-model limits come from the same place
 as `/usage`, fetched at most every 2 minutes, so they can lag that much.
+
+The CPU etc. use is sampled by `claude_procstats.py` (needing `python3`, and `nvidia-smi`
+for the GPU) every ~5 seconds, in the background, so it lags by up to ~10 seconds. CPU %
+is as in `top` (100% per core), and turns yellow at 70% of the machine's CPUs, red at 90%;
+memory likewise, of its RAM. It counts jobs that were detached (e.g. with `nohup`) as long
+as they still have Claude Code's `CLAUDE_PID` in their environment, but not ones in Docker
+containers, nor the memory of ones running as another user (e.g. via `sudo`).
 
 #### Claude Code settings
 

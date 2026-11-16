@@ -1,25 +1,35 @@
 #!/usr/bin/env bash
 # Claude Code's status line (statusLine in claude_settings.json): the model (in red if
 # Fable) and its effort level (bold if xhigh or max, and followed by a cyan bar per level,
-# filled up to it), then bars for how much of the plan's 5-hour and weekly usage limits is used, and
-# when each resets, then any per-model weekly limits (e.g. Fable's), then as much of the
-# session's name as fits, and the vim mode at the right edge (in place of the built-in
-# `-- INSERT --` line, which hideVimModeIndicator hides). E.g.:
-#   Opus 5.5 high ▊▊▊▊▊ · 7d ▓▓▓▓▓▓▓░░░ 73% (Sun) · Fable ▓▓▓▓░░░░░░ 43% · Fix the pa…  --INSERT--
+# filled up to it), then bars for how much of the plan's 5-hour and weekly usage limits is
+# used, and when each resets, then any per-model weekly limits (e.g. Fable's), then as much
+# of the session's name as fits, and at the right edge, the CPU, memory, and (if any) GPU
+# use of Claude Code and everything it started. E.g.:
+#   Opus 5.5 high ▊▊▊▊▊ · 7d ▓▓▓▓░ 73% (Sun) · Fable ▓▓░░░ 43% · Fix the pa…  cpu 340% mem 3.4G
 # The bars are narrowed (to no less than MIN_CELLS) as needed to fit the rest but the name.
+# The vim mode isn't shown (and hideVimModeIndicator hides the built-in `-- INSERT --`).
 #
 # Claude Code passes the session's state as JSON on stdin. The 5-hour and weekly usage is
 # only there when logged in with a Pro / Max / Ultra plan, and only after the session's
 # first reply. The per-model limits aren't in it at all, so they come from the usage
 # endpoint /usage reads, fetched in the background (at most every FETCH_EVERY seconds)
 # into a cache, so the status line never waits on the network.
+#
+# The CPU, memory and GPU use is likewise sampled in the background, by
+# claude_procstats.py (see there for what's counted), at most every SAMPLE_EVERY seconds,
+# so it's from the sample before, with CPU use averaged since the one before that. CPU and
+# memory turn yellow from 70% of the machine's, and red from 90%. statusLine's
+# refreshInterval re-runs this while Claude Code is otherwise idle, e.g. waiting on a job.
 
 FETCH_EVERY=120
 # (cached usage older than this isn't shown, e.g. if the login expired)
 SHOW_FOR=600
+SAMPLE_EVERY=4
+# (older samples aren't shown, e.g. if sampling keeps failing)
+SHOW_SAMPLE_FOR=30
 # (how many cells wide each bar is, at most, and at least when narrowed to fit)
-MAX_CELLS=10
-MIN_CELLS=4
+MAX_CELLS=5
+MIN_CELLS=2
 # (columns of the terminal the status line can't use, as Claude Code pads it on each side)
 MARGIN=4
 # (the fewest columns to show a cut-off session name in, else it's left out)
@@ -32,8 +42,8 @@ usage=$cache/usage.json
 
 # (\x1f-separated, as read's IFS would merge runs of a whitespace separator like \t, losing
 # empty fields)
-IFS=$'\x1f' read -r model effort mode five five_reset week week_reset session < <(jq -r '[
-    .model.display_name, .effort.level, .vim.mode,
+IFS=$'\x1f' read -r model effort five five_reset week week_reset session < <(jq -r '[
+    .model.display_name, .effort.level,
     .rate_limits.five_hour.used_percentage, .rate_limits.five_hour.resets_at,
     .rate_limits.seven_day.used_percentage, .rate_limits.seven_day.resets_at,
     (.session_name // "" | gsub("[[:cntrl:]]"; ""))
@@ -72,8 +82,22 @@ if (( now - last_fetch >= FETCH_EVERY )) && mkdir -p "$cache" \
     fetch_usage < /dev/null > /dev/null 2>&1 &
 fi
 
+# Sets the variable named $2 to the color (an SGR parameter, or $3 if none) to show
+# something at $1 percent (of a limit, or of the machine) in: yellow from 70%, and red from
+# 90%. (Variables are set, rather than output printed, by this and the functions for the
+# CPU etc. use, as a subshell to capture output from takes a ms or two each.)
+function level_color() {
+    if (( $1 >= 90 )); then
+        printf -v "$2" 31
+    elif (( $1 >= 70 )); then
+        printf -v "$2" 33
+    else
+        printf -v "$2" '%s' "$3"
+    fi
+}
+
 # Prints "<label> <bar> <percent>% (<when it resets>)" for one usage window. The bar is
-# green, then yellow from 70%, and red from 90%.
+# green, then as level_color() says.
 #
 # Args:
 #   $1: the label.
@@ -86,12 +110,8 @@ function window() {
     printf -v percent '%.0f' "$percent"
     local filled=$(( (percent * cells + 50) / 100 ))
     (( filled > cells )) && filled=$cells
-    local color='38;5;114'
-    if (( percent >= 90 )); then
-        color=31
-    elif (( percent >= 70 )); then
-        color=33
-    fi
+    local color
+    level_color "$percent" color '38;5;114'
     local bar= i
     for (( i = 0; i < cells; i++ )); do
         if (( i < filled )); then bar+='▓'; else bar+='░'; fi
@@ -171,13 +191,75 @@ if [ -f "$usage" ]; then
         | map(tostring) | join("\u001f")' "$usage" 2>/dev/null)
 fi
 
-# (vim shows nothing for normal mode, but the room for it is kept, so the session name
-# doesn't change length with the mode)
-vim= vim_width=0
-if [ -n "$mode" ]; then
-    [ "$mode" != NORMAL ] && vim="--$mode--"
-    vim_width=${#vim}
-    (( vim_width < 10 )) && vim_width=10
+# Claude Code's process: the nearest ancestor run as claude (which CLAUDE_PID also is, if
+# set, in the commands it runs). Its name (comm) isn't always claude, e.g. 2.1.325 for a
+# background session's, which titles itself "claude bg-spare ..." (as its whole command
+# line), and is run by a daemon, also run as claude, but whose usage would include every
+# background session's.
+claude_pid= p=$PPID
+while (( p > 1 )) && [ -e "/proc/$p" ]; do
+    # (up to the first NUL, which ends each arg)
+    IFS= read -r -d '' arg0 2>/dev/null < "/proc/$p/cmdline"
+    arg0=${arg0%% *}
+    if [ "${arg0##*/}" = claude ]; then
+        claude_pid=$p
+        break
+    fi
+    # (the parent is the 2nd field after the name, which is in parentheses)
+    read -r stat < "/proc/$p/stat" || break
+    read -r _ p _ <<< "${stat##*') '}"
+done
+if [ -z "$claude_pid" ] && [ -n "$CLAUDE_PID" ] && [ -d "/proc/$CLAUDE_PID" ]; then
+    claude_pid=$CLAUDE_PID
+fi
+
+# Sets $size to an amount of memory, given in KiB, in M under 1000M, else in G (to 1
+# decimal under 10G), e.g. 412M, 3.4G, 12G.
+function size() {
+    local kib=$1
+    if (( kib < 1000 * 1024 - 512 )); then
+        printf -v size '%dM' $(( (kib + 512) / 1024 ))
+    elif (( kib < 10 * 1024 * 1024 - 52429 )); then
+        local tenths=$(( (kib * 10 + 524288) / 1048576 ))
+        printf -v size '%d.%dG' $(( tenths / 10 )) $(( tenths % 10 ))
+    else
+        printf -v size '%dG' $(( (kib + 524288) / 1048576 ))
+    fi
+}
+
+# Appends to $procs "<label> <value>", with the value padded on the left to 4 columns, and
+# in level_color()'s color for $3 percent.
+function add_level() {
+    local text color
+    printf -v text '%4s' "$2"
+    level_color "$3" color
+    [ -n "$color" ] && text=$'\e['"${color}m$text"$'\e[m'
+    procs+="${procs:+ }$1 $text"
+}
+
+# The CPU, memory and GPU use, e.g. "cpu 340% mem 3.4G gpu 85% 1.2G", from the last sample
+procs=
+if [ -n "$claude_pid" ]; then
+    run=${XDG_RUNTIME_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/claude_statusline
+    sample=$run/procs-$claude_pid
+    sampled=0
+    read -r sampled cpu cpus mem mem_total gpu gpu_mem 2>/dev/null < "$sample"
+    if (( now - sampled >= SAMPLE_EVERY )) && mkdir -p "$run"; then
+        # (in its own session, as Claude Code kills this if it's still running when it next
+        # updates the status line)
+        setsid -f python3 -I -S "${BASH_SOURCE[0]%/*}/claude_procstats.py" "$claude_pid" \
+            "$sample" < /dev/null > /dev/null 2>&1
+    fi
+    if (( now - sampled < SHOW_SAMPLE_FOR )); then
+        # (CPU use is unknown until the second sample)
+        [ "$cpu" != - ] && add_level cpu "$cpu%" $(( cpus ? cpu / cpus : 0 ))
+        size "$mem"
+        add_level mem "$size" $(( mem_total ? mem * 100 / mem_total : 0 ))
+        if [ "$gpu" != - ]; then
+            size $(( gpu_mem * 1024 ))
+            procs+=" gpu $gpu% $size"
+        fi
+    fi
 fi
 
 # Prints the model, its effort level, and the usage windows.
@@ -202,14 +284,15 @@ out=$(line "$MAX_CELLS")
 # (Claude Code gives the terminal's width as COLUMNS)
 if [ -z "$COLUMNS" ]; then
     [ -n "$session" ] && out+="${out:+ · }$session"
-    [ -n "$vim" ] && out+="${out:+ · }$vim"
+    [ -n "$procs" ] && out+="${out:+ · }$procs"
     printf '%s\n' "$out"
     exit
 fi
 
 room=$(( COLUMNS - MARGIN ))
-# (the vim mode, with at least a space before it)
-right=$(( vim_width ? vim_width + 1 : 0 ))
+# (the CPU etc. use, with at least a space before it)
+right=0
+[ -n "$procs" ] && right=$(( $(width "$procs") + 1 ))
 over=$(( $(width "$out") + right - room ))
 if (( over > 0 && ${#labels[@]} )); then
     # (taking the same number of cells from each bar, rounding up)
@@ -226,10 +309,10 @@ if [ -n "$session" ]; then
     (( ${#session} <= left )) && out+=" · $session"
 fi
 
-if [ -n "$vim" ]; then
-    pad=$(( room - $(width "$out") - ${#vim} ))
+if [ -n "$procs" ]; then
+    pad=$(( room - $(width "$out") - right + 1 ))
     (( pad < 1 )) && pad=1
     printf -v spaces '%*s' "$pad" ''
-    out+="$spaces$vim"
+    out+="$spaces$procs"
 fi
 printf '%s\n' "$out"
