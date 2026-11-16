@@ -3914,3 +3914,56 @@ function cbg() {
             tmux attach -t "=$tmux_name"
     fi
 }
+
+# Forwards a port here to one on (or reachable from) a remote host, over ssh, until
+# interrupted. E.g. `tunnel bouldermesh 36184` makes a server bouldermesh only listens for
+# on its loopback reachable here at localhost:36184.
+#
+# Usage: tunnel [<user>@]<host> [<address>] <port> [<local port>]
+#
+# Args:
+#   host: as ssh takes it, so the user defaults to that of the host's entry in
+#       ~/.ssh/config, if it has one, else the local user.
+#   address: the address the port is bound to, as the remote host sees it (told apart from
+#       a port by not being all digits). Defaults to 127.0.0.1.
+#   port: the port on the remote host.
+#   local port: the port to listen on, on localhost here. Defaults to the remote port.
+function tunnel() {
+    local usage='usage: tunnel [<user>@]<host> [<address>] <port> [<local port>]'
+    local host=$1 address=127.0.0.1
+    shift
+    if [ -n "$1" ] && [[ ! $1 =~ ^[0-9]+$ ]]; then
+        address=$1
+        shift
+    fi
+    if [ -z "$host" ] || (( $# < 1 || $# > 2 )); then
+        echo "$usage" >&2
+        return 2
+    fi
+    local port=$1 local_port=${2:-$1} p
+    for p in "$port" "$local_port"; do
+        if [[ ! $p =~ ^[0-9]+$ ]] || (( p < 1 || p > 65535 )); then
+            echo "tunnel: not a port: $p" >&2
+            echo "$usage" >&2
+            return 2
+        fi
+    done
+    # (an IPv6 address needs brackets in -L)
+    [[ $address == *:* && $address != \[* ]] && address="[$address]"
+    echo "tunnel: localhost:$local_port -> $address:$port on $host (Ctrl+C to stop)"
+    # (so ssh exits, rather than staying connected and forwarding nothing, if e.g. the
+    # local port is taken)
+    ssh -N -o ExitOnForwardFailure=yes -L "$local_port:$address:$port" "$host"
+}
+
+# Completes tunnel's host, from known hosts and ~/.ssh/config, as for ssh
+function _tunnel() {
+    (( COMP_CWORD == 1 )) || return 0
+    # (renamed in bash-completion 2.12)
+    if declare -F _comp_complete_known_hosts > /dev/null; then
+        _comp_complete_known_hosts "$@"
+    elif declare -F _known_hosts > /dev/null; then
+        _known_hosts "$@"
+    fi
+}
+complete -F _tunnel tunnel
