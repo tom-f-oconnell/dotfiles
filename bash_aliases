@@ -3917,9 +3917,11 @@ function cbg() {
 
 # Forwards a port here to one on (or reachable from) a remote host, over ssh, until
 # interrupted. E.g. `tunnel bouldermesh 36184` makes a server bouldermesh only listens for
-# on its loopback reachable here at localhost:36184.
+# on its loopback reachable here at localhost:36184. Says when it's forwarding, and saves
+# each run that got that far, for `tunnel -r` to run again.
 #
 # Usage: tunnel [<user>@]<host> [<address>] <port> [<local port>]
+#        tunnel -r
 #
 # Args:
 #   host: as ssh takes it, so the user defaults to that of the host's entry in
@@ -3928,8 +3930,26 @@ function cbg() {
 #       a port by not being all digits). Defaults to 127.0.0.1.
 #   port: the port on the remote host.
 #   local port: the port to listen on, on localhost here. Defaults to the remote port.
+#   -r: picks a past run (latest first) to run again, with the arrow keys (or j/k) and
+#       Enter, or q / Esc / Ctrl-C to quit.
 function tunnel() {
-    local usage='usage: tunnel [<user>@]<host> [<address>] <port> [<local port>]'
+    local usage=$'usage: tunnel [<user>@]<host> [<address>] <port> [<local port>]\n'
+    usage+='       tunnel -r'
+    local hist=${XDG_STATE_HOME:-$HOME/.local/state}/tunnel_history
+    case $1 in
+        -h|--help)
+            echo "$usage"
+            return 0
+            ;;
+        -r)
+            if (( $# > 1 )); then
+                echo "$usage" >&2
+                return 2
+            fi
+            _tunnel_pick "$hist"
+            return
+            ;;
+    esac
     local host=$1 address=127.0.0.1
     shift
     if [ -n "$1" ] && [[ ! $1 =~ ^[0-9]+$ ]]; then
@@ -3940,6 +3960,12 @@ function tunnel() {
         echo "$usage" >&2
         return 2
     fi
+    # (a host starting with - would be taken as an option, and the history is split on
+    # whitespace)
+    if [[ $host == -* || $host =~ [[:space:][:cntrl:]] ]]; then
+        echo "tunnel: not a host: $host" >&2
+        return 2
+    fi
     local port=$1 local_port=${2:-$1} p
     for p in "$port" "$local_port"; do
         if [[ ! $p =~ ^[0-9]+$ ]] || (( p < 1 || p > 65535 )); then
@@ -3948,19 +3974,162 @@ function tunnel() {
             return 2
         fi
     done
+
     # (an IPv6 address needs brackets in -L)
-    [[ $address == *:* && $address != \[* ]] && address="[$address]"
-    echo "tunnel: localhost:$local_port -> $address:$port on $host (Ctrl+C to stop)"
-    # (so ssh exits, rather than staying connected and forwarding nothing, if e.g. the
-    # local port is taken)
-    ssh -N -o ExitOnForwardFailure=yes -L "$local_port:$address:$port" "$host"
+    local bound=$address
+    [[ $bound == *:* && $bound != \[* ]] && bound="[$bound]"
+
+    # (keeping the history to the latest run of each, once it's grown)
+    if [ -f "$hist" ] && (( $(wc -l < "$hist") > 1000 )); then
+        _tunnel_history "$hist" | tac > "$hist.tmp" && mv -f "$hist.tmp" "$hist"
+    fi
+
+    # Run by ssh (in the user's shell) once it's connected and listening on the local port,
+    # to say so, and save the run. (% is escaped, as ssh expands e.g. %h in it)
+    local entry q_dir q_entry q_hist q_msg cmd
+    printf -v entry '%(%s)T %s %s %s %s' -1 "$host" "$address" "$port" "$local_port"
+    printf -v q_dir %q "${hist%/*}"
+    printf -v q_entry %q "$entry"
+    printf -v q_hist %q "$hist"
+    printf -v q_msg %q "tunnel: forwarding localhost:$local_port -> $bound:$port on $host (Ctrl+C to stop)"
+    cmd="mkdir -p $q_dir && printf '%s\n' $q_entry >> $q_hist; echo $q_msg"
+
+    echo "tunnel: connecting to $host..."
+    # (ExitOnForwardFailure, so ssh exits, rather than staying connected and forwarding
+    # nothing, if e.g. the local port is taken)
+    ssh -N -o ExitOnForwardFailure=yes -o PermitLocalCommand=yes \
+        -o "LocalCommand=${cmd//%/%%}" -L "$local_port:$bound:$port" "$host"
+}
+
+# Prints tunnel's past runs from history file $1, latest first, and only the latest of
+# each, as lines of "<when, in seconds since the epoch> <host> <address> <port> <local port>".
+function _tunnel_history() {
+    tac "$1" 2>/dev/null | sort -s -k1,1nr | awk 'NF == 5 && !seen[$2 " " $3 " " $4 " " $5]++'
+}
+
+# For `tunnel -r`: lists the past runs in history file $1, to pick one to run again.
+function _tunnel_pick() {
+    local hist=$1
+    local -a runs labels
+    mapfile -t runs < <(_tunnel_history "$hist")
+    if (( ${#runs[@]} == 0 )); then
+        echo "tunnel: no past runs (saved in $hist once forwarding)" >&2
+        return 1
+    fi
+    if [ ! -t 0 ] || [ ! -t 2 ]; then
+        echo "tunnel -r: needs a terminal" >&2
+        return 1
+    fi
+
+    # (each run as "<how long ago> localhost:<local port> -> <address>:<port> on <host>")
+    local now run t host address port local_port ago
+    printf -v now '%(%s)T' -1
+    for run in "${runs[@]}"; do
+        read -r t host address port local_port <<< "$run"
+        [[ $address == *:* && $address != \[* ]] && address="[$address]"
+        t=$(( now - t ))
+        if (( t < 3600 )); then
+            ago="$(( t / 60 ))m"
+        elif (( t < 86400 )); then
+            ago="$(( t / 3600 ))h"
+        else
+            ago="$(( t / 86400 ))d"
+        fi
+        printf -v run '%4s  localhost:%-5s -> %s:%s on %s' "$ago" "$local_port" \
+            "$address" "$port" "$host"
+        labels+=("$run")
+    done
+
+    local n=${#runs[@]} sel=0 top=0 rows=$(( ${LINES:-24} - 2 ))
+    (( rows > 15 )) && rows=15
+    (( rows < 3 )) && rows=3
+    (( rows > n )) && rows=$n
+    local old_stty old_trap i key rest chosen= quit=
+    old_stty=$(stty -g)
+    # (so keys pressed between reads aren't echoed)
+    stty -echo
+    # (so Ctrl-C quits through the cleanup below, rather than leaving the terminal not
+    # echoing, and the cursor hidden)
+    old_trap=$(trap -p INT)
+    trap quit=1 INT
+    printf '\e[?25ltunnel: ↑/↓ or j/k to pick, Enter to run, q / Esc / Ctrl-C to quit\n' >&2
+    while :; do
+        (( sel < top )) && top=$sel
+        (( sel >= top + rows )) && top=$(( sel - rows + 1 ))
+        for (( i = top; i < top + rows; i++ )); do
+            if (( i == sel )); then
+                printf '\r\e[K\e[7m> %s\e[m\n' "${labels[i]}" >&2
+            else
+                printf '\r\e[K  %s\n' "${labels[i]}" >&2
+            fi
+        done
+        # (reading with a timeout, as Ctrl-C only interrupts read in an interactive shell,
+        # and its trap only runs between commands. Else, quitting on e.g. EOF.)
+        until IFS= read -rsn1 -t 0.1 key; do
+            (( $? > 128 )) && [ -z "$quit" ] && continue
+            quit=1
+            break
+        done
+        [ -n "$quit" ] && break
+        case $key in
+            # (Enter)
+            '')
+                chosen=$sel
+                break
+                ;;
+            q|$'\x04')
+                break
+                ;;
+            k)
+                (( sel > 0 )) && sel=$(( sel - 1 ))
+                ;;
+            j)
+                (( sel < n - 1 )) && sel=$(( sel + 1 ))
+                ;;
+            $'\e')
+                # (an arrow key sends Esc then 2 more bytes, all at once)
+                rest=
+                IFS= read -rsn2 -t 0.05 rest
+                case $rest in
+                    '[A'|OA)
+                        (( sel > 0 )) && sel=$(( sel - 1 ))
+                        ;;
+                    '[B'|OB)
+                        (( sel < n - 1 )) && sel=$(( sel + 1 ))
+                        ;;
+                    '')
+                        break
+                        ;;
+                esac
+                ;;
+        esac
+        printf '\e[%dA' "$rows" >&2
+    done
+    # (clearing the list and the line above it)
+    printf '\e[%dA\r\e[J\e[?25h' $(( rows + 1 )) >&2
+    stty "$old_stty"
+    eval "${old_trap:-trap - INT}"
+    [ -n "$chosen" ] || return 0
+
+    read -r t host address port local_port <<< "${runs[chosen]}"
+    # (the shortest equivalent command, also put in the shell's history, so it can be
+    # rerun from there)
+    local -a args=("$host")
+    [ "$address" != 127.0.0.1 ] && args+=("$address")
+    args+=("$port")
+    [ "$local_port" != "$port" ] && args+=("$local_port")
+    history -s tunnel "${args[@]}"
+    echo "\$ tunnel ${args[*]}"
+    tunnel "${args[@]}"
 }
 
 # Completes tunnel's host, from known hosts and ~/.ssh/config, as for ssh
 function _tunnel() {
     (( COMP_CWORD == 1 )) || return 0
+    if [[ $2 == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W '-r -h' -- "$2")
     # (renamed in bash-completion 2.12)
-    if declare -F _comp_complete_known_hosts > /dev/null; then
+    elif declare -F _comp_complete_known_hosts > /dev/null; then
         _comp_complete_known_hosts "$@"
     elif declare -F _known_hosts > /dev/null; then
         _known_hosts "$@"

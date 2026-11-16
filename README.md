@@ -45,6 +45,12 @@ Scripts meant to be run by name are in `bin/`, which `bashrc` adds to the end of
   defaulting to the most recent one in the current directory. `/bgt` in Claude Code (the
   `bg-tmux` plugin in `claude_plugins/`, enabled by `claude_settings.json`) does `/bg` and
   then this, once the terminal is free, for sessions started by the `claude` shell function.
+- `tunnel [<user>@]<host> [<address>] <port> [<local port>]` (`bash_aliases`): forwards
+  localhost:`<local port>` (default: `<port>`) to `<address>:<port>` as `<host>` sees it
+  (default address: 127.0.0.1), with `ssh -N -L`, saying once it's forwarding. Each run
+  that got that far is saved (in `~/.local/state/tunnel_history`), and `tunnel -r` lists
+  them, latest first, to pick one to run again (arrows or j/k, Enter; q / Esc / Ctrl-C to
+  quit).
 
 #### Packages
 
