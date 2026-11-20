@@ -201,5 +201,6 @@
   "editorMode": "vim",
   "switchModelsOnFlag": true,
   "remoteControlAtStartup": true,
-  "inputNeededNotifEnabled": true
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
 }

@@ -2555,17 +2555,10 @@ function clone() {
     fi
 }
 
-# TODO TODO try to switch all hub stuff to gh (official CLI), try to use it again, and
-# try to get autocomplete working (and with any aliases too!)
-alias cl='github_clone'
-complete -o bashdefault -o default -F _github_clone_complete cl
-
 # TODO option to exclude stuff not modified past a certain date / recency?
 # TODO test these (at least mgf) can also show if upstream has stuff we don't
 # TODO TODO have it print output in order of when anything in each repo was last
 # modified (or reverse)?
-# TODO TODO TODO just for stuff where i'm the repo owner [/ a contributor]
-# (also for ejhonglab / orgs i'm in. don't i already have a list of those here?)
 # TODO TODO modify/wrap mgitstatus so i can have an option to show git status for
 # (certain?) flagged stuff
 # TODO add another alias that runs this, but only on repos modified within some
@@ -3885,6 +3878,7 @@ alias claude-stale='claude-prune-stale --dry-run'
 function claude-list() {
     claude-sessions list "$@"
 }
+alias cl='claude-list'
 
 # Read-only look at one session (name or part of one, session ID or prefix, or background
 # id), optionally on another host: status, terminal, working directory and git state, and
