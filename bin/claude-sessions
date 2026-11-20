@@ -4,8 +4,8 @@
 Subcommands (bash_aliases wraps them as `claude-list`, `claude-peek` and the `claude`
 function):
   list [host ...]         active sessions: id (first 8 characters of the session ID),
-                          background or not, status and for how long, terminal, time since
-                          anyone typed there, name
+                          background or not, status and for how long, terminal, tmux
+                          session (if in one), time since anyone typed there, name
   peek <name|id> [host]   read-only look at one session: status, terminal, working directory
                           and git state, and its last few turns
   resume-guard <args>     run by the `claude` function for `claude -r` / `claude -c`: when the
@@ -93,19 +93,23 @@ def _proc_alive(pid) -> bool:
 
 
 def _terminal_info(pid):
-    """(tty name e.g. 'pts/20' or None, ssh client address or None, seconds since input)."""
+    """(tty name e.g. 'pts/20' or None, ssh client address or None, seconds since input,
+    tmux server socket from $TMUX or None)."""
     try:
         dev = os.readlink(f"/proc/{pid}/fd/0")
     except OSError:
-        return None, None, None
+        return None, None, None, None
     if not (dev.startswith("/dev/pts/") or dev.startswith("/dev/tty")):
-        return None, None, None
-    ssh_from = None
+        return None, None, None, None
+    ssh_from = tmux_socket = None
     try:
         with open(f"/proc/{pid}/environ", "rb") as f:
             for var in f.read().split(b"\0"):
                 if var.startswith(b"SSH_CONNECTION="):
                     ssh_from = var.split(b"=", 1)[1].split()[0].decode()
+                elif var.startswith(b"TMUX="):
+                    # socket path,server pid,session id
+                    tmux_socket = var.split(b"=", 1)[1].rsplit(b",", 2)[0].decode()
     except (OSError, IndexError):
         pass
     try:
@@ -113,14 +117,34 @@ def _terminal_info(pid):
         typed_ago = time.time() - os.stat(dev).st_atime
     except OSError:
         typed_ago = None
-    return dev[len("/dev/"):], ssh_from, typed_ago
+    return dev[len("/dev/"):], ssh_from, typed_ago, tmux_socket
+
+
+def _tmux_sessions(sockets):
+    """{tty name: tmux session name} for the panes of the default tmux server and of the
+    servers at `sockets`."""
+    panes = {}
+    if not shutil.which("tmux"):
+        return panes
+    for sock in [None] + sorted(sockets):
+        cmd = ["tmux"] + (["-S", sock] if sock else []) + [
+            "list-panes", "-a", "-F", "#{pane_tty}\t#{session_name}"]
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        for line in r.stdout.splitlines():
+            tty_dev, _, name = line.partition("\t")
+            panes.setdefault(tty_dev[len("/dev/"):], name)
+    return panes
 
 
 def live_sessions():
     """Active sessions, as `claude agents --json` lists them, plus details from this host.
 
     Added keys: `status_for` (seconds in the current status), `tty`, `ssh_from`,
-    `typed_ago` (seconds since input on that terminal) and `version` (Claude Code's).
+    `typed_ago` (seconds since input on that terminal), `tmux` (tmux session name, or
+    None when not in tmux) and `version` (Claude Code's).
     """
     r = subprocess.run([claude_bin(), "agents", "--json"], capture_output=True, text=True,
                        timeout=60)
@@ -139,8 +163,12 @@ def live_sessions():
         s["status_for"] = now - since / 1000 if since else None
         s["version"] = info.get("version")
         # a background session's terminal is the daemon's, not one anyone sits at
-        s["tty"], s["ssh_from"], s["typed_ago"] = (
-            _terminal_info(pid) if pid and s.get("kind") != "background" else (None,) * 3)
+        s["tty"], s["ssh_from"], s["typed_ago"], s["tmux_socket"] = (
+            _terminal_info(pid) if pid and s.get("kind") != "background" else (None,) * 4)
+    panes = _tmux_sessions({s["tmux_socket"] for s in sessions if s["tmux_socket"]})
+    for s in sessions:
+        # $TMUX set but no pane found (e.g. tmux not on PATH): in tmux, session unknown
+        s["tmux"] = panes.get(s["tty"]) or ("?" if s.pop("tmux_socket") else None)
     return sessions
 
 
@@ -420,6 +448,8 @@ def _process_line(s) -> str:
             f"{local_time(s.get('startedAt'))})")
     if s.get("kind") != "background":
         line += f"; {s.get('tty') or 'no terminal'}"
+        if s.get("tmux"):
+            line += f" (tmux session {s['tmux']})"
         line += f", ssh from {s['ssh_from']}" if s.get("ssh_from") else ", local"
         if s.get("typed_ago") is not None:
             line += f", last typed {age(s['typed_ago'])} ago"
@@ -538,7 +568,7 @@ def run_remote(host, args, capture=False):
 # ---------------------------------------------------------------------------------------
 # Subcommands
 
-LIST_COLUMNS = ("ID", "background", "status", "for", "terminal", "last typed", "name")
+LIST_COLUMNS = ("ID", "background", "status", "for", "terminal", "tmux", "last typed", "name")
 
 
 def by_session(sessions):
@@ -563,7 +593,7 @@ def list_rows(sessions):
             sid = s.get("id") or (s.get("sessionId") or "-")[:8]
             rows.append([sid, "yes" if s.get("kind") == "background" else "no",
                          status_of(s), age(s.get("status_for")), s.get("tty") or "-",
-                         age(s.get("typed_ago")), name])
+                         s.get("tmux") or "-", age(s.get("typed_ago")), name])
     return rows
 
 

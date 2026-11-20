@@ -3876,11 +3876,11 @@ alias cconv='claude-conversation'
 alias claude-stale='claude-prune-stale --dry-run'
 
 # Active Claude Code sessions, interactive and background: id, whether background, status
-# and for how long, terminal, time since anyone typed there, name. The id is the first 8
-# characters of the session ID, which `claude-peek` and `claude -r` take; for background
-# sessions it is also what `claude attach` / `stop` / `rm` take. Hosts as arguments list
-# theirs over ssh (`claude-list hal atlas`). Plain `claude agents` opens the interactive
-# agent view instead of printing them.
+# and for how long, terminal, tmux session (if in one), time since anyone typed there, name.
+# The id is the first 8 characters of the session ID, which `claude-peek` and `claude -r`
+# take; for background sessions it is also what `claude attach` / `stop` / `rm` take. Hosts
+# as arguments list theirs over ssh (`claude-list hal atlas`). Plain `claude agents` opens
+# the interactive agent view instead of printing them.
 function claude-list() {
     claude-sessions list "$@"
 }
