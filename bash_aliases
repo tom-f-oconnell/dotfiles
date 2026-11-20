@@ -3875,8 +3875,9 @@ alias cconv='claude-conversation'
 # systemd user timer runs daily.
 alias claude-stale='claude-prune-stale --dry-run'
 
-# Active Claude Code sessions, interactive and background: id, whether background, status
-# and for how long, terminal, tmux session (if in one), time since anyone typed there, name.
+# Active Claude Code sessions, interactive and background: id, whether background (and if
+# so, whether `claude attach`ed), status and for how long, terminal (an attached client's,
+# for a background session), tmux session (if in one), time since anyone typed there, name.
 # The id is the first 8 characters of the session ID, which `claude-peek` and `claude -r`
 # take; for background sessions it is also what `claude attach` / `stop` / `rm` take. Hosts
 # as arguments list theirs over ssh (`claude-list hal atlas`). Plain `claude agents` opens

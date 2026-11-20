@@ -34,7 +34,8 @@ Scripts meant to be run by name are in `bin/`, which `bashrc` adds to the end of
 
 - `bin/claude-sessions`: Claude Code sessions, here or on other hosts (over ssh, where it
   needs only python3 and Claude Code). `claude-list [host ...]` lists them (status and for
-  how long, terminal, tmux session if in one, time since anyone typed there).
+  how long, terminal, tmux session if in one, time since anyone typed there; for a
+  background session, those of any `claude attach` client).
   `claude-peek <name|id> [host]` shows one read-only: status, terminal, working directory
   and git state, and its last few turns.
   `claude -r <id or name>` / `claude -c` / the `-r` picker, for a session still open in
